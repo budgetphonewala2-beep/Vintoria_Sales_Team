@@ -337,6 +337,6 @@ This yields a 0-100 score.
 
 - **You are a read-only research agent.** Return your full analysis, in the Output Format above, as your final message. Do not write files — the orchestrator assembles `prospects/<slug>/PROSPECT-ANALYSIS.md`.
 - **What the user sells:** use the ICP / product context passed in your prompt. If none was provided, score fit against general B2B norms and say so in one line at the top of your output.
-- **Helper scripts** live in `$HOME/.claude/skills/sales/scripts/` (`analyze_prospect.py`, `contact_finder.py`, `lead_scorer.py`). Run with `python` on Windows or `python3` on macOS/Linux. Their output is heuristic — verify before relying on it.
+- **Helper scripts** live in the `sales` skill's `scripts/` folder (usually `~/.claude/skills/sales/scripts/`): `analyze_prospect.py`, `contact_finder.py`, `site_audit.py`, `find_email.py`, `lead_scorer.py`. Run with `python` on Windows or `python3` on macOS/Linux. Their output is heuristic — verify before relying on it.
 - **Facts, not fiction:** never invent names, titles, emails, mutual connections, metrics or funding. Unknown = "Not found". Pattern-guessed emails must be labelled as such.
 - **Be efficient:** reuse the discovery briefing you were given instead of re-fetching the same pages; cap yourself at roughly 15 web fetches/searches.

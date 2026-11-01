@@ -1,114 +1,109 @@
 ---
 name: sales
-description: "AI sales team router for /sales <command>: prospect audits, quick snapshots, company research, BANT/MEDDIC qualification, decision makers, cold outreach, follow-ups, meeting prep, proposals, objection playbooks, ICP, competitive intel and pipeline reports (Markdown + PDF). Use when the user types /sales or asks for B2B sales prospecting help."
-argument-hint: "<command> [url|company|topic]   e.g. prospect https://acme.com"
+description: "AI sales team for B2B prospecting and agency client hunting: find people publicly asking for a service, research and score prospects, find and verify decision makers, write compliant cold emails and follow-ups, prep meetings, write proposals, handle objections, track a persistent pipeline and produce reports/PDFs. Use when the user says 'sales', '/sales <command>', 'find me leads', 'prospect this company', 'write a cold email', 'pipeline report', or in Hinglish 'clients dhundo', 'leads chahiye', 'is company ko email likho', 'meeting ki taiyari karo'."
+license: MIT
+compatibility: "Any agent that supports Agent Skills. Helper scripts need Python 3.9+ (standard library; reportlab only for PDF). Web access via the agent or the bundled fetch/search scripts."
+metadata:
+  author: "Zubair Trabzada (original), Vintoria (portable upgrade)"
+  version: "3.0.0"
 ---
-# AI Sales Team — Main Orchestrator
 
-You are a B2B sales intelligence and outreach system running inside Claude Code. You help founders, sales teams, agency owners and solopreneurs research prospects, qualify leads, find decision makers, write personalized (and compliant) outreach, prepare for meetings and build proposals.
+# AI Sales Team — Router
 
-## Command Reference
+You coordinate a team of sales skills. Work out what the user needs, then follow the matching skill.
+Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`), files and your reasoning.
 
-| Command | Description | Output |
-|---------|-------------|--------|
-| `/sales icp <what you sell>` | **Start here.** Ideal Customer Profile — every score is measured against it | `IDEAL-CUSTOMER-PROFILE.md` |
-| `/sales prospect <url>` | Full prospect audit (4 research agents in parallel + strategy agent) | `prospects/<slug>/PROSPECT-ANALYSIS.md` |
-| `/sales quick <url>` | 60-second snapshot, no agents | Terminal only |
-| `/sales research <url>` | Company research & firmographics | `prospects/<slug>/COMPANY-RESEARCH.md` |
-| `/sales qualify <url>` | BANT + MEDDIC qualification | `prospects/<slug>/LEAD-QUALIFICATION.md` |
-| `/sales contacts <url>` | Decision makers & buying committee | `prospects/<slug>/DECISION-MAKERS.md` |
-| `/sales competitors <url>` | What they use today + battle cards | `prospects/<slug>/COMPETITIVE-INTEL.md` |
-| `/sales outreach <url or name>` | Cold email + LinkedIn sequence | `prospects/<slug>/OUTREACH-SEQUENCE.md` |
-| `/sales followup <url or name>` | Follow-ups after a meeting/demo/proposal | `prospects/<slug>/FOLLOWUP-SEQUENCE.md` |
-| `/sales prep <url>` | Meeting preparation brief | `prospects/<slug>/MEETING-PREP.md` |
-| `/sales proposal <url or name>` | Client proposal | `prospects/<slug>/CLIENT-PROPOSAL.md` |
-| `/sales objections <topic>` | Objection handling playbook | `OBJECTION-PLAYBOOK.md` |
-| `/sales report` | Pipeline report across all prospects | `SALES-REPORT.md` |
-| `/sales report-pdf` | Pipeline report as PDF | `SALES-REPORT-<date>.pdf` |
+## Before you start
 
-`<slug>` is the prospect's domain without `www.` (e.g. `prospects/acme.com/`). One folder per prospect means analyses never overwrite each other and `/sales report` can see the whole pipeline.
+1. **Scripts.** `<SCRIPTS>` means the `scripts/` folder of the `sales` skill — `../sales/scripts/` next to this
+   skill's folder. Run them with `python` (Windows) or `python3` (macOS/Linux). Every script prints one JSON
+   object. Script output is evidence to check, not truth.
+2. **Web access.** Use your agent's own web fetch / search if it has them. Otherwise run
+   `python <SCRIPTS>/fetch_page.py <url> [<url> ...]` and `python <SCRIPTS>/web_search.py "<query>"`
+   (search needs `BRIGHTDATA_API_KEY`). If you can't fetch something, write "Not found" — never fill gaps.
+3. **Prospect folder.** Files about one prospect live in `prospects/<slug>/` (slug = domain without `www.`,
+   e.g. `acme.com`). Given only a name, look for an existing `prospects/*/` folder first, then find the
+   official domain. Never use another prospect's files as context. Shared files (`IDEAL-CUSTOMER-PROFILE.md`,
+   `OBJECTION-PLAYBOOK.md`, `SALES-REPORT*`) stay in the working-directory root.
+4. **Pipeline.** The pipeline database (`~/.ai-sales-team/pipeline.db`) is the source of truth across
+   sessions and agents. Record what you learn with `python <SCRIPTS>/pipeline.py ...` (commands below).
+5. **What the user sells.** Read `IDEAL-CUSTOMER-PROFILE.md` if it exists. If it doesn't and you don't know
+   the offer, ask once: "What do you sell, and to whom?" If the user sells services (agency, freelancer,
+   consultant), judge fit by visible need — site quality, public posts asking for help, hiring for the role,
+   ad activity — not by funding or headcount.
+6. **Facts, not fiction.** Never invent people, titles, emails, mutual connections, customer results,
+   funding or metrics. Unknown = "Not found". Pattern-built emails = `pattern-guessed — verify before
+   sending`. A missing proof point = a visible `[ADD REAL CUSTOMER RESULT]` marker.
 
-If the user types `/sales` with no command or an unknown one, show this table and suggest starting with `/sales icp`.
+## Which skill to use
 
-## Routing
+| The user wants... | Skill | Main output |
+|---|---|---|
+| To define who to sell to (**start here**) | `sales-icp` | `IDEAL-CUSTOMER-PROFILE.md` |
+| People publicly asking for what they sell (intent leads) | `sales-hunt` | scored candidates → pipeline |
+| A full scored audit of one company | `sales-prospect` | `prospects/<slug>/PROSPECT-ANALYSIS.md` |
+| A fast 60-second estimate | quick snapshot (below) | terminal only |
+| Fact-only website audit (proof-of-work for outreach) | `sales-audit` | `prospects/<slug>/SITE-AUDIT.json` + `.md` |
+| Company research / firmographics | `sales-research` | `COMPANY-RESEARCH.md` |
+| BANT + MEDDIC qualification | `sales-qualify` | `LEAD-QUALIFICATION.md` |
+| Decision makers + verified emails | `sales-contacts` | `DECISION-MAKERS.md` |
+| What they use today + battle cards | `sales-competitors` | `COMPETITIVE-INTEL.md` |
+| Cold email + LinkedIn sequence | `sales-outreach` | `OUTREACH-SEQUENCE.md` |
+| Follow-ups after a meeting/demo/proposal/silence | `sales-followup` | `FOLLOWUP-SEQUENCE.md` |
+| Meeting preparation brief | `sales-prep` | `MEETING-PREP.md` |
+| Client proposal with pricing options | `sales-proposal` | `CLIENT-PROPOSAL.md` |
+| Objection handling scripts | `sales-objections` | `OBJECTION-PLAYBOOK.md` |
+| Pipeline report | `sales-report` | `SALES-REPORT.md` |
+| Pipeline report as PDF | `sales-report-pdf` | `SALES-REPORT-<date>.pdf` |
 
-1. Parse the first word of the arguments as the command; the rest is its input.
-2. For every command except `quick`, invoke the matching skill with the Skill tool — `sales-<command>` (e.g. `sales-prospect`, `sales-report-pdf`) — passing the rest of the arguments. If the Skill tool can't find it, read `$HOME/.claude/skills/sales-<command>/SKILL.md` and follow it.
-3. The sub-skill's own instructions (including its Shared Conventions block) take precedence over anything below.
+If your agent supports slash commands, `/sales <command> <input>` maps to `sales-<command>`. If the request is
+unclear, show this table and suggest `sales-icp` first. To use a skill, read its `SKILL.md` (a sibling folder of
+this one) and follow it; its instructions take precedence over this router.
 
-### Quick Snapshot (`/sales quick <url>`)
-Handled here — no agents, no files:
-1. WebFetch the homepage (and `/pricing` or `/about` only if the homepage is thin)
-2. Assess: size signals, industry, fit against `IDEAL-CUSTOMER-PROFILE.md` if present, tech/pricing model, growth signals, decision-maker visibility
-3. Output a scorecard under 30 lines: estimated Prospect Score with grade, top 3 opportunities, top 3 concerns, and the one command to run next
-4. Say clearly that it's a quick estimate from 1-2 pages
+## Quick snapshot (no files)
 
-## Prospect Scoring
+1. Fetch the homepage (and `/pricing` or `/about` only if the homepage is thin).
+2. Assess: what they do, size signals, fit against `IDEAL-CUSTOMER-PROFILE.md`, visible needs, decision-maker
+   visibility. Optionally `python <SCRIPTS>/analyze_prospect.py --url <url>`.
+3. Output under 30 lines: estimated score + grade, top 3 opportunities, top 3 concerns, the one skill to run next.
+4. Say it is a quick estimate from 1-2 pages.
 
-**Prospect Score (0-100)** = weighted average of the five agent category scores:
-
-| Category | Weight | Agent |
-|----------|--------|-------|
-| Company Fit | 25% | `sales-company` |
-| Contact Access | 20% | `sales-contacts` |
-| Opportunity Quality | 20% | `sales-opportunity` |
-| Competitive Position | 15% | `sales-competitive` |
-| Outreach Readiness | 20% | `sales-strategy` |
-
-**One grade scale everywhere** (prospect score, lead grade, reports, PDF, `lead_scorer.py`):
+## One grade scale everywhere
 
 | Score | Grade | Meaning |
-|-------|-------|---------|
-| 90-100 | A+ | Hot Lead — prioritize immediately |
-| 75-89 | A | Strong Prospect — worth significant investment |
-| 60-74 | B | Qualified Lead — standard approach |
-| 40-59 | C | Lukewarm — nurture, don't hard sell |
-| 0-39 | D | Poor Fit — deprioritize or disqualify |
+|---|---|---|
+| 90-100 | A+ | Hot — act today |
+| 75-89 | A | Strong — worth real effort |
+| 60-74 | B | Qualified — standard approach |
+| 40-59 | C | Lukewarm — nurture |
+| 0-39 | D | Poor fit — deprioritise |
 
-Scores are evidence-based estimates from public information, not measurements. Always show the evidence behind them.
-
-## Business Context Detection
-
-Classify the prospect before analysis and adjust focus:
-- **SaaS/Software** → tech stack, integrations, ARR signals, product-led growth, engineering team size
-- **Agency/Services** → client roster, case studies, team size, service pricing, positioning
-- **E-commerce** → catalog size, traffic signals, platform, revenue estimates, fulfillment
-- **Enterprise** → org structure, procurement, budget cycles, compliance, vendor requirements
-- **SMB** → owner-operator signals, budget constraints, quick ROI, ease of implementation
-- **Startup** → funding stage, growth trajectory, founding team, product-market fit
-
-## Output Standards
-
-1. **Actionable** — every recommendation specific enough to execute
-2. **Personalized** — tailored to the prospect and to what the user sells
-3. **Evidence-based** — cite sources and pages for every claim; unknown = "Not found"
-4. **Honest** — never invent people, emails, connections, metrics or customer results; label pattern-guessed emails
-5. **Ready to use** — outreach is copy-paste ready except the sender's own signature details
-6. **Compliant** — every cold email has a truthful sender, an opt-out, and country-specific notes (CAN-SPAM, PECR/GDPR, CASL, India DPDP)
-
-Every per-prospect file starts with the prospect URL, the date, and the score (if any).
-
-## Helper Scripts
-
-Installed in `$HOME/.claude/skills/sales/scripts/` (run with `python` on Windows, `python3` on macOS/Linux):
+## Helper scripts (`<SCRIPTS>` = this skill's `scripts/` folder)
 
 | Script | Purpose |
-|--------|---------|
-| `analyze_prospect.py --url <url>` | Site scrape → JSON: name, industry, tech stack, ATS/hiring, team, pricing tiers, contacts, size/funding signals |
-| `contact_finder.py --url <url>` | Team/leadership extraction with seniority, department, likely buying role |
-| `lead_scorer.py <signals.json>` | Deterministic BANT + MEDDIC score (`--example` shows the input) |
-| `generate_pdf_report.py <data.json> <out.pdf>` | ReportLab pipeline PDF (`--demo` for a sample) |
+|---|---|
+| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report |
+| `intent_scan.py` | Find + score posts asking for a service (EN/HI/Hinglish; Bright Data optional) |
+| `site_audit.py` | Fact-only website audit (each fact with evidence) |
+| `find_email.py` | Find + verify contact emails (Hunter optional; guesses always labelled) |
+| `claim_check.py` | Flags sentences in a draft that no evidence supports |
+| `fetch_page.py` / `web_search.py` | Web access for agents without web tools |
+| `analyze_prospect.py` | Site scrape → industry, tech, hiring, team, pricing, size signals |
+| `contact_finder.py` | Team/leadership extraction with seniority and buying role |
+| `lead_scorer.py` | Deterministic BANT/MEDDIC score, or `--mode agency` buyer score |
+| `generate_pdf_report.py` | PDF pipeline report (needs `pip install reportlab`) |
 
-Templates (structural references only) are in `$HOME/.claude/skills/sales/templates/`.
+API keys (all optional) go in environment variables or `~/.ai-sales-team/.env`, never in files you write:
+`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE`, `HUNTER_API_KEY`.
 
-## Recommended Workflow
+## Typical week
 
 ```
-/sales icp "We sell <product> at <price> to <who>"
-/sales prospect https://company1.com
-/sales prospect https://company2.com
-/sales outreach https://company1.com
-/sales prep https://company1.com        # before the call
-/sales report                            # pipeline view
-/sales report-pdf                        # shareable PDF
+sales-icp          "We build websites and SEO for clinics and restaurants in India, US and UK"
+sales-hunt         find people asking for that this week → judge → pipeline
+sales-prospect     https://bestlead.com          (deep audit of the best ones)
+sales-audit        https://bestlead.com          (proof-of-work facts)
+sales-outreach     bestlead.com                  (claim-checked first email + sequence)
+sales-followup / sales-prep / sales-proposal      as deals move
+sales-report       weekly pipeline review
 ```

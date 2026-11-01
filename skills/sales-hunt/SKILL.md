@@ -1,0 +1,75 @@
+---
+name: sales-hunt
+description: "Finds public posts (LinkedIn, Reddit, Facebook groups, forums) where someone is actively asking to hire a service the user sells — website, app, SEO, marketing, design, software — scores them in English, Hindi and Hinglish, filters out sellers, job seekers and job ads, judges real buyers with a labelled rubric and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'."
+license: MIT
+compatibility: "Any agent that supports Agent Skills. Helper scripts need Python 3.9+ (standard library; reportlab only for PDF). Web access via the agent or the bundled fetch/search scripts."
+metadata:
+  author: "Zubair Trabzada (original), Vintoria (portable upgrade)"
+  version: "3.0.0"
+---
+
+# Intent Hunt — find people asking for what you sell
+
+Intent beats cold lists: a person who wrote "need a website for my clinic" this week is worth fifty
+cold contacts. This skill finds those posts, separates real buyers from noise, and puts them in the pipeline.
+
+## Before you start
+
+1. **Scripts.** `<SCRIPTS>` means the `scripts/` folder of the `sales` skill — `../sales/scripts/` next to this
+   skill's folder. Run them with `python` (Windows) or `python3` (macOS/Linux). Every script prints one JSON
+   object. Script output is evidence to check, not truth.
+2. **Web access.** Use your agent's own web fetch / search if it has them. Otherwise run
+   `python <SCRIPTS>/fetch_page.py <url> [<url> ...]` and `python <SCRIPTS>/web_search.py "<query>"`
+   (search needs `BRIGHTDATA_API_KEY`). If you can't fetch something, write "Not found" — never fill gaps.
+3. **Prospect folder.** Files about one prospect live in `prospects/<slug>/` (slug = domain without `www.`,
+   e.g. `acme.com`). Given only a name, look for an existing `prospects/*/` folder first, then find the
+   official domain. Never use another prospect's files as context. Shared files (`IDEAL-CUSTOMER-PROFILE.md`,
+   `OBJECTION-PLAYBOOK.md`, `SALES-REPORT*`) stay in the working-directory root.
+4. **Pipeline.** The pipeline database (`~/.ai-sales-team/pipeline.db`) is the source of truth across
+   sessions and agents. Record what you learn with `python <SCRIPTS>/pipeline.py ...` (commands below).
+5. **What the user sells.** Read `IDEAL-CUSTOMER-PROFILE.md` if it exists. If it doesn't and you don't know
+   the offer, ask once: "What do you sell, and to whom?" If the user sells services (agency, freelancer,
+   consultant), judge fit by visible need — site quality, public posts asking for help, hiring for the role,
+   ad activity — not by funding or headcount.
+6. **Facts, not fiction.** Never invent people, titles, emails, mutual connections, customer results,
+   funding or metrics. Unknown = "Not found". Pattern-built emails = `pattern-guessed — verify before
+   sending`. A missing proof point = a visible `[ADD REAL CUSTOMER RESULT]` marker.
+
+## Steps
+
+1. **Know the offer.** Read `IDEAL-CUSTOMER-PROFILE.md` or ask what services, which countries, which languages.
+2. **Collect posts** — any of these:
+   - With a Bright Data key: `python <SCRIPTS>/intent_scan.py --serp --lookback 7 --max-calls 10 [--country in] --save hunt.json`
+     (`--list-queries` shows the default X-ray queries; add your own with `--query '...'`, repeatable).
+   - Without a key: search yourself (your web tool, or ask the user to paste posts) for queries like those in
+     `references/queries.md`, save posts one per line or as JSON lines (`url`, `text`, `author`) and run
+     `python <SCRIPTS>/intent_scan.py --file posts.jsonl --save hunt.json`.
+   - One post: `python <SCRIPTS>/intent_scan.py --text "..."`.
+   The scanner skips posts seen in earlier runs and rejects sellers, job seekers and job ads for free.
+3. **Judge every candidate** with `references/intent-rubric.md`. For each, decide: buyer / seller /
+   job_seeker / other, services wanted, urgency, budget (only if stated), location/timezone (only if stated
+   or obvious), and an **exact quote** from the post that proves intent. Discard anything below confidence 0.6.
+4. **Score buyers**: write their signals to a JSON file and run
+   `python <SCRIPTS>/lead_scorer.py --mode agency signals.json` (fields: `intent_confidence`, `urgency`,
+   `posted_days_ago`, `comments`, `budget_stated`, `services_requested`, `services_offered`, `email_status`,
+   `sources_count`).
+5. **Add to the pipeline** (one per buyer):
+   `python <SCRIPTS>/pipeline.py add --url <their site or post URL> --name "<name/company>" --source hunt:<query-id> --services web,seo`
+   `python <SCRIPTS>/pipeline.py score <slug> <score>` · `python <SCRIPTS>/pipeline.py note <slug> "Post: <url> — quote: '<exact quote>'"`
+6. **Find a contact** for the top buyers: `python <SCRIPTS>/find_email.py --text "<post text>" [--domain <site>] [--first X --last Y]`,
+   then `python <SCRIPTS>/pipeline.py contact <slug> --name ... --email ... --email-status <status> --source <source>`.
+   No verified email? Suggest the user reply publicly under the post or DM from their own account — give
+   them a 2-line message. Never post or DM on their behalf.
+7. **Report**: a table — buyer, what they need, quote, score, contact status, suggested next step
+   (`sales-audit` then `sales-outreach` for the best ones).
+
+## Rules
+- The quote must be copied exactly from the post. No quote = not a buyer.
+- Agencies advertising, freelancers offering services, "#hiring" job posts and job seekers are never buyers.
+- Respect each platform's terms: only public posts, no scraping behind logins, no automated messaging.
+- Paid search calls are capped by `--max-calls`; tell the user how many calls a run used.
+
+## References (read when you reach that step)
+
+- `references/intent-rubric.md` — 30 labelled examples (EN + Hinglish): buyers, sellers, job seekers, spam
+- `references/queries.md` — search queries by service and language, and how to add your own

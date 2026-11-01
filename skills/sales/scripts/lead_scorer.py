@@ -12,6 +12,13 @@ Usage:
     python lead_scorer.py input.json
     cat input.json | python lead_scorer.py
     python lead_scorer.py --example        # print a sample input file
+    python lead_scorer.py --mode agency in.json   # agency/service-buyer score (see --example --mode agency)
+
+Two models:
+  bant   (default) B2B account fit from budget/authority/need/timeline signals + MEDDIC gaps.
+  agency  for service businesses (agencies, freelancers, consultants) selling to someone who ASKED for
+          help in public: intent, urgency, freshness, competition, stated budget, service fit,
+          contactability, multi-source. Funding and headcount are deliberately ignored.
 
 Input JSON (every field optional; omit what you don't know — do NOT guess):
 {
@@ -235,6 +242,44 @@ def score_lead(data):
     }
 
 
+AGENCY_MAX = {"intent": 25, "urgency": 15, "freshness": 15, "low_competition": 10, "budget": 8,
+              "service_fit": 10, "contactability": 12, "multi_source": 5}
+EXAMPLE_AGENCY = {
+    "company": "Sweet Crumbs Bakery",
+    "intent_confidence": 0.9, "urgency": "high", "posted_days_ago": 2, "comments": 3, "budget_stated": True,
+    "services_requested": ["web"], "services_offered": ["web", "seo", "app"], "email_status": "verified",
+    "sources_count": 1,
+}
+
+
+def score_agency(d):
+    """Agency-buyer score (0-100) with parts. Unknown inputs get neutral points, never full marks."""
+    parts = {}
+    conf = to_number(d.get("intent_confidence"))
+    conf = conf if conf is not None and 0 <= conf <= 1 else (conf / 100 if conf and 1 < conf <= 100 else 0.5)
+    parts["intent"] = round(25 * conf, 1)
+    parts["urgency"] = {"high": 15, "medium": 9, "low": 4}.get(str(d.get("urgency") or "").lower(), 6)
+    age = to_number(d.get("posted_days_ago"))
+    parts["freshness"] = 7 if age is None else 15 if age <= 1 else 12 if age <= 3 else 8 if age <= 7 else 4 if age <= 14 else 1
+    c = to_number(d.get("comments"))
+    parts["low_competition"] = 5 if c is None else 10 if c <= 2 else 7 if c <= 10 else 3 if c <= 30 else 0
+    parts["budget"] = 8 if to_bool(d.get("budget_stated")) else 0
+    want = [x.lower() for x in to_list(d.get("services_requested"))]
+    offer = [x.lower() for x in to_list(d.get("services_offered"))]
+    parts["service_fit"] = round(10 * (sum(1 for x in want if x in offer) / len(want)), 1) if want and offer else 3
+    parts["contactability"] = {"verified": 12, "valid": 12, "catch_all": 6, "unverified": 2, "pattern-guessed": 1}.get(
+        str(d.get("email_status") or "").lower(), 0)
+    sc = to_number(d.get("sources_count"))
+    parts["multi_source"] = 5 if sc and sc >= 2 else 0
+    total = round(min(100.0, sum(parts.values())), 1)
+    grade, label, action = grade_for(total)
+    missing = [k for k in ("intent_confidence", "urgency", "posted_days_ago", "comments", "email_status") if d.get(k) in (None, "")]
+    return {"company": d.get("company", "Unknown"), "model": "agency", "score": total, "lead_grade": grade, "grade_label": label,
+            "breakdown": {k: {"score": v, "max": AGENCY_MAX[k]} for k, v in parts.items()},
+            "unknown_inputs": missing, "recommended_action": action if parts["contactability"] >= 6 else
+            action + " First find a verified email (find_email.py) — no verified contact means no cold email."}
+
+
 EXAMPLE = {
     "company": "Acme",
     "budget_signals": {"funding_amount": "$12M", "employee_count": "120", "pricing_visible": True,
@@ -254,10 +299,11 @@ def main():
     )
     parser.add_argument("input_file", nargs="?", help="Path to input JSON (reads stdin if omitted)")
     parser.add_argument("--example", action="store_true", help="Print an example input JSON and exit")
+    parser.add_argument("--mode", choices=["bant", "agency"], default="bant", help="scoring model (default bant)")
     args = parser.parse_args()
 
     if args.example:
-        print(json.dumps(EXAMPLE, indent=2))
+        print(json.dumps(EXAMPLE_AGENCY if args.mode == "agency" else EXAMPLE, indent=2))
         return
     try:
         if args.input_file:
@@ -266,7 +312,7 @@ def main():
         else:
             if sys.stdin.isatty():
                 parser.error("no input file given and nothing on stdin (try --example)")
-            data = json.loads(sys.stdin.read().lstrip("Feff"))
+            data = json.loads(sys.stdin.read().lstrip("﻿"))
     except FileNotFoundError:
         sys.exit(f"Error: file not found: {args.input_file}")
     except json.JSONDecodeError as exc:
@@ -274,7 +320,8 @@ def main():
     if not isinstance(data, dict):
         sys.exit("Error: input must be a JSON object")
 
-    print(json.dumps(score_lead(data), indent=2, ensure_ascii=False))
+    result = score_agency(data) if args.mode == "agency" else score_lead(data)
+    print(json.dumps(result, indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

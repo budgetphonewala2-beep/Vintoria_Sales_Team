@@ -22,6 +22,16 @@ USER_AGENT = (
 MAX_BYTES = 4 * 1024 * 1024  # never read more than 4 MB of a page
 
 
+def tls_context():
+    """Verified TLS context: the certifi CA bundle when installed (fixes Windows/macOS Pythons that
+    can't find the local issuer), else the system store."""
+    try:
+        import certifi  # optional
+        return ssl.create_default_context(cafile=certifi.where())
+    except (ImportError, OSError):
+        return ssl.create_default_context()
+
+
 # ---------------------------------------------------------------------------
 # URL helpers
 # ---------------------------------------------------------------------------
@@ -80,7 +90,7 @@ def fetch_url(url, timeout=10):
             result["html"] = raw.decode(charset, errors="replace")
 
     try:
-        _do(ssl.create_default_context())
+        _do(tls_context())
     except HTTPError as exc:
         result["status"] = exc.code
         result["error"] = f"HTTP {exc.code}"
@@ -288,3 +298,101 @@ def looks_like_soft_404(parsed, home_fingerprint):
 
 def subpage_urls(base, paths):
     return [urljoin(base + "/", p.lstrip("/")) for p in paths]
+
+
+# ---------------------------------------------------------------------------
+# Data home, secrets, JSON APIs (used by the pipeline, hunt and email scripts)
+# ---------------------------------------------------------------------------
+
+import os
+import sys
+import time
+from pathlib import Path
+
+_SECRETS = set()
+
+
+def data_home():
+    """User data folder (survives reinstalls): $AI_SALES_HOME or ~/.ai-sales-team."""
+    env = os.environ.get("AI_SALES_HOME")
+    home = Path(env).expanduser() if env else Path.home() / ".ai-sales-team"
+    home.mkdir(parents=True, exist_ok=True)
+    return home
+
+
+def _dotenv():
+    path = data_home() / ".env"
+    out = {}
+    if path.exists():
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            v = v.strip().strip('"').strip("'")
+            if v:
+                out[k.strip()] = v
+    return out
+
+
+def secret(name):
+    """API key from the environment or <data home>/.env; registered for redaction. None if unset."""
+    value = os.environ.get(name) or _dotenv().get(name)
+    if value and len(value) >= 6:
+        _SECRETS.add(value)
+    return value or None
+
+
+def redact(text):
+    s = str(text)
+    for v in sorted(_SECRETS, key=len, reverse=True):
+        s = s.replace(v, "***")
+    return s
+
+
+class ApiError(Exception):
+    def __init__(self, status, message):
+        super().__init__(message)
+        self.status = status
+
+
+def api_json(method, url, headers=None, body=None, params=None, timeout=30, retries=2, sleep=time.sleep):
+    """JSON API call with retry on 429/5xx (Retry-After aware). Returns (status, parsed_json)."""
+    from urllib.parse import urlencode
+    if params:
+        url = url + ("&" if "?" in url else "?") + urlencode(params)
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    hdrs = {"Accept": "application/json", "User-Agent": USER_AGENT}
+    if data is not None:
+        hdrs["Content-Type"] = "application/json"
+    hdrs.update(headers or {})
+    attempt = 0
+    while True:
+        attempt += 1
+        req = Request(url, data=data, headers=hdrs, method=method.upper())
+        try:
+            with urlopen(req, timeout=timeout, context=tls_context()) as resp:
+                raw = resp.read(MAX_BYTES)
+                status = resp.status
+        except HTTPError as exc:
+            raw, status = exc.read() or b"", exc.code
+            if status in (429, 500, 502, 503, 504) and attempt <= retries:
+                wait = exc.headers.get("Retry-After") if exc.headers else None
+                sleep(min(float(wait), 30.0) if wait and wait.isdigit() else 1.5 * attempt)
+                continue
+        except URLError as exc:
+            raise ApiError(0, redact(f"network error: {getattr(exc, 'reason', exc)}"))
+        try:
+            parsed = json.loads(raw.decode("utf-8-sig")) if raw else {}
+        except ValueError:
+            parsed = {"raw": raw[:300].decode("utf-8", "replace")}
+        return status, parsed
+
+
+def emit(obj, code=0):
+    """Print one JSON object (secrets redacted) and exit."""
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8")
+    print(redact(json.dumps(obj, ensure_ascii=False, indent=2, default=str)))
+    sys.exit(code)

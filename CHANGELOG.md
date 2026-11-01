@@ -1,5 +1,27 @@
 # Changelog
 
+## 3.5.0 — 2026-11-01 (end-to-end tested, team mode)
+
+### Fixed
+- `claim_check.py`: drafts (OUTREACH-SEQUENCE, FOLLOWUP-SEQUENCE, CLIENT-PROPOSAL, SEQUENCE, MEETING-PREP, *DRAFT*,
+  *EMAIL*, the draft itself) are never used as evidence — a glob over `prospects/<slug>/*.md` used to let a draft
+  prove itself. Seller identity (signature, address) and real proof from the profile are evidence; hedged
+  consequences ("so … may …") are treated as opinion.
+- Bookings made through a booking link were not detected; `inbox.py` now records them from Calendly, Cal.com,
+  SavvyCal, TidyCal, HubSpot, Zoom Scheduler, YouCanBook.me notifications and from calendar invites (ICS, with TZID).
+
+### Added
+- `claim_check.py --prospect <slug>` (auto evidence) and `--no-profile`; `outreach.py` preflight uses it.
+- `pipeline.py value <slug> <amount> --currency`, weighted `forecast` in `report` (stage odds).
+- Warm-up ramp: `SENDING_STARTED` (10/day in week 1, +5/week, up to `DAILY_SEND_LIMIT`).
+- `lead_sources.py apollo-api` — Apollo's official people search with `APOLLO_API_KEY`.
+- Agenda: exact next step per lead (deep scan → verify email → write and approve the sequence).
+- Seller profile is the fallback for SENDER_NAME, SENDER_EMAIL, SENDER_ADDRESS, BOOKING_URL, MEETING_LINK, TIMEZONE.
+- Team mode: `skills/sales/references/team.md` (roles, handoffs, rhythm, targets) and Claude Code subagents
+  `sales-hunter`, `sales-researcher`, `sales-writer`, `sales-closer`.
+- `tools/validate_skills.py` checks every script command, subcommand and flag written in the skills.
+- Tests: `tests/test_full_flow.py` (whole loop + each fix) — 111 tests in total.
+
 ## 3.4.0 — 2026-11-01 (seller profile first, international clients, Apollo + people databases)
 
 ### Added

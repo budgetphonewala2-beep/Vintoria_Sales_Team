@@ -195,6 +195,19 @@ def _contact(conn, pid, email):
     return dict(r) if r else None
 
 
+def daily_limit(now_dt=None):
+    """DAILY_SEND_LIMIT, ramped while a new inbox warms up: SENDING_STARTED=YYYY-MM-DD → 10/day in week 1, +5 per week."""
+    cap = int(setting("DAILY_SEND_LIMIT", "30"))
+    start = setting("SENDING_STARTED")
+    if start:
+        try:
+            weeks = max(0, ((now_dt or datetime.now(timezone.utc)).date() - datetime.fromisoformat(start).date()).days // 7)
+            return min(cap, 10 + 5 * weeks)
+        except ValueError:
+            pass
+    return cap
+
+
 def preflight(conn, key, to, subject, body, evidence=None, evidence_text=None, allow_catch_all=False, today=None):
     """Every gate that must pass before an email may be sent. Returns (problems, info)."""
     problems, info = [], {}
@@ -229,14 +242,14 @@ def preflight(conn, key, to, subject, body, evidence=None, evidence_text=None, a
     address = setting("SENDER_ADDRESS")
     if address and address.split(",")[0].strip().lower() not in (body or "").lower():
         problems.append("signature is missing your postal address (SENDER_ADDRESS) — required for US cold email")
-    sources = claim_check.load_sources(evidence or [], evidence_text or [])
+    sources = claim_check.load_sources(evidence or [], evidence_text or [], slug=p["slug"])
     cc = claim_check.check(body, sources)
     info["claim_check"] = {"ok": cc["ok"], "checked": cc["checked"], "supported": cc["supported"]}
     if not cc["ok"]:
         problems.extend(f"unsupported claim: {u['text']}" for u in cc["unsupported"])
         problems.extend(f"placeholder not filled: {h}" for h in cc["placeholders"])
     now_dt = today or datetime.now(timezone.utc)
-    limit = int(setting("DAILY_SEND_LIMIT", "30"))
+    limit = daily_limit(now_dt)
     sent_today = conn.execute("SELECT COUNT(*) FROM touches WHERE status = 'sent' AND at >= ?",
                               (now_dt.date().isoformat(),)).fetchone()[0]
     info["sent_today"], info["daily_limit"] = sent_today, limit

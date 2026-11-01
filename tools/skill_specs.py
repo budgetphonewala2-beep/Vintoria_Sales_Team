@@ -58,6 +58,12 @@ sales-setup → sales-icp → sales-hunt (lead_sources) → prospect_scan (dossi
 Default for any new prospect: run the deep scan first (`python <SCRIPTS>/prospect_scan.py <url> [--post-text "..."]`),
 then write from `DOSSIER.md`. Its `facts` are claim-check evidence.
 
+## Working as a team
+
+One agent can run every step; several agents can split the work by role — Manager, Hunter, Researcher, Writer,
+Closer — sharing the profile, the pipeline and `prospects/`. Handoffs are pipeline stages and next actions.
+Read `references/team.md` for the roles, daily rhythm, targets and rules.
+
 ## Quick snapshot (no files)
 
 1. Fetch the homepage (and `/pricing` or `/about` only if the homepage is thin).
@@ -80,7 +86,7 @@ then write from `DOSSIER.md`. Its `facts` are claim-check evidence.
 
 | Script | Purpose |
 |---|---|
-| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report, `today`, suppress |
+| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report (+ forecast), `today`, `value`, `where`, suppress |
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
@@ -124,7 +130,7 @@ sales-report       weekly pipeline review
 ```
 """,
 "before": True,
-"refs": [],
+"refs": [("team.md", "running the skills as a sales team: roles, handoffs, daily rhythm, targets, rules")],
 },
 # --------------------------------------------------------------------------- hunt
 {
@@ -145,7 +151,10 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
      `{SRC} linkedin` · `{SRC} hackernews` (incl. the monthly "Seeking freelancer" thread) · `{SRC} reddit`
      (r/forhire [Hiring] and more; free JSON without Apify) · `{SRC} x` · `{SRC} facebook --group-url <public group>`
      · `{SRC} google` — each uses the profile, or `--services/--location`, or your own `--query` (repeatable).
-   - **People databases** (decision makers matching the profile — lists, no intent): `{SRC} apollo` (Apollo search
+   - **People databases** (decision makers matching the profile — lists, no intent). Best: Apollo's official
+     API — `{SRC} apollo-api` with your `APOLLO_API_KEY`, or your agent's Apollo connector if it has one (search
+     people with the profile's titles, countries, size and niches, then reveal emails per person). Otherwise
+     `{SRC} apollo` (Apollo search
      URLs built from the profile, or `--url` from your Apollo account), `{SRC} leads` (Apollo-style filters, no
      account), `{SRC} people` (LinkedIn profile search), `{SRC} employees --company <LinkedIn company URL>`.
      Add `--add --verify` to save them with verified emails. These need a stronger first line — deep-scan first.
@@ -346,7 +355,8 @@ deliverability, so verification status is always shown.""",
    (Prospeo, Findymail, Hunter, Apollo — whichever keys are set, order in `EMAIL_FINDERS`) → verifiers
    (MillionVerifier, ZeroBounce, NeverBounce, Hunter) on the candidates, or on likely name patterns if nothing
    was found. `find_email.py --providers` shows what is configured.
-   If the post or website already shows an address it is used and only verified — no finder credits.
+   If the post or website already shows an address it is used and only verified — no finder credits. An address
+   from a people database (Apollo, Leads Finder): `python <SCRIPTS>/find_email.py --email <address>` (verify only).
    Use the status exactly as returned: `verified`, `catch_all`, `unverified`, `pattern-guessed`, `invalid`.
    Only `verified` addresses are safe for cold email; say so.
    **Best channel** per person: verified email → email; business phone from the site or Google Maps → WhatsApp
@@ -424,7 +434,8 @@ Never disparage a competitor with claims you can't source.
 7. **Put it on autopilot** (with SMTP + IMAP set up): save the 5 emails as `prospects/<slug>/SEQUENCE.json`
    (`[{{"step": 1, "subject": "...", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]` — follow-ups reply in the same
    thread), show them to the user, and on approval run
-   `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --evidence "prospects/<slug>/*.md" --evidence prospects/<slug>/SITE-AUDIT.json`.
+   `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json` (the dossier, audit and research files
+   and your profile's proof are used as evidence automatically; add `--evidence-text "<their post>"` if it isn't in the dossier).
    It checks every email now and queues them; `{AUTO} tick --send` (scheduled) sends each on its day and stops
    the moment they reply, opt out, bounce or book.
 8. **Or send one at a time** (see "Before anything is sent"): either the user sends it and you log it —
@@ -520,7 +531,9 @@ Never disparage a competitor with claims you can't source.
 3. **Follow-up sequence** after sending (Step 3).
 4. Claim-check the whole proposal and its emails.
 5. Write `prospects/<slug>/CLIENT-PROPOSAL.md` (`references/output-format.md`).
-6. Record: `{PIPE} stage <slug> proposal --reason "proposal sent <date>"`, attach the file, `{PIPE} next <slug> "Walkthrough offer" --due <date+2>`.
+6. Record: `{PIPE} stage <slug> proposal --reason "proposal sent <date>"`, `{PIPE} value <slug> <recommended option price> --currency <cur>`,
+   attach the file, `{PIPE} next <slug> "Walkthrough offer" --due <date+2>`. When they decide: `{PIPE} stage <slug> won`
+   (or `lost --reason "<why>"` — the reason feeds the weekly review).
 """,
 "writes_email": True,
 "refs": [("playbook.md", "inputs, the 11 sections, follow-up sequence"), ("output-format.md", "CLIENT-PROPOSAL.md format"),
@@ -579,7 +592,8 @@ you learn the seller's business properly and save it, so every agent after you b
 4. **Save** each answer: `{PROF} set <field> '<json or text>'` (e.g. `{PROF} set offer.niches '["DTC skincare", "coffee brands"]'`),
    then `{PROF} check` until it says `Ready.`
 5. **Keys check:** `python <SCRIPTS>/find_email.py --providers` and look for `APIFY_TOKEN`, `SMTP_*`, `IMAP_*`,
-   `BOOKING_URL` in `~/.ai-sales-team/.env` (template `examples/env.example`). Tell the user which sources and
+   `BOOKING_URL`, `APOLLO_API_KEY` in `~/.ai-sales-team/.env` (template `examples/env.example`), and whether your
+   agent has an Apollo connector. Tell the user which sources and
    automations are on, and the one key that would add the most (usually `APIFY_TOKEN`, then a verifier).
 6. **Show the queries this profile produces:** `{QL}` — 3 LinkedIn queries, 2 X-ray queries, the Apollo URL and the
    subreddits — and ask if they look like their buyers. Adjust niches/pains/triggers and re-run until they do.
@@ -691,6 +705,8 @@ when time zones barely overlap), `WORK_DAYS` (Mon-Fri), `MEETING_MINUTES` (30), 
 
 ## Rules
 - The booking link goes out only after they've shown interest; `outreach.py` refuses it in cold emails.
+- When they book through the link, `{INBOX} check --apply` (and the autopilot) spots the Calendly / Cal.com /
+  calendar-invite email, records the meeting with its time, moves the stage and schedules prep — no manual step.
   With `AUTO_REPLY=1` and IMAP, a "let's talk" reply gets the link automatically within one autopilot tick.
 - Always show times in **their** zone first, with yours in brackets.
 - Never invent a video link: use `--link`, `MEETING_LINK`, or say the link will follow.
@@ -739,6 +755,10 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
    tomorrow, and one suggestion (e.g. "3 leads from hunt:li-posts booked meetings — run more of that query").
    On Mondays, offer `sales-report`.
 
+## Team mode
+If several agents work together, give each a role from `../sales/references/team.md` (Manager, Hunter, Researcher,
+Writer, Closer). You are then the Manager: run the tick and the agenda, assign items, and review the weekly numbers.
+
 ## Daily targets (adjust to the user)
 Answer every reply the same day · 10-20 new first emails · every due follow-up · prep for every meeting
 in the next 24 hours · funnel ≥ 20 open leads.
@@ -766,7 +786,9 @@ in the next 24 hours · funnel ≥ 20 open leads.
    (`{PIPE} add ...`, `{PIPE} score ...`) so the report is complete.
 3. Analyse (`references/playbook.md`): pipeline health, stuck deals and why, which sources/queries produce
    replies and meetings (`by_source`), which sequence step gets replies (`{OUT} queue` statuses), score
-   distribution, gaps (e.g. no verified contacts, sequences not approved, inbox not connected).
+   distribution, gaps (e.g. no verified contacts, sequences not approved, inbox not connected), and the
+   **forecast** (`forecast`: open, weighted and won value per currency from `{PIPE} value`). Missing values on
+   meeting/proposal deals are a gap to fix.
 4. Write `SALES-REPORT.md` (`references/output-format.md`): summary, funnel table, top prospects, stale deals,
    source performance, action plan (today / this week / this month) with one concrete action per prospect.
 5. Offer `sales-report-pdf` for a shareable version.

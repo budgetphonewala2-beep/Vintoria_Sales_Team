@@ -32,6 +32,28 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.5 — tested end to end, ready for a team of agents
+
+A full-loop test now runs the whole job with no network: profile → lead → dossier → approved sequence → day-0 send in
+the prospect's morning → day-3 follow-up in the same thread → "let's talk" reply → instant booking link → Cal.com
+booking detected → meeting recorded → outcome → deal value → won → forecast. Building it found and fixed real bugs:
+
+| Found | Fixed |
+|---|---|
+| Claim check accepted drafts as evidence (`--evidence "prospects/<slug>/*.md"` matched `OUTREACH-SEQUENCE.md`, so a draft proved itself) | Drafts are never evidence; `--prospect <slug>` adds the dossier/audit/research; your profile's real proof covers claims about you |
+| A postal address in the signature failed the claim check (numbers) | Your identity from the profile is evidence |
+| "…, so phones may see the desktop layout" was blocked although the audit skill allows hedged consequences | Hedged consequences count as opinion; unhedged ones ("you're losing 40% of sales") still need proof |
+| Bookings through Calendly / Cal.com were invisible | `inbox.py` detects booking emails and calendar invites → meeting with its time, stage, prep, sequence stopped |
+| No deal values or forecast | `pipeline.py value`, weighted forecast per currency in `report` |
+| New inboxes sent at full volume on day 1 | `SENDING_STARTED` warm-up ramp (10/day, +5 per week) |
+| Agenda said "new lead" for everything | Each lead gets its exact next step: deep scan → verify email → write + approve sequence |
+| Settings duplicated in `.env` and the profile | The profile is the source of truth for sender, address, booking link, time zone |
+| Skill commands could drift from the scripts | The validator runs every `python <SCRIPTS>/x.py sub --flag` against the script's `--help` |
+
+Also new: Apollo's **official API** (`lead_sources.py apollo-api`, or your agent's Apollo connector), and a **team
+mode** — Manager, Hunter, Researcher, Writer, Closer roles with handoffs through the pipeline
+(`skills/sales/references/team.md`, optional Claude Code subagents in `adapters/claude-code/agents/`).
+
 ## What's new in v3.4 — it learns you first, then hunts overseas clients
 
 | | v3.3 | v3.4 |

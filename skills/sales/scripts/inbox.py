@@ -16,6 +16,10 @@ Settings (env or ~/.ai-sales-team/.env):
     IMAP_USER (default SMTP_USER / SENDER_EMAIL)    IMAP_PASSWORD (default SMTP_PASSWORD)    IMAP_FOLDER=INBOX
     AUTO_REPLY_CATEGORIES=meeting_request          BOOKING_URL=https://cal.com/you/15min (needed for auto-reply)
 Gmail / Google Workspace: enable IMAP and use an App Password. Outlook/Microsoft 365 needs IMAP enabled for the mailbox.
+Bookings: a prospect who books through your link is detected too — calendar invitations (text/calendar parts,
+e.g. Google/Outlook) and booking notifications from Calendly, Cal.com, SavvyCal, TidyCal, HubSpot, Zoom
+Scheduler, YouCanBook.me. The meeting is recorded (with its time when the invite has one), the stage moves to
+`meeting`, the sequence stops and prep is scheduled.
 Matching: In-Reply-To/References → a message we sent; else the sender is a saved contact; else the sender's domain
 is a prospect's domain (not for webmail). Bounces are matched by the failed address in the bounce body.
 """
@@ -43,6 +47,9 @@ BOUNCE_FROM = re.compile(r"^(mailer-daemon|postmaster|mail-daemon|bounce)", re.I
 BOUNCE_SUBJ = re.compile(r"(undeliver|delivery status notification|delivery (has )?failed|returned mail|failure notice|"
                          r"mail delivery (failed|subsystem))", re.I)
 EMAIL_RE = re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+")
+BOOKING_FROM = re.compile(r"@([\w-]+\.)*(calendly\.com|cal\.com|savvycal\.com|tidycal\.com|hubspot\.com|zoom\.us|"
+                          r"youcanbook\.me|acuityscheduling\.com|zcal\.co|koalendar\.com)$", re.I)
+BOOKING_SUBJ = re.compile(r"(new event|new booking|booked|scheduled|invitation:|accepted:|confirmed:|new meeting)", re.I)
 
 
 class UserError(Exception):
@@ -107,13 +114,62 @@ def text_of(msg):
     return re.sub(r"[ \t]+", " ", content).strip()
 
 
+def calendar_of(msg):
+    for part in msg.walk():
+        if part.get_content_type() == "text/calendar":
+            try:
+                c = part.get_content()
+            except Exception:  # noqa: BLE001
+                c = (part.get_payload(decode=True) or b"").decode("utf-8", "replace")
+            return c if isinstance(c, str) else c.decode("utf-8", "replace")
+    return None
+
+
+def parse_ics(text):
+    """{start_utc, minutes, attendees, organizer, method, summary} from an iCalendar invite (first VEVENT)."""
+    from datetime import datetime as _dt
+    lines = re.sub(r"\r?\n[ \t]", "", text or "").splitlines()
+    ev, method, inside = {}, None, False
+    for ln in lines:
+        if ln.startswith("METHOD:"):
+            method = ln.split(":", 1)[1].strip()
+        if ln.startswith("BEGIN:VEVENT"):
+            inside = True
+        elif ln.startswith("END:VEVENT"):
+            break
+        elif inside and ":" in ln:
+            k, v = ln.split(":", 1)
+            ev.setdefault(k.split(";")[0].upper(), []).append((k, v.strip()))
+
+    def when(key):
+        if key not in ev:
+            return None
+        k, v = ev[key][0]
+        tzm = re.search(r"TZID=([^;:]+)", k)
+        try:
+            if v.endswith("Z"):
+                return _dt.strptime(v, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+            if "T" in v:
+                naive = _dt.strptime(v[:15], "%Y%m%dT%H%M%S")
+                import meeting
+                return naive.replace(tzinfo=meeting.tz(tzm.group(1)) if tzm else timezone.utc).astimezone(timezone.utc)
+            return _dt.strptime(v[:8], "%Y%m%d").replace(tzinfo=timezone.utc)
+        except Exception:  # noqa: BLE001
+            return None
+    start, end = when("DTSTART"), when("DTEND")
+    mails = lambda key: [m.lower() for _, v in ev.get(key, []) for m in EMAIL_RE.findall(v)]  # noqa: E731
+    return {"start_utc": start, "minutes": int((end - start).total_seconds() // 60) if start and end else None,
+            "attendees": mails("ATTENDEE"), "organizer": (mails("ORGANIZER") or [None])[0], "method": method,
+            "summary": (ev.get("SUMMARY") or [("", "")])[0][1], "status": (ev.get("STATUS") or [("", "")])[0][1]}
+
+
 def parse(raw):
     msg = email.message_from_bytes(raw, policy=policy.default)
     refs = " ".join(str(msg.get(h, "")) for h in ("In-Reply-To", "References"))
     name, addr = parseaddr(str(msg.get("From", "")))
     return {"message_id": str(msg.get("Message-ID", "")).strip(), "from": addr.lower(), "from_name": name,
             "subject": str(msg.get("Subject", "")), "date": str(msg.get("Date", "")),
-            "refs": re.findall(r"<[^>]+>", refs), "text": text_of(msg),
+            "refs": re.findall(r"<[^>]+>", refs), "text": text_of(msg), "calendar": calendar_of(msg),
             "to": [a.lower() for _, a in getaddresses([str(msg.get("To", ""))])]}
 
 
@@ -144,6 +200,57 @@ def match(conn, m):
     return None, None, None
 
 
+def booking_of(conn, m):
+    """(prospect row, contact email, ics-dict or None, tool) when this message is a booking/invite for a prospect."""
+    ics = parse_ics(m["calendar"]) if m.get("calendar") else None
+    tool = None
+    if BOOKING_FROM.search(m["from"]) and BOOKING_SUBJ.search(m["subject"]):
+        tool = BOOKING_FROM.search(m["from"]).group(2)
+    elif ics and ics.get("status", "").upper() != "CANCELLED" and (ics.get("method") or "").upper() in ("REQUEST", "PUBLISH", "REPLY", ""):
+        tool = "calendar invite"
+    if not tool:
+        return None
+    me = (setting("SENDER_EMAIL") or "").lower()
+    pool = (ics["attendees"] + [ics["organizer"] or ""] if ics else []) + [a.lower() for a in EMAIL_RE.findall(m["text"])]
+    pool += [m["from"]] if tool == "calendar invite" else []
+    for addr in dict.fromkeys(a for a in pool if a and a != me):
+        r = conn.execute("SELECT p.* FROM contacts c JOIN prospects p ON p.id = c.prospect_id WHERE lower(c.email) = ?",
+                         (addr,)).fetchone()
+        if r:
+            return dict(r), addr, ics, tool
+    return None
+
+
+def record_booking(conn, p, addr, ics, tool):
+    import meeting
+    start = ics["start_utc"] if ics else None
+    done = []
+    if start:
+        exists = conn.execute("SELECT id FROM meetings WHERE prospect_id = ? AND starts_at = ?",
+                              (p["id"], start.replace(microsecond=0).isoformat())).fetchone()
+        if not exists:
+            with conn:
+                cur = conn.execute("INSERT INTO meetings(prospect_id, starts_at, minutes, tz, title, attendee, link, status, uid, "
+                                   "notes, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+                                   (p["id"], start.replace(microsecond=0).isoformat(), ics.get("minutes") or 30, p.get("tz") or "UTC",
+                                    ics.get("summary") or f"Booked via {tool}", addr, None, "scheduled", None, f"booked via {tool}",
+                                    pipeline.now()))
+            done.append(f"meeting #{cur.lastrowid} recorded for {start.isoformat()}")
+        due = (start - timedelta(days=1)).date().isoformat()
+        action = "Prep the meeting brief (sales-prep) and send a reminder the day before"
+    else:
+        due = datetime.now(timezone.utc).date().isoformat()
+        action = f"Booked via {tool} — check the time in your calendar and run meeting.py book to record it"
+    if p["stage"] not in ("meeting", "proposal", "won"):
+        pipeline.set_stage(conn, p["slug"], "meeting", f"booked via {tool}")
+        done.append("stage → meeting")
+    outreach.stop(conn, p["slug"], f"meeting booked via {tool}")
+    with conn:
+        conn.execute("UPDATE prospects SET next_action = ?, next_due = ? WHERE id = ?", (action, due, p["id"]))
+        pipeline.event(conn, p["id"], "meeting", f"booked via {tool}" + (f" for {start.isoformat()}" if start else ""))
+    return done + ["follow-ups stopped", "prep scheduled" if start else "time to confirm"]
+
+
 def booking_reply(m, result, prospect):
     url = setting("BOOKING_URL")
     first = (m["from_name"] or "").split(" ")[0].strip('"') or "there"
@@ -169,6 +276,20 @@ def check(conn, messages, apply=False, auto_reply=False, smtp=None, now=None):
             continue
         if conn.execute("SELECT 1 FROM inbox_seen WHERE message_id = ?", (m["message_id"],)).fetchone():
             out["already_seen"] += 1
+            continue
+        booked = booking_of(conn, m)
+        if booked:
+            bp, baddr, ics, tool = booked
+            item = {"prospect": bp["slug"], "from": m["from"], "subject": m["subject"], "matched_by": "booking",
+                    "category": "meeting_booked", "tool": tool,
+                    "start_utc": ics["start_utc"].isoformat() if ics and ics.get("start_utc") else None}
+            if apply:
+                item["applied"] = record_booking(conn, bp, baddr, ics, tool)
+                with conn:
+                    conn.execute("INSERT OR IGNORE INTO inbox_seen(message_id, prospect_id, category, at) VALUES (?,?,?,?)",
+                                 (m["message_id"], bp["id"], "meeting_booked", pipeline.now()))
+            out["matched"].append(item)
+            out.setdefault("bookings", []).append(item)
             continue
         p, addr, how = match(conn, m)
         if not p:

@@ -13,6 +13,8 @@ PEOPLE ASKING (intent posts → intent_scan scoring, sellers/job ads/job seekers
 PEOPLE DATABASES (decision makers matching your profile — lists, no intent; pair with a dossier):
     apollo       Apollo.io people search via Apify (default code_crafter/apollo-scraper) — give an Apollo search URL,
                  or let the seller profile build one (titles × countries × company size × niche keywords)
+    apollo-api   Apollo's OFFICIAL people search with your own APOLLO_API_KEY (POST /api/v1/mixed_people/api_search) —
+                 preferred over scraping when you have a key; emails are revealed later by find_email.py (people/match)
     leads        Apollo-style filters without an Apollo account (default code_crafter/leads-finder)
     people       LinkedIn profile search (harvestapi/linkedin-profile-search): title + location + niche keyword
     employees    Decision makers at given companies (harvestapi/linkedin-company-employees)
@@ -34,6 +36,7 @@ Usage (every command prints one JSON object):
     python lead_sources.py google [--query '...'] [--services web] [--location Pune] [--country in]
     python lead_sources.py maps --services web --location "Austin" [--max 40] [--add]
     python lead_sources.py apollo [--url "https://app.apollo.io/#/people?..."] [--max 200] [--add] [--verify]
+    python lead_sources.py apollo-api [--max 100] [--add]                 # official Apollo API (APOLLO_API_KEY)
     python lead_sources.py leads [--max 200] [--add] [--verify]          # filters from SELLER-PROFILE.json
     python lead_sources.py people [--query "skincare"] [--max 100] [--add] [--verify]
     python lead_sources.py employees --company https://www.linkedin.com/company/acme [--max 20] [--add]
@@ -326,6 +329,27 @@ def apollo(urls, max_items=200, call=api_json):
         inp = {"url": u, "totalRecords": int(max_items), "getPersonalEmails": False, "getWorkEmails": True}
         out += [normalize_person(i, "apollo") for i in run_actor(actor_for("apollo"), inp, max_items=max_items, call=call)]
     return out
+
+
+def apollo_api(filters, max_items=100, call=api_json):
+    """Official Apollo people search. filters: person_titles, person_locations, organization_num_employees_ranges,
+    q_organization_keyword_tags (lists). No emails here — reveal them per person with find_email.py (credits)."""
+    key = secret("APOLLO_API_KEY")
+    if not key:
+        raise UserError("APOLLO_API_KEY is not set (Apollo → Settings → Integrations → API). Without it use `apollo` (Apify).")
+    out, page = [], 1
+    while len(out) < max_items and page <= 5:
+        body = {**{k: v for k, v in filters.items() if v}, "page": page, "per_page": min(100, max_items)}
+        status, d = call("POST", "https://api.apollo.io/api/v1/mixed_people/api_search", headers={"X-Api-Key": key},
+                         body=body, timeout=60)
+        if status >= 400:
+            raise ApiError(status, f"Apollo API HTTP {status}: {str((d or {}).get('error') or d)[:160]}")
+        people_rows = (d or {}).get("people") or []
+        out += [normalize_person(x, "apollo-api") for x in people_rows]
+        if len(people_rows) < body["per_page"]:
+            break
+        page += 1
+    return out[:max_items]
 
 
 def leads_finder(filters, max_items=200, call=api_json):
@@ -628,11 +652,12 @@ def main(argv=None):
     rs.add_argument("--out-dir")
     qq = sub.add_parser("queries"); qq.add_argument("--services"); qq.add_argument("--location", "--city", dest="location")
     apo = sub.add_parser("apollo"); apo.add_argument("--url", action="append", help="Apollo people-search URL (repeatable)")
+    aa = sub.add_parser("apollo-api"); aa.add_argument("--input", help="JSON filters (default: built from the seller profile)")
     ld = sub.add_parser("leads"); ld.add_argument("--input", help="JSON filters (default: built from the seller profile)")
     pp = sub.add_parser("people"); pp.add_argument("--query", action="append", help="keyword, e.g. a niche")
     em = sub.add_parser("employees"); em.add_argument("--company", action="append", required=True, help="LinkedIn company URL")
     em.add_argument("--title", action="append")
-    for x in (apo, ld, pp, em):
+    for x in (apo, aa, ld, pp, em):
         x.add_argument("--max", type=int, default=100); x.add_argument("--add", action="store_true")
         x.add_argument("--verify", action="store_true", help="verify each email before saving (verifier credits)")
         x.add_argument("--save")
@@ -663,6 +688,11 @@ def main(argv=None):
                 raise UserError("give --url (copy an Apollo people search URL) or fill SELLER-PROFILE.json (buyer_titles, countries, niches)")
             out = people_result(apollo(urls, a.max), a, "apollo")
             out["apollo_urls"] = urls
+        elif a.cmd == "apollo-api":
+            filters = json.loads(Path(a.input).read_text(encoding="utf-8")) if a.input else lib.get("apollo_api")
+            if not filters:
+                raise UserError("give --input filters.json or fill SELLER-PROFILE.json")
+            out = people_result(apollo_api(filters, a.max), a, "apollo-api")
         elif a.cmd == "leads":
             filters = json.loads(Path(a.input).read_text(encoding="utf-8")) if a.input else lib.get("leads_finder")
             if not filters:

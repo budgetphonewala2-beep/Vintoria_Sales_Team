@@ -3,10 +3,13 @@
 
 Checks: name format == folder, description <= 1024 chars, only standard frontmatter fields, SKILL.md body
 < 300 lines, every `references/...` and `<SCRIPTS>/...` file mentioned exists, no agent-specific tools or
-paths. Exit 1 on any problem.   Usage: python tools/validate_skills.py
+paths, and every `python <SCRIPTS>/x.py <subcommand> --flag` written in a skill or reference really exists
+(checked against each script's --help), so an agent never runs a command that fails.
+Exit 1 on any problem.   Usage: python tools/validate_skills.py
 """
 
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -65,6 +68,46 @@ def check(skill_dir):
     return problems
 
 
+_HELP = {}
+
+
+def _help(args):
+    key = tuple(args)
+    if key not in _HELP:
+        r = subprocess.run([sys.executable, str(SCRIPTS / args[0]), *args[1:], "--help"], capture_output=True, text=True,
+                           encoding="utf-8", cwd=str(ROOT))
+        _HELP[key] = r.stdout + r.stderr
+    return _HELP[key]
+
+
+def _subcommands(help_text):
+    m = re.search(r"positional arguments:\s*\n\s*\{([\w,-]+)\}", help_text)
+    return m.group(1).split(",") if m else []
+
+
+def check_commands(skill_dir):
+    """Every python <SCRIPTS>/x.py [sub] --flag mentioned must exist."""
+    problems = set()
+    files = [skill_dir / "SKILL.md", *sorted((skill_dir / "references").glob("*.md"))] if (skill_dir / "references").exists() \
+        else [skill_dir / "SKILL.md"]
+    for f in files:
+        for m in re.finditer(r"python <SCRIPTS>/([\w-]+\.py)([^`\n]*)", f.read_text(encoding="utf-8")):
+            script, rest = m.group(1), m.group(2)
+            if not (SCRIPTS / script).exists():
+                continue                       # reported by check()
+            top = _help([script])
+            subs = _subcommands(top)
+            toks = rest.split()
+            sub = toks[0] if toks and toks[0] in subs else None
+            if subs and toks and not sub and re.fullmatch(r"[a-z][a-z-]+", toks[0]):
+                problems.add(f"{f.name}: {script} has no subcommand '{toks[0]}'")
+            h = _help([script, sub]) if sub else top
+            for flag in re.findall(r"(?<![\w-])(--[a-z][\w-]*)", rest):
+                if not re.search(r"(?<![\w-])" + re.escape(flag) + r"(?![\w-])", h):
+                    problems.add(f"{f.name}: {script}{' ' + sub if sub else ''} has no option {flag}")
+    return sorted(problems)
+
+
 def official(skill_dir):
     try:
         from skills_ref.validator import validate  # type: ignore
@@ -80,7 +123,7 @@ def official(skill_dir):
 def main():
     bad = 0
     for d in sorted(p for p in SKILLS.iterdir() if (p / "SKILL.md").exists()):
-        probs = check(d)
+        probs = check(d) + check_commands(d)
         off = official(d)
         if off:
             probs += [f"skills-ref: {e}" for e in off]

@@ -21,6 +21,7 @@ def test_every_skill_valid():
     assert len(skills) == 20
     for d in skills:
         assert v.check(d) == [], d.name
+        assert v.check_commands(d) == [], d.name
         official = v.official(d)
         assert official in (None, []), (d.name, official)
 
@@ -44,7 +45,7 @@ def test_installer_copy_backup_uninstall(tmp_path, monkeypatch):
     assert (tmp_path / ".claude" / "skills" / "sales" / "scripts" / "pipeline.py").exists()
     assert not (tmp_path / ".claude" / "skills" / "sales" / "templates").exists()          # stale files gone
     assert list((tmp_path / ".ai-sales-team" / "backups").glob("*/*sales"))                  # but backed up
-    assert len(list((tmp_path / ".claude" / "agents").glob("sales-*.md"))) == 5
+    assert len(list((tmp_path / ".claude" / "agents").glob("sales-*.md"))) == 9
     r = subprocess.run([sys.executable, str(ROOT / "install.py"), "--uninstall"], env=env, capture_output=True, text=True)
     assert r.returncode == 0 and not list((tmp_path / ".agents" / "skills").iterdir())
     assert not list((tmp_path / ".claude" / "agents").glob("sales-*.md"))

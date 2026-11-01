@@ -3,10 +3,13 @@
 The skills in `skills/` work in every agent that supports Agent Skills, with no adapter. Adapters only add
 agent-specific extras.
 
-## Claude Code — parallel prospect roles
-`claude-code/agents/*.md` are Claude Code subagents (frontmatter: name, description, tools) with the same
-text as `skills/sales-prospect/references/role-*.md`. With them installed, `sales-prospect` can run the four
-research roles in parallel. Install: `python install.py --agent claude-code --with-claude-agents`.
+## Claude Code — sales team roles + parallel prospect roles
+`claude-code/agents/*.md` are Claude Code subagents (frontmatter: name, description, tools):
+- **Team roles** — `sales-hunter`, `sales-researcher`, `sales-writer`, `sales-closer` (the Manager is the main
+  session running `sales-autopilot`). See `skills/sales/references/team.md` for handoffs and targets.
+- **Prospect roles** — `sales-company`, `sales-contacts`, `sales-opportunity`, `sales-competitive`,
+  `sales-strategy` (same text as `skills/sales-prospect/references/role-*.md`) so `sales-prospect` can research in parallel.
+Install: `python install.py --agent claude-code --with-claude-agents`.
 
 ## Codex CLI
 Codex reads skills from `~/.agents/skills` (and `.agents/skills` in a repo). `python install.py --agent codex`.
@@ -15,8 +18,8 @@ Optional `AGENTS.md` snippet for a sales workspace:
 ```markdown
 ## Sales work
 For prospecting, outreach, follow-ups, proposals or pipeline questions, use the `sales` skill and the
-`sales-*` skills it routes to. Record every prospect in the pipeline (`pipeline.py`). Never send email or
-post on social media; write drafts for me to send. Run claim_check.py on every email before showing it.
+`sales-*` skills it routes to. Run `sales-setup` first if SELLER-PROFILE.json is missing. Record every prospect
+in the pipeline (`pipeline.py`). Claim-check every email; send nothing I haven't approved; never post on social media.
 ```
 
 ## Cursor

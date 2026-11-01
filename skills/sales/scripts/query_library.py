@@ -407,6 +407,10 @@ def people_search(profile):
     niches = o.get("niches") or []
     return {"linkedin_people": [{"searchQuery": n[:300], "locations": locs, "currentJobTitles": titles[:6]} for n in niches[:4]]
             or [{"searchQuery": " ".join(titles[:2]), "locations": locs, "currentJobTitles": titles[:6]}],
+            "apollo_api": {"person_titles": titles[:8], "person_locations": locs,
+                           "organization_num_employees_ranges": SIZE_RANGES.get(
+                               str(tg.get("company_size") or "").replace(" ", "").replace("employees", ""), []),
+                           "q_organization_keyword_tags": niches[:8]},
             "leads_finder": {"contact_job_title": titles[:8], "contact_location": [l.lower() for l in locs],
                              "company_keywords": niches[:8], "email_status": ["validated"]}}
 

@@ -21,6 +21,7 @@ Usage (every command prints one JSON object):
     python pipeline.py remove acme.com                   # delete a prospect and its records
     python pipeline.py today                             # the day's agenda: replies, meetings, follow-ups, new leads
     python pipeline.py where acme.com --country US --tz America/Chicago   # where they are (send times, slots)
+    python pipeline.py value acme.com 6000 --currency USD                  # deal value → forecast in the report
     python pipeline.py suppress priya@acme.com --reason "asked not to be contacted"   # or a whole domain: acme.com
     python pipeline.py suppressed                        # list the do-not-contact list
 
@@ -96,9 +97,9 @@ def connect(path=None):
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
     cols = {r[1] for r in conn.execute("PRAGMA table_info(prospects)")}
-    for col in ("country", "tz"):                          # added in 3.4 — migrate older databases in place
+    for col, typ in (("country", "TEXT"), ("tz", "TEXT"), ("value", "REAL"), ("currency", "TEXT")):  # migrate in place
         if col not in cols:
-            conn.execute(f"ALTER TABLE prospects ADD COLUMN {col} TEXT")
+            conn.execute(f"ALTER TABLE prospects ADD COLUMN {col} {typ}")
     return conn
 
 
@@ -112,6 +113,38 @@ def infer_country(slug):
         if s.endswith(tld):
             return TLD_COUNTRY[tld]
     return None
+
+
+# Probability a deal at this stage closes (for the weighted forecast). Rough agency defaults; override with STAGE_ODDS.
+STAGE_ODDS = {"new": 0.01, "researched": 0.02, "qualified": 0.05, "contacted": 0.05, "replied": 0.15, "meeting": 0.3,
+              "proposal": 0.5, "nurture": 0.03, "won": 1.0, "lost": 0.0, "disqualified": 0.0}
+
+
+def set_value(conn, key, value, currency=None):
+    v = float(value)
+    if v < 0:
+        raise UserError("value must be ≥ 0")
+    p = get(conn, key)
+    cur = (currency or p.get("currency") or "USD").upper()
+    with conn:
+        conn.execute("UPDATE prospects SET value = ?, currency = ?, updated_at = ? WHERE id = ?", (v, cur, now(), p["id"]))
+        event(conn, p["id"], "value", f"{v:g} {cur}")
+    return {"prospect": p["slug"], "value": v, "currency": cur}
+
+
+def forecast(rows):
+    out = {}
+    for r in rows:
+        if not r.get("value"):
+            continue
+        c = out.setdefault(r.get("currency") or "USD", {"open": 0.0, "weighted": 0.0, "won": 0.0, "deals_with_value": 0})
+        c["deals_with_value"] += 1
+        if r["stage"] == "won":
+            c["won"] += r["value"]
+        elif r["stage"] in OPEN:
+            c["open"] += r["value"]
+            c["weighted"] += r["value"] * STAGE_ODDS.get(r["stage"], 0)
+    return {k: {kk: round(vv, 2) if isinstance(vv, float) else vv for kk, vv in v.items()} for k, v in out.items()}
 
 
 def set_where(conn, key, country=None, tz=None):
@@ -271,7 +304,7 @@ def report(conn, today=None):
                 "meetings_upcoming": conn.execute("SELECT COUNT(*) FROM meetings WHERE status = 'scheduled' AND starts_at >= ?",
                                                   (today.replace(microsecond=0).isoformat(),)).fetchone()[0]}
     return {"total": len(rows), "open": sum(funnel[s] for s in OPEN), "funnel": funnel, "conversion": conv,
-            "activity": activity,
+            "activity": activity, "forecast": forecast(rows),
             "avg_score": round(sum(r["score"] for r in scored) / len(scored), 1) if scored else None,
             "grades": {g: sum(1 for r in scored if r["grade"] == g) for g in ("A+", "A", "B", "C", "D")},
             "stale": sorted(stale, key=lambda x: -x["days_idle"]), "due_today": due, "by_source": by_source,
@@ -345,12 +378,22 @@ def today_agenda(conn, today=None):
         if not (p["next_due"] and p["next_due"] >= d):
             add_item(4, "stale", p, f"Idle {s['days_idle']} days in {s['stage']} — re-engage or move to nurture/lost",
                      "sales-followup")
-    # 5. best untouched leads (research → contact → first email)
+    # 5. best untouched leads: the exact next step for each (scan → verify email → approve sequence)
     fresh = [p for p in rows.values() if p["stage"] in ("new", "researched", "qualified") and not p["next_due"]]
-    for p in sorted(fresh, key=lambda r: -(r["score"] or 0))[:5]:
-        step = {"new": ("Research + audit, then score", "sales-prospect"),
-                "researched": ("Find a verified contact, then write email 1", "sales-contacts"),
-                "qualified": ("Write and send email 1", "sales-outreach")}[p["stage"]]
+    for p in sorted(fresh, key=lambda r: -(r["score"] or 0))[:8]:
+        cs = contacts(conn, p["id"])
+        has_dossier = conn.execute("SELECT 1 FROM artifacts WHERE prospect_id = ? AND kind = 'dossier'", (p["id"],)).fetchone()
+        queued = conn.execute("SELECT COUNT(*) FROM sequence_steps WHERE prospect_id = ? AND status IN ('approved','sent')",
+                              (p["id"],)).fetchone()[0]
+        verified = [c for c in cs if c.get("email_status") == "verified"]
+        if queued:
+            continue
+        if not has_dossier and p["stage"] == "new":
+            step = ("Deep scan: prospect_scan.py <url> (dossier + email + hooks)", "sales-prospect")
+        elif not verified:
+            step = ("Find/verify a decision-maker email (or reply where they posted)", "sales-contacts")
+        else:
+            step = (f"Write the 5-email sequence for {verified[0]['email']} and approve it", "sales-outreach")
         add_item(5, "new-lead", p, step[0], step[1], score=p["score"])
     seen, out = set(), []
     for it in sorted(items, key=lambda x: (x["priority"], -(x.get("overdue_days") or 0))):
@@ -401,6 +444,7 @@ def main(argv=None):
     r = sub.add_parser("report"); r.add_argument("--pdf-input", help="also write generate_pdf_report.py input JSON here")
     rm = sub.add_parser("remove"); rm.add_argument("prospect")
     sub.add_parser("today")
+    va = sub.add_parser("value"); va.add_argument("prospect"); va.add_argument("value", type=float); va.add_argument("--currency")
     wh = sub.add_parser("where"); wh.add_argument("prospect"); wh.add_argument("--country"); wh.add_argument("--tz")
     su = sub.add_parser("suppress"); su.add_argument("value", help="email address or domain"); su.add_argument("--reason", default="")
     sub.add_parser("suppressed")
@@ -455,6 +499,8 @@ def main(argv=None):
             with conn:
                 conn.execute("DELETE FROM prospects WHERE id = ?", (p["id"],))
             out = {"removed": p["slug"]}
+        elif args.cmd == "value":
+            out = set_value(conn, args.prospect, args.value, args.currency)
         elif args.cmd == "where":
             try:
                 out = set_where(conn, args.prospect, args.country, args.tz)

@@ -327,9 +327,29 @@ def _dotenv():
     return out
 
 
+# Settings that live in the seller profile (SELLER-PROFILE.json) when not set in the environment / .env.
+PROFILE_SETTINGS = {"SENDER_NAME": "seller.name", "SENDER_EMAIL": "seller.email", "SENDER_ADDRESS": "seller.postal_address",
+                    "BOOKING_URL": "seller.booking_url", "MEETING_LINK": "seller.meeting_link", "TIMEZONE": "seller.timezone"}
+
+
+def _profile_value(dotted):
+    for path in (Path("SELLER-PROFILE.json"), data_home() / "seller-profile.json"):
+        if path.exists():
+            try:
+                cur = json.loads(path.read_text(encoding="utf-8-sig"))
+            except ValueError:
+                return None
+            for part in dotted.split("."):
+                cur = cur.get(part) if isinstance(cur, dict) else None
+            return cur if isinstance(cur, str) and cur.strip() else None
+    return None
+
+
 def setting(name, default=None):
-    """Non-secret setting (sender name, time zone, work hours...) from the environment or <data home>/.env."""
+    """Non-secret setting from the environment, <data home>/.env, or (sender/booking/time zone) the seller profile."""
     value = os.environ.get(name) or _dotenv().get(name)
+    if not value and name in PROFILE_SETTINGS:
+        value = _profile_value(PROFILE_SETTINGS[name])
     return value if value else default
 
 

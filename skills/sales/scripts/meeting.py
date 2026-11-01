@@ -285,7 +285,8 @@ def outcome(conn, meeting_id, status, notes=""):
                      (status, f"\n{status}: {notes}" if notes else f"\n{status}", m["id"]))
         pipeline.event(conn, p["id"], "meeting", f"meeting #{m['id']} {status}" + (f": {notes}" if notes else ""))
     today = datetime.now(timezone.utc).date()
-    plan = {"held": ("Send recap + proposal within 24-48h (sales-followup post-meeting, then sales-proposal)", 1),
+    plan = {"held": ("Send recap + proposal within 24-48h (sales-followup post-meeting, then sales-proposal); "
+                     "set the deal value: pipeline.py value <slug> <amount> --currency USD", 1),
             "no_show": ("Send a friendly 'sorry we missed each other' with 2 new slots (meeting.py slots)", 0),
             "rescheduled": ("Book the new time: meeting.py book ...", 0),
             "cancelled": ("Ask whether to rebook later; otherwise move to nurture", 2)}[status]

@@ -66,6 +66,16 @@ from both the demo data and the schema the skills document. Status column = stat
 | 35 | No CI; Python 3.9 support untested | Fixed — GitHub Actions on 3 OSes × Python 3.9/3.13; `vermin` clean for 3.9 |
 | 36 | The flow stopped at the first email: no cadence, reply handling or booking | Fixed — `outreach.py`, `reply_triage.py`, `meeting.py`, `sales-reply`, `sales-book`, `sales-autopilot` |
 
+## F. Found by the end-to-end test (fixed in 3.5)
+
+| # | Problem | v3.5 status |
+|---|---|---|
+| 37 | Claim check counted the draft's own file as evidence when skills globbed `prospects/<slug>/*.md` | Fixed — drafts never evidence |
+| 38 | Postal address in the signature failed the claim check | Fixed — seller identity is evidence |
+| 39 | Hedged consequences blocked, contradicting the audit skill | Fixed — hedged = opinion, unhedged must be proven |
+| 40 | Link bookings (Calendly/Cal.com) never reached the pipeline | Fixed — inbox detects them |
+| 41 | Skill commands could drift from script flags | Fixed — validator checks every command |
+
 ## Known limits (honest)
 
 - JavaScript-only sites return little HTML; the audit then reports only what the server sent.

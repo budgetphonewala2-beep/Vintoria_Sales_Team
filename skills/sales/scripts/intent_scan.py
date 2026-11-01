@@ -44,6 +44,11 @@ INTENT = {
     "hire a": 8, "want to hire": 12, "looking to hire": 10, "budget": 6, "quote": 5, "quotation": 6,
     "want a website": 14, "need a website": 15, "need an app": 15, "get a website": 10, "build my": 8,
     "redesign": 6, "revamp": 6, "help me with": 6, "anyone know a": 10, "dm me": 4,
+    "seeking freelancer": 15, "looking for a freelancer": 15, "need a freelancer": 15, "hire a freelancer": 12,
+    "[hiring]": 10, "seeking agency": 15, "agency recommendations": 15, "recommend an agency": 15,
+    "recommend a good": 10, "request for proposal": 12, "rfp": 8, "get quotes": 10, "looking for quotes": 12,
+    "who did your website": 12, "who built your website": 12, "who do you use for": 10, "anyone used": 6,
+    "looking for help with": 10, "need someone to": 12, "willing to pay": 12, "paid gig": 10, "will pay": 8,
     "chahiye": 12, "banwana hai": 15, "banwani hai": 15, "banvana hai": 15, "banana hai": 8, "koi batao": 12,
     "koi bata": 10, "koi suggest": 12, "suggest karo": 12, "recommend karo": 12, "kisi ko jante": 10,
     "help chahiye": 12, "batao": 8, "bataiye": 8, "suggest kijiye": 10, "karwana hai": 12, "karwani hai": 12,
@@ -74,7 +79,8 @@ NEGATIVE = {
     "my portfolio": -18, "our portfolio": -15, "dm for": -12, "dm me for": -15, "starting at": -15,
     "starting from": -12, "% off": -18, "discount": -10, "limited offer": -20, "affordable website": -20,
     "hum banate hain": -25, "website banwaye": -20, "contact us today": -15, "book a free": -12,
-    "giveaway": -30, "crypto": -20, "airdrop": -30,
+    "giveaway": -30, "crypto": -20, "airdrop": -30, "[for hire]": -30, "seeking work": -30, "freelancer available": -25,
+    "i can help you": -15, "we can help you": -15, "free audit": -10, "hire us": -25,
 }
 DEFAULT_QUERIES = [
     {"id": "li-web", "query": 'site:linkedin.com/posts ("looking for" OR "need" OR "recommend") ("web developer" OR website OR "app developer" OR "SEO agency")'},
@@ -110,7 +116,16 @@ def score_text(text, title=""):
 
 
 def platform_of(url):
-    m = re.search(r"https?://(?:[\w-]+\.)*?(linkedin|reddit|facebook|twitter|x|quora|instagram|youtube)\.com", url or "", re.I)
+    u = url or ""
+    if re.search(r"news\.ycombinator\.com", u, re.I):
+        return "hackernews"
+    if re.search(r"producthunt\.com", u, re.I):
+        return "producthunt"
+    if re.search(r"indiehackers\.com", u, re.I):
+        return "indiehackers"
+    if re.search(r"(google\.[a-z.]+/maps|maps\.google|goo\.gl/maps)", u, re.I):
+        return "maps"
+    m = re.search(r"https?://(?:[\w-]+\.)*?(linkedin|reddit|facebook|twitter|x|quora|instagram|youtube|upwork|threads)\.(com|net)", u, re.I)
     return (m.group(1).lower().replace("twitter", "x")) if m else "web"
 
 
@@ -155,6 +170,13 @@ def load_posts(path):
     return out
 
 
+def contacts_in(text):
+    """Emails, phones, WhatsApp numbers and websites written in the post itself."""
+    import find_email
+    f = find_email.from_text(text)
+    return {k: f[k] for k in ("emails", "phones", "whatsapp", "websites") if f[k]}
+
+
 def _seen_file():
     return data_home() / "intent_seen.json"
 
@@ -169,8 +191,16 @@ def scan(posts, dedupe=True):
             continue
         seen.add(key)
         s = score_text(post.get("text", ""), post.get("title", ""))
-        item = {"url": post.get("url"), "platform": platform_of(post.get("url", "")), "author": post.get("author"),
-                "title": post.get("title"), "text": post.get("text", "")[:1500], "query": post.get("query"), **s}
+        item = {"url": post.get("url"), "platform": post.get("platform") or platform_of(post.get("url", "")),
+                "author": post.get("author"), "title": post.get("title"), "text": post.get("text", "")[:1500],
+                "query": post.get("query"), **s}
+        for k in ("author_url", "author_headline", "posted", "source"):
+            if post.get(k):
+                item[k] = post[k]
+        if s["keep"]:
+            c = contacts_in(f"{post.get('title', '')} {post.get('text', '')}")
+            if any(c.values()):
+                item["contact_in_post"] = c         # email/phone already written in the post: no finder needed
         (kept if s["keep"] else rejected).append(item)
     if dedupe:
         _seen_file().write_text(json.dumps(sorted(seen)), encoding="utf-8")

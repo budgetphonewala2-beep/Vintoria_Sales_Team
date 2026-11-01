@@ -19,11 +19,11 @@ Outreach Readiness Score: [X]/100
   Message-Market Fit: [XX]/25 █████░░░░░
 
 Sequence Overview:
-  Email 1 (Day 1):  The Hook — [subject line A]
+  Email 1 (Day 0):  The Hook — [subject line A]
   Email 2 (Day 3):  The Value Add — [subject line A]
   Email 3 (Day 7):  The Social Proof — [subject line A]
   Email 4 (Day 14): The Different Angle — [subject line A]
-  Email 5 (Day 21): The Breakup — [subject line A]
+  Email 5 (Day 28): The Breakup — [subject line A]
 
 LinkedIn Touchpoints: 4 (Day 0, 5, 10, 18)
 

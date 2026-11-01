@@ -16,6 +16,8 @@ Waterfall (stops at the first verified address; every paid step only runs if its
        millionverifier MILLIONVERIFIER_API_KEY · zerobounce ZEROBOUNCE_API_KEY · neverbounce NEVERBOUNCE_API_KEY · hunter
   5. no verifier and a name: pattern guesses, clearly labelled "pattern-guessed — verify before sending"
 A provider that errors (no credits, HTTP 4xx/5xx) is skipped and the next one is tried.
+No credits are spent on finders when the address is already known: an email written in the post itself, or
+(for the named person) a personal address on their website, skips step 3 — it is only verified.
 
 Statuses: verified | catch_all | unverified | invalid | pattern-guessed.
 Hunter API v2 (hunter.io/api-documentation/v2): GET /v2/email-finder?domain&first_name&last_name,
@@ -298,7 +300,7 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
     found = from_text(text)
     steps.append({"step": "text", **found})
     for e in found["emails"]:
-        add(e, "unverified", "text")
+        add(e, "unverified", "post")
     domain = _bare(domain) or (found["websites"][0] if found["websites"] else "")
     phone = (found["whatsapp"] + found["phones"] or [None])[0]
     if domain:
@@ -325,7 +327,16 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
     verifiers = providers("verifiers") if use_hunter else []
     have = lambda: any(c["status"] == "verified" for c in cands)  # noqa: E731
     personal = lambda: any(first and first.lower() in c["email"].split("@")[0] and c["status"] == "verified" for c in cands)  # noqa: E731
-    if domain and first and last and domain not in WEBMAIL:
+    skip_reason = None
+    if any(c["source"] == "post" for c in cands):
+        skip_reason = "email already in the post — no finder credits spent"
+    elif first and any(c["source"] == "website" and first.lower() in c["email"].split("@")[0] for c in cands):
+        skip_reason = f"personal address for {first} already on their website — no finder credits spent"
+    elif not first and any(c["source"] == "website" for c in cands):
+        skip_reason = "no person named and the website lists an address — no finder credits spent"
+    if skip_reason:
+        steps.append({"step": "finders_skipped", "reason": skip_reason})
+    if domain and first and last and domain not in WEBMAIL and not skip_reason:
         for name, key, fn in finders:
             if personal():
                 break
@@ -364,11 +375,11 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
         for e in patterns(first, last, domain):
             add(e, "pattern-guessed", "pattern")
         steps.append({"step": "patterns", "note": "No verifier key — these are guesses, NOT verified. Verify before sending."})
-    order = {"text": 0, "website": 1, "pattern": 9}
+    order = {"post": 0, "website": 1, "pattern": 9}
     best = sorted(cands, key=lambda c: (-RANK[c["status"]], order.get(c["source"], 2)))[0] if cands else None
     return {"domain": domain or None, "best": best, "candidates": cands, "phone": phone, "steps": steps,
             "finders_used": [n for n, _, _ in finders], "verifiers_used": [n for n, _, _ in verifiers],
-            "verifier_available": bool(verifiers), "verifications": used,
+            "verifier_available": bool(verifiers), "verifications": used, "finders_skipped": skip_reason,
             "label": None if not best else {"verified": "verified", "catch_all": "catch-all domain — deliverability uncertain",
                                             "unverified": "unverified — verify before sending",
                                             "pattern-guessed": "pattern-guessed — verify before sending",

@@ -204,10 +204,30 @@ def test_find_email_site_then_hunter_verify(monkeypatch):
         return 200, {"data": {"status": "valid", "score": 95}}
     r = find_email.find("acme.in", "Priya", "Mehta", "", True, fetch, api)
     by = {c["email"]: c["status"] for c in r["candidates"]}
-    assert by == {"priya@acme.in": "catch_all", "info@acme.in": "verified"}   # finder said accept_all; verifier ok'd info@
-    assert r["best"]["email"] == "info@acme.in" and r["label"] == "verified"
+    # priya@ is on their own site, so no finder credits are spent: it is only verified
+    assert by == {"priya@acme.in": "verified", "info@acme.in": "unverified"} and "website" in r["finders_skipped"]
+    assert r["best"]["email"] == "priya@acme.in" and r["label"] == "verified"
+    assert not any(u.endswith("email-finder") for u, _, _ in calls)
     assert calls[0][2] == {"X-API-KEY": "hunter_test_key_1"} and "api_key" not in calls[0][0]
     assert any(s["step"] == "hunter_verifier" for s in r["steps"]) and r["phone"]
+    # nobody personal on the site → the finder runs
+    calls.clear()
+    site.pop("https://acme.in/contact")
+    r = find_email.find("acme.in", "Priya", "Mehta", "", True, fetch, api)
+    assert any(u.endswith("email-finder") for u, _, _ in calls) and r["finders_skipped"] is None
+
+
+def test_find_email_post_email_skips_finders(monkeypatch):
+    monkeypatch.setenv("HUNTER_API_KEY", "hunter_test_key_1")
+    monkeypatch.setattr(site_audit, "fetch_url", fake_fetch({}))
+    calls = []
+
+    def api(method, url, headers=None, params=None, **kw):
+        calls.append(url)
+        return 200, {"data": {"status": "valid", "score": 90}}
+    r = find_email.find("", "Priya", "Mehta", "Need a website for Chai Cafe, mail me priya@chaicafe.in", True, lambda u: [], api)
+    assert r["best"]["email"] == "priya@chaicafe.in" and r["best"]["source"] == "post" and r["best"]["status"] == "verified"
+    assert "post" in r["finders_skipped"] and not any("email-finder" in u for u in calls)
 
 
 def test_find_email_no_key_labels_guesses(monkeypatch):

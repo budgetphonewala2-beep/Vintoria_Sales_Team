@@ -262,7 +262,7 @@ Do you have a relevant case study with metrics?
 - No emojis
 - No bold or italic formatting (plain text emails outperform HTML for cold outreach)
 
-### Email 1 — The Hook (Day 1)
+### Email 1 — The Hook (Day 0)
 
 **Goal:** Get a response. Establish relevance. Create curiosity.
 
@@ -380,7 +380,7 @@ Subject B: [A/B variant]
 | Problem-focused | Opportunity-focused |
 | Your solution | Industry trend |
 
-### Email 5 — The Breakup (Day 21)
+### Email 5 — The Breakup (Day 28)
 
 **Goal:** Respectful close. Leave the door open. Create subtle scarcity (of your attention, not your product).
 
@@ -424,15 +424,15 @@ Cold email alone has declining response rates. Integrate LinkedIn touchpoints to
 
 | Day | Channel | Action | Purpose |
 |-----|---------|--------|---------|
-| **Day 0** | LinkedIn | Send connection request with custom note (under 300 characters) | Get connected before emailing |
-| **Day 1** | Email | Send Email 1 (The Hook) | Primary outreach |
+| **Day -1** | LinkedIn | Send connection request with custom note (under 300 characters) | Get connected before emailing |
+| **Day 0** | Email | Send Email 1 (The Hook) | Primary outreach |
 | **Day 3** | Email | Send Email 2 (The Value Add) | Provide value |
 | **Day 5** | LinkedIn | Engage with their content — like and leave a thoughtful comment | Build familiarity and visibility |
 | **Day 7** | Email | Send Email 3 (The Social Proof) | Build trust |
 | **Day 10** | LinkedIn | Send a LinkedIn message referencing your emails | Cross-channel reinforcement |
 | **Day 14** | Email | Send Email 4 (The Different Angle) | New perspective |
 | **Day 18** | LinkedIn | Share a piece of content they would find valuable (tag them if appropriate) | Provide value on their platform |
-| **Day 21** | Email | Send Email 5 (The Breakup) | Respectful close |
+| **Day 28** | Email | Send Email 5 (The Breakup) | Respectful close |
 
 ### 4.2 LinkedIn Connection Request Note
 

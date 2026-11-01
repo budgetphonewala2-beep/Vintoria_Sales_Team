@@ -75,6 +75,9 @@ from both the demo data and the schema the skills document. Status column = stat
   free-slot finder only knows meetings booked through `meeting.py`, so check your own calendar before confirming.
 - Email is sent only through SMTP you configure: one approved message at a time, or an approved sequence that
   the scheduled autopilot sends (after an inbox check). There is no bulk blast.
+- Hacker News (Algolia), Reddit JSON and Product Hunt GraphQL were implemented from their public API docs and tested
+  with mocked responses; Reddit increasingly rate-limits unauthenticated requests, so the Apify actor is the
+  dependable route. Product Hunt often redacts maker details; the product website is the lead.
 - Apify actor inputs/outputs are set by each actor's publisher and can change; the defaults were checked against
   the actors' public docs (2026-11) and outputs are read defensively, but run a small test (`--max 5`) after
   switching actors. Provider APIs (Prospeo, Findymail, Apollo, verifiers) were implemented from their public docs

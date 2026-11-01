@@ -32,6 +32,21 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.3 — every lead source, sharper queries, deep scans
+
+| | v3.2 | v3.3 |
+|---|---|---|
+| Sources | LinkedIn, Google, Reddit (Apify) | + **Hacker News** (free, incl. monthly "Seeking freelancer" thread), **Reddit free JSON**, **X/Twitter**, **Facebook groups**, **Google Maps** (no-website / low-rating businesses + phone), **Product Hunt** launches, Quora / Indie Hackers / Upwork jobs / hiring signals via X-ray |
+| Queries | A few defaults | **`query_library.py`**: ASK + SERVICE + platform + exclusions + recency for 8 services; LinkedIn boolean queries checked against the 5-operator / 500-char limit; Hinglish; location-aware |
+| Email in the post | Finders still ran | **No finder credits spent** when the post (or their site, for the named person) already has the address — it's only verified |
+| Research | Separate scripts | **`prospect_scan.py`**: site audit + company + people + email + 11 web searches → `DOSSIER.md` with ranked, evidence-backed hooks, straight into the pipeline |
+| Skills | — | All 19 reviewed: dossier-first workflow, channel by lead source, day-by-day sequence content plan, service-buyer red flags, proposal terms, local competitor hooks, ICP → hunt settings |
+
+```
+python skills/sales/scripts/lead_sources.py hunt --services web,seo --location Pune --save hunt.json
+python skills/sales/scripts/prospect_scan.py https://lead.com --post-text "<their post>" --source hunt:li-web-1
+```
+
 ## What's new in v3.2 — hands-free from lead to booked call
 
 | | v3.1 | v3.2 |
@@ -104,7 +119,8 @@ BRIGHTDATA_API_KEY=...   # Google search for sales-hunt / web_search.py (Bright 
 BRIGHTDATA_ZONE=serp_api1
 HUNTER_API_KEY=...       # email finder + verifier
 SMTP_PASSWORD=...        # only if you want the agent to send approved emails (see examples/env.example)
-APIFY_TOKEN=...          # LinkedIn posts (HarvestAPI actor), Google, Reddit via Apify
+APIFY_TOKEN=...          # LinkedIn posts (HarvestAPI), Google, Reddit, X, Facebook groups, Google Maps via Apify
+PRODUCTHUNT_TOKEN=...    # new launches (free developer token); Hacker News needs no key
 PROSPEO_API_KEY=...      # or FINDYMAIL_API_KEY / APOLLO_API_KEY — email finders, tried in order
 MILLIONVERIFIER_API_KEY=...  # or ZEROBOUNCE_API_KEY / NEVERBOUNCE_API_KEY — email verification
 ```
@@ -169,7 +185,9 @@ Every script prints one JSON object and is safe to run from any agent or by hand
 | Script | What it does |
 |---|---|
 | `pipeline.py` | `add`, `list`, `show`, `stage`, `score`, `note`, `contact`, `attach`, `next`, `report [--pdf-input]`, `today`, `suppress`, `remove` |
-| `lead_sources.py` | `linkedin`, `google`, `reddit`, `hunt` (all), `actor` (any Apify actor), `research <domain>`, `queries` |
+| `lead_sources.py` | `hunt` (all), `linkedin`, `hackernews`, `reddit`, `x`, `facebook`, `google`, `maps`, `producthunt`, `actor`, `research`, `queries` |
+| `query_library.py` | Search queries per service / platform / location (LinkedIn boolean, X-ray, X, subreddits, HN, Maps) |
+| `prospect_scan.py` | Deep scan → `DOSSIER.json/.md` + pipeline (audit, company, people, email, web research, hooks) |
 | `outreach.py` | `log`, `cadence`, `approve` / `queue` / `run` / `cancel` sequences, `send` (dry run → `--send`), `whatsapp` |
 | `inbox.py` | `check [--apply] [--auto-reply]` — IMAP replies and bounces → pipeline |
 | `autopilot.py` | `tick [--send]`, `schedule` |

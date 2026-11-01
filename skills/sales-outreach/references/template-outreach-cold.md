@@ -20,7 +20,7 @@
 
 ---
 
-## Email 1: The Hook (Day 1)
+## Email 1: The Hook (Day 0)
 
 **Goal:** Capture attention with a personalized observation and clear value proposition.
 
@@ -164,7 +164,7 @@ I'd be happy to share [SPECIFIC_INSIGHT_OR_ANALYSIS] that might help
 
 ---
 
-## Email 5: The Breakup (Day 21)
+## Email 5: The Breakup (Day 28)
 
 **Goal:** Respectful close that leaves the door open and sometimes triggers a response.
 

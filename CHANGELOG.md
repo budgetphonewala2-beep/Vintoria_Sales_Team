@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.3.0 — 2026-11-01 (all lead sources, query library, deep scans, skill review)
+
+### Added
+- `query_library.py` — buyer queries for 8 services (web, app, seo, marketing, design, software, ecommerce, video):
+  LinkedIn boolean (validated: ≤ 5 AND/OR/NOT, ≤ 500 chars, NOT last), Google X-ray per platform with seller
+  exclusions, X search, subreddit plan (r/forhire `flair:Hiring` ...), Hacker News asks, Google Maps categories,
+  Hinglish, location-aware.
+- `lead_sources.py`: `hackernews` (Algolia API, free; asks + the monthly "Freelancer? Seeking freelancer?" thread),
+  `reddit` free public-JSON fallback, `x` (Apify tweet scraper), `facebook` (public groups), `maps` (Google Maps
+  businesses with need signals, `--add` to pipeline), `producthunt` (GraphQL, launches), `hunt` runs them all.
+- `prospect_scan.py` — deep scan per prospect → `DOSSIER.json` (claim-check evidence) + `DOSSIER.md` with ranked
+  hooks; records prospect, decision maker, best email and files in the pipeline.
+- Research covers complaints, founder, ads and competitors too.
+- Intent phrases for freelance/agency asks (`seeking freelancer`, `[hiring]`, `rfp`, `who built your website` ...)
+  and seller phrases (`[for hire]`, `seeking work` ...); `platform_of` knows HN, Product Hunt, Indie Hackers, Upwork, Maps.
+- Tests: `tests/test_sources_v33.py`.
+
+### Changed
+- `find_email.py` spends no finder credits when the address is already in the post, or (for the named person) on
+  their website — it is only verified (`finders_skipped` says why).
+- `intent_scan.py` candidates carry `contact_in_post` (emails/phones/sites written in the post) and author details.
+- All 19 skills reviewed and upgraded (dossier-first, channel by source, sequence content plan, qualification red
+  flags, proposal terms, local competitor hooks via Maps, ICP hunt settings, objection ↔ reply categories).
+- Outreach references aligned to the day 0/3/7/14/28 cadence.
+
 ## 3.2.0 — 2026-11-01 (hands-free: Apify sources, email waterfall, self-sending sequences, inbox)
 
 ### Added

@@ -7,6 +7,8 @@ TRIAGE = "python <SCRIPTS>/reply_triage.py"
 SRC = "python <SCRIPTS>/lead_sources.py"
 AUTO = "python <SCRIPTS>/autopilot.py"
 INBOX = "python <SCRIPTS>/inbox.py"
+SCAN = "python <SCRIPTS>/prospect_scan.py"
+QL = "python <SCRIPTS>/query_library.py"
 
 SKILLS = [
 # --------------------------------------------------------------------------- router
@@ -23,6 +25,7 @@ Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`)
 | The whole job, every day: find → contact → follow up → book (**daily driver**) | `sales-autopilot` | today's agenda, done step by step |
 | To define who to sell to (**start here**) | `sales-icp` | `IDEAL-CUSTOMER-PROFILE.md` |
 | People publicly asking for what they sell (intent leads) | `sales-hunt` | scored candidates → pipeline |
+| Everything about one prospect in one run (site, people, email, web) | deep scan: `prospect_scan.py` | `prospects/<slug>/DOSSIER.json` + `.md` |
 | A full scored audit of one company | `sales-prospect` | `prospects/<slug>/PROSPECT-ANALYSIS.md` |
 | A fast 60-second estimate | quick snapshot (below) | terminal only |
 | Fact-only website audit (proof-of-work for outreach) | `sales-audit` | `prospects/<slug>/SITE-AUDIT.json` + `.md` |
@@ -43,6 +46,15 @@ Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`)
 If your agent supports slash commands, `/sales <command> <input>` maps to `sales-<command>`. If the request is
 unclear, show this table and suggest `sales-icp` first. To use a skill, read its `SKILL.md` (a sibling folder of
 this one) and follow it; its instructions take precedence over this router.
+
+## The end-to-end flow
+
+```
+sales-icp → sales-hunt (lead_sources) → prospect_scan (dossier) → sales-outreach (approve 5 emails)
+   → autopilot sends day 0/3/7/14/28 → inbox.py reply → sales-reply → sales-book → sales-prep → sales-proposal
+```
+Default for any new prospect: run the deep scan first (`python <SCRIPTS>/prospect_scan.py <url> [--post-text "..."]`),
+then write from `DOSSIER.md`. Its `facts` are claim-check evidence.
 
 ## Quick snapshot (no files)
 
@@ -67,7 +79,9 @@ this one) and follow it; its instructions take precedence over this router.
 | Script | Purpose |
 |---|---|
 | `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report, `today`, suppress |
-| `lead_sources.py` | Apify: LinkedIn posts (HarvestAPI), Google, Reddit, any actor → intent-scored leads; `research` a prospect across the web |
+| `lead_sources.py` | LinkedIn posts (HarvestAPI), Hacker News, Reddit, X, Facebook groups, Google X-ray, Google Maps, Product Hunt, any Apify actor; `research` |
+| `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
+| `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
 | `outreach.py` | Log touches, approve whole sequences, `run` due follow-ups (day 3/7/14/28), safe SMTP send, WhatsApp links |
 | `inbox.py` | Read replies/bounces over IMAP (read-only) → pipeline; optional instant booking-link reply |
 | `autopilot.py` | `tick`: inbox → due sequence emails → today's agenda (schedule it every 30 min) |
@@ -112,18 +126,24 @@ sales-report       weekly pipeline review
 {
 "name": "sales-hunt",
 "title": "Intent Hunt — find people asking for what you sell",
-"description": "Finds public posts (LinkedIn, Reddit, Facebook groups, forums) where someone is actively asking to hire a service the user sells — website, app, SEO, marketing, design, software — scores them in English, Hindi and Hinglish, filters out sellers, job seekers and job ads, judges real buyers with a labelled rubric and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
+"description": "Finds people publicly asking to hire a service the user sells (website, app, SEO, marketing, design, software, e-commerce, video) on LinkedIn posts (Apify HarvestAPI), Hacker News (incl. the Seeking-freelancer thread), Reddit (r/forhire and more), X, Facebook groups, Quora, Indie Hackers and Upwork via Google X-ray, plus companies with a visible need from Google Maps and Product Hunt — using a query library with strong boolean queries — scores them in English, Hindi and Hinglish, filters sellers, job seekers and job ads, judges real buyers, deep-scans the best and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
 "intro": """Intent beats cold lists: a person who wrote "need a website for my clinic" this week is worth fifty
 cold contacts. This skill finds those posts, separates real buyers from noise, and puts them in the pipeline.""",
 "body": f"""## Steps
 
-1. **Know the offer.** Read `IDEAL-CUSTOMER-PROFILE.md` or ask what services, which countries, which languages.
+1. **Know the offer.** Read `IDEAL-CUSTOMER-PROFILE.md` (its "Hunt settings": services, location, languages) or ask.
+   Preview the searches: `{QL} --services web,seo [--location Pune]` — read `references/queries.md` for the formula.
 2. **Collect posts** — any of these (best first):
-   - With an Apify token (LinkedIn posts via HarvestAPI + Google X-ray + Reddit in one run):
-     `{SRC} hunt --services web,seo --posted week --max 30 --save hunt.json`, or one source:
-     `{SRC} linkedin --query "looking for a web developer" --query "website banwana hai" --posted week --max 50`
-     (`{SRC} queries` lists the defaults; `{SRC} actor <user/actor> --input in.json` runs any other Apify actor).
-     Spend is capped per run by `APIFY_MAX_USD` (default $1) and `APIFY_MAX_RUNS`; tell the user what ran.
+   - Everything at once: `{SRC} hunt --services web,seo [--location Pune] --posted week --max 30 --save hunt.json`
+     (Hacker News free; LinkedIn, Reddit, X, Google X-ray with `APIFY_TOKEN`). Or one source:
+     `{SRC} linkedin` · `{SRC} hackernews` (incl. the monthly "Seeking freelancer" thread) · `{SRC} reddit`
+     (r/forhire [Hiring] and more; free JSON without Apify) · `{SRC} x` · `{SRC} facebook --group-url <public group>`
+     · `{SRC} google` — each takes `--services/--location` or your own `--query` (repeatable).
+   - Companies with a visible need (outbound): `{SRC} maps --services web --location "Pune" --add` (no website,
+     social-only page, low rating, few reviews + phone) and `{SRC} producthunt --days 7 --add` (new launches).
+   - Any other Apify actor: `{SRC} actor <user/actor> --input in.json`.
+     Spend is capped by `APIFY_MAX_USD` (default $1/run) and `APIFY_MAX_RUNS`; tell the user what ran and the counts
+     (`sources_run`, `by_source`, `kept_by_source`).
    - With a Bright Data key: `python <SCRIPTS>/intent_scan.py --serp --lookback 7 --max-calls 10 [--country in] --save hunt.json`
      (`--list-queries` shows the default X-ray queries; add your own with `--query '...'`, repeatable).
    - Without a key: search yourself (your web tool, or ask the user to paste posts) for queries like those in
@@ -131,7 +151,8 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
      `python <SCRIPTS>/intent_scan.py --file posts.jsonl --save hunt.json`.
    - One post: `python <SCRIPTS>/intent_scan.py --text "..."`.
    The scanner skips posts seen in earlier runs and rejects sellers, job seekers and job ads for free.
-   LinkedIn results include the author's name, headline and profile URL — keep them for step 6.
+   LinkedIn results include the author's name, headline and profile URL — keep them for step 6. A candidate with
+   `contact_in_post` already has an email/phone from the post: use it, don't pay a finder for it.
 3. **Judge every candidate** with `references/intent-rubric.md`. For each, decide: buyer / seller /
    job_seeker / other, services wanted, urgency, budget (only if stated), location/timezone (only if stated
    or obvious), and an **exact quote** from the post that proves intent. Discard anything below confidence 0.6.
@@ -142,20 +163,26 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 5. **Add to the pipeline** (one per buyer):
    `{PIPE} add --url <their site or post URL> --name "<name/company>" --source hunt:<query-id> --services web,seo`
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
-6. **Find a contact** for the top buyers: `python <SCRIPTS>/find_email.py --text "<post text>" [--domain <site>] [--first X --last Y]`,
-   then `{PIPE} contact <slug> --name ... --email ... --email-status <status> --source <source>`.
+6. **Deep-scan the top buyers** (best 5-10, freshest first):
+   `{SCAN} <their site or domain> --post-text "<post>" --post-url <url> [--first X --last Y] --source hunt:<query-id>`
+   → `prospects/<slug>/DOSSIER.md` with the audit, people, the best email (finders skipped when the post or site
+   already has one), web research and ranked hooks; the prospect and contact go into the pipeline. No website?
+   `python <SCRIPTS>/find_email.py --text "<post text>"` and record with `{PIPE} contact ...`.
    No verified email? Suggest the user reply publicly under the post or DM from their own account — give
    them a 2-line message. Never post or DM on their behalf.
-7. **Report**: a table — buyer, what they need, quote, score, contact status, suggested next step
-   (`sales-audit` then `sales-outreach` for the best ones).
+7. **Report**: a table — buyer, platform, what they need, exact quote, posted, score, contact status, next step.
+   Respond to fresh asks (under 48 h) the same day: an email if there is a verified address, otherwise a
+   2-line public reply or DM for the user to post from their own account.
 
 ## Rules
 - The quote must be copied exactly from the post. No quote = not a buyer.
 - Agencies advertising, freelancers offering services, "#hiring" job posts and job seekers are never buyers.
 - Respect each platform's terms: only public posts, no scraping behind logins, no automated messaging.
 - Paid search calls are capped by `--max-calls`; tell the user how many calls a run used.
+- Speed beats polish on intent leads: most asks get answered within a day or two by someone.
 """,
 "refs": [("intent-rubric.md", "30 labelled examples (EN + Hinglish): buyers, sellers, job seekers, spam"),
+         ("queries.md", "the query formula, LinkedIn boolean rules, every source and what it's best for, signal searches"),
          ("queries.md", "search queries by service and language, and how to add your own")],
 },
 # --------------------------------------------------------------------------- audit
@@ -169,7 +196,8 @@ This skill produces only facts the page itself proves, so outreach built on it s
 
 1. Run the audit and save it in the prospect folder:
    `python <SCRIPTS>/site_audit.py --url <url> --save prospects/<slug>/SITE-AUDIT.json`
-   (add `--no-links` for a faster run; robots.txt is respected).
+   (add `--no-links` for a faster run; robots.txt is respected). For the full picture in one run — audit plus
+   company, people, email and web research with ranked hooks — use `{SCAN} <url>` instead.
 2. Write `prospects/<slug>/SITE-AUDIT.md`: the URL, date, and a table of every fact (`statement` + `evidence`).
 3. Pick the **top 3 observations** that matter to the prospect's business, using
    `references/fact-to-hook.md` (e.g. no viewport → phone visitors get the desktop layout; no CTA →
@@ -178,7 +206,10 @@ This skill produces only facts the page itself proves, so outreach built on it s
    measured number.
 4. Record it: `{PIPE} add --url <url>` (if new), `{PIPE} attach <slug> prospects/<slug>/SITE-AUDIT.json --kind site-audit`,
    `{PIPE} note <slug> "Audit hooks: <hook 1>; <hook 2>"`.
-5. Suggest `sales-outreach` next — it will use these facts as evidence.
+5. **Local comparison** (local businesses, powerful hook): `{SRC} maps --search "<category> in <area>" --max 10`
+   and compare rating, reviews and website with the top 3 nearby competitors — "3 of the 5 top-rated dentists in
+   Koregaon Park have online booking; yours doesn't" is a fact if the data shows it.
+6. Suggest `sales-outreach` next — it will use these facts as evidence.
 
 ## Rules
 - Facts only. No scores like "your SEO is 4/10", no guessed traffic, no "your site is slow" unless the fact
@@ -197,10 +228,11 @@ This skill produces only facts the page itself proves, so outreach built on it s
 plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 "body": f"""## Steps
 
-1. **Discovery** (see `references/playbook.md` Phase 1): fetch the homepage and key pages, detect company type
-   and industry, run `python <SCRIPTS>/analyze_prospect.py --url <url>` and
-   `python <SCRIPTS>/site_audit.py --url <url> --save prospects/<slug>/SITE-AUDIT.json`, read any existing
-   files in `prospects/<slug>/`, and write a short discovery briefing.
+1. **Discovery** (see `references/playbook.md` Phase 1): run the deep scan —
+   `{SCAN} <url> [--name "<company>"] [--post-text "<their post>"] [--city <city>]` — which audits the site,
+   analyses the company, finds people and the best email, searches the web (reviews, news, hiring, complaints,
+   ads, competitors) and writes `prospects/<slug>/DOSSIER.json/.md`. Read it plus any other files in
+   `prospects/<slug>/`, then write a short discovery briefing.
 2. **Roles** (Phase 2): follow, in this order, `references/role-company.md`, `role-contacts.md`,
    `role-opportunity.md`, `role-competitive.md`, then `role-strategy.md` (which needs the other four). Each
    returns a 0-100 category score with evidence. If your agent can run subagents, the first four may run in
@@ -233,16 +265,19 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 "Not found".""",
 "body": f"""## Steps
 
-1. Fetch the homepage, about, team, careers, pricing/services, blog/news pages (several at once:
-   `python <SCRIPTS>/fetch_page.py <url1> <url2> ...`). Run `python <SCRIPTS>/analyze_prospect.py --url <url>`.
-2. Search the wider web: `{SRC} research <domain> --name "<company>" [--city <city>]` runs mentions,
-   reviews, news, LinkedIn, social, directories and hiring searches and saves `prospects/<slug>/WEB-RESEARCH.json`
-   (needs `APIFY_TOKEN` or `BRIGHTDATA_API_KEY`; otherwise use your own search tool). Snippets are leads — open
-   the page before stating a fact from it.
+1. Start with the deep scan: `{SCAN} <url> [--name "<company>"] [--city <city>]` (site audit, company analysis,
+   people, email, web research → `DOSSIER.md`). Then fetch what it missed — about, team, careers, services,
+   blog/news, case studies — with your web tool or `python <SCRIPTS>/fetch_page.py <url1> <url2> ...`.
+2. The web research inside the scan (`{SRC} research <domain> --name "<company>"` on its own) covers mentions,
+   reviews, complaints, news, LinkedIn, founder, social, directories, hiring, ads and competitors and saves
+   `prospects/<slug>/WEB-RESEARCH.json` (needs `APIFY_TOKEN` or `BRIGHTDATA_API_KEY`; otherwise use your own
+   search tool). Snippets are leads — open the page before stating a fact from it.
 3. Cover the 8 dimensions in `references/playbook.md`. Adapt to the business type: for a local business or
    SMB focus on owner, locations, reviews, website quality and marketing activity; for SaaS on product,
    pricing, team growth; for e-commerce on catalogue, platform, channels.
-4. Write `prospects/<slug>/COMPANY-RESEARCH.md` using `references/output-format.md`, with a source for each fact.
+4. Write `prospects/<slug>/COMPANY-RESEARCH.md` using `references/output-format.md`, with a source for each fact,
+   ending with **"Why now"** (the trigger: their post, a launch, hiring, bad reviews, an outdated site) and the
+   **3 best hooks** for outreach.
 5. Record: `{PIPE} add --url <url> --name "<company>" --stage researched` and
    `{PIPE} attach <slug> prospects/<slug>/COMPANY-RESEARCH.md --kind research`; add named leaders with
    `{PIPE} contact <slug> --name ... --title ... --source website`.
@@ -267,9 +302,14 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
      shows the format) and run `python <SCRIPTS>/lead_scorer.py prospects/<slug>/_bant_signals.json`.
    - Someone who asked for a service publicly: `python <SCRIPTS>/lead_scorer.py --mode agency <file>`.
    If your score and the script differ by more than 15, explain why.
-4. Write `prospects/<slug>/LEAD-QUALIFICATION.md` (`references/output-format.md`), including the 3-5
-   discovery questions that would close the biggest gaps.
-5. Record: `{PIPE} score <slug> <score>`, `{PIPE} stage <slug> qualified --reason "<grade + main reason>"`
+4. **Service-buyer checks** (agencies/freelancers): budget stated or implied (₹/$ range, "cheap" = flag),
+   decision maker = the poster/owner?, timeline trigger (launch, festive season, event, "ASAP"), scope clarity,
+   red flags (wants free samples/spec work, "just exploring", equity-only, unrealistic budget for scope, many
+   agencies already in the comments). Two or more red flags → `nurture` or `disqualified`, fast.
+5. Write `prospects/<slug>/LEAD-QUALIFICATION.md` (`references/output-format.md`), including the 3-5
+   discovery questions that would close the biggest gaps (budget range, decision process, timeline, success
+   measure, what went wrong last time).
+6. Record: `{PIPE} score <slug> <score>`, `{PIPE} stage <slug> qualified --reason "<grade + main reason>"`
    (or `disqualified` / `nurture`), `{PIPE} next <slug> "<next step>"`.
 """,
 "refs": [("playbook.md", "BANT and MEDDIC rubrics with scoring guidance"), ("output-format.md", "LEAD-QUALIFICATION.md template"),
@@ -279,14 +319,15 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 {
 "name": "sales-contacts",
 "title": "Decision Makers & Verified Contacts",
-"description": "Maps the buying committee at a prospect — names, titles, buying roles, personalization anchors, warm paths and a multi-threading plan — and finds and verifies contact emails with find_email.py (Hunter optional; guesses always labelled pattern-guessed), writing DECISION-MAKERS.md and saving contacts to the pipeline. Use when the user says 'who should I contact', 'find the decision maker', 'get their email', 'who is the owner', '/sales contacts', or in Hinglish 'owner kaun hai', 'iska email nikalo', 'kisse baat karun'.",
+"description": "Maps the buying committee at a prospect — names, titles, buying roles, personalization anchors, warm paths and a multi-threading plan — and finds and verifies contact emails with find_email.py (post/site first, then Prospeo, Findymail, Hunter, Apollo and MillionVerifier/ZeroBounce/NeverBounce; guesses always labelled pattern-guessed), writing DECISION-MAKERS.md and saving contacts to the pipeline. Use when the user says 'who should I contact', 'find the decision maker', 'get their email', 'who is the owner', '/sales contacts', or in Hinglish 'owner kaun hai', 'iska email nikalo', 'kisse baat karun'.",
 "intro": """You find the right people and the safest way to reach them. A wrong or guessed address costs
 deliverability, so verification status is always shown.""",
 "body": f"""## Steps
 
-1. **People**: run `python <SCRIPTS>/contact_finder.py --url <url>`, read the team/about pages, and search
-   for leaders (e.g. `site:linkedin.com/in "<company>" founder OR owner OR director`). Only list people you
-   found evidence for.
+1. **People**: if a `DOSSIER.json` exists, start from its `people` and `decision_maker`. Otherwise run
+   `python <SCRIPTS>/contact_finder.py --url <url>`, read the team/about pages, and search for leaders
+   (`site:linkedin.com/in "<company>" founder OR owner OR director`). A hunt lead already names the person:
+   the post author (LinkedIn profile URL, HN/Reddit username). Only list people you found evidence for.
 2. **Roles**: classify each as Economic Buyer, Champion, Technical Evaluator, User, Influencer or Blocker
    (`references/playbook.md` Phase 2). For an owner-run SMB the owner is usually buyer and champion.
 3. **Emails**: for the top 1-3 people run
@@ -295,8 +336,12 @@ deliverability, so verification status is always shown.""",
    (Prospeo, Findymail, Hunter, Apollo — whichever keys are set, order in `EMAIL_FINDERS`) → verifiers
    (MillionVerifier, ZeroBounce, NeverBounce, Hunter) on the candidates, or on likely name patterns if nothing
    was found. `find_email.py --providers` shows what is configured.
+   If the post or website already shows an address it is used and only verified — no finder credits.
    Use the status exactly as returned: `verified`, `catch_all`, `unverified`, `pattern-guessed`, `invalid`.
    Only `verified` addresses are safe for cold email; say so.
+   **Best channel** per person: verified email → email; business phone from the site or Google Maps → WhatsApp
+   click-to-chat (`python <SCRIPTS>/outreach.py whatsapp`); only a LinkedIn/Reddit/HN profile → the user replies
+   where they posted or sends a DM themselves.
 4. **Personalization anchors** and **multi-threading plan** (Phases 3-5).
 5. Write `prospects/<slug>/DECISION-MAKERS.md` (`references/output-format.md`).
 6. Record each person: `{PIPE} contact <slug> --name "<name>" --title "<title>" --role "<buying role>"
@@ -314,7 +359,10 @@ deliverability, so verification status is always shown.""",
 "body": f"""## Steps
 
 1. Detect current solutions (`references/playbook.md` Step 1): site tech (`python <SCRIPTS>/site_audit.py --url <url> --no-links`
-   reports the platform), footer credits ("Designed by ..."), job posts, case studies, review sites.
+   reports the platform), footer credits ("Designed by ...", "Powered by ..."), job posts, case studies, review
+   sites, and the `competitors` / `ads` sections of `WEB-RESEARCH.json` if present.
+   **Their market competitors** (strong for local businesses): `{SRC} maps --search "<category> in <city>" --max 15`
+   gives nearby rivals' ratings, review counts and websites — use the gap as a fact-based hook.
 2. Categorise them and build one battle card per competitor (Step 3): honest strengths, specific weaknesses,
    your advantages, switching cost, triggers, landmine questions, a positioning statement.
 3. Feature/service gap analysis, win/loss patterns, recommended strategy (Steps 4-6).
@@ -335,16 +383,28 @@ Never disparage a competitor with claims you can't source.
 "intro": """You write outreach a busy owner actually answers: short, specific, true, and easy to say yes to.""",
 "body": f"""## Steps
 
-1. **Evidence first.** Collect what you know: their post (if they asked publicly), `prospects/<slug>/` files,
-   `SITE-AUDIT.json` (run `sales-audit` if missing), `DECISION-MAKERS.md` and the pipeline record
-   (`{PIPE} show <slug>`). Recipient must have a `verified` email, or say clearly that it isn't.
+1. **Evidence first.** If `prospects/<slug>/DOSSIER.json` is missing, run the deep scan:
+   `{SCAN} <url> [--post-text "<their post>" --post-url <url>]`. Read `DOSSIER.md` (ranked hooks, decision maker,
+   best email), other `prospects/<slug>/` files and `{PIPE} show <slug>`. Recipient must have a `verified` email,
+   or say clearly that it isn't.
+   **Channel by source:** they posted asking (LinkedIn/Reddit/HN/X/FB) → reply there first (user posts it, 2 lines,
+   helpful, no pitch) + email if verified; Google Maps lead with a phone and no email → WhatsApp click-to-chat;
+   Product Hunt launch → email the maker or comment on the launch (user).
 2. **First email** — follow `references/first-email-guide.md`: plain text, under 120 words, mentions their post
    or business naturally, ONE specific observation backed by evidence, one soft question as the CTA ("worth a
    quick call?"), the user's signature with postal address and an opt-out line. **No booking link** — the goal of
    the cold emails is a reply; the calendar link is sent only once they say yes (`sales-reply` / `sales-book`).
 3. **Sequence** — 4 follow-ups on **day 3, 7, 14 and 28** after email 1 (`{OUT} cadence`), each adding something
-   new (a second audit fact, a relevant example, a question), the last a polite breakup; plus LinkedIn touches,
-   using `references/playbook.md` and the templates `references/template-outreach-cold.md`, `-warm.md`, `-referral.md`.
+   new, using `references/playbook.md` and the templates `references/template-outreach-cold.md`, `-warm.md`, `-referral.md`:
+   | Email | Day | Content | Words |
+   |---|---|---|---|
+   | 1 | 0 | Their post / top hook + one fact + soft question | ≤ 120 |
+   | 2 | 3 | Second hook (another audit fact) + a 1-line fix idea | ≤ 70 |
+   | 3 | 7 | Proof: a relevant real result, or a mini teardown of their page (`[ADD REAL CUSTOMER RESULT]` if none) | ≤ 90 |
+   | 4 | 14 | Different angle: competitor/market fact (Maps comparison, reviews) or a simple question | ≤ 60 |
+   | 5 | 28 | Polite breakup: "close the file?" + leave the door open | ≤ 50 |
+   Subject lines: 2-5 words, lower-case, specific ("acme homepage on mobile"), no clickbait; follow-ups reply
+   in the same thread. Write in the prospect's language (Hinglish post → simple Hinglish email).
    Use the warm or referral template only for a real, confirmed connection.
 4. **Claim check** every email (see "Before anything is sent"); fix until it passes.
 5. Write `prospects/<slug>/OUTREACH-SEQUENCE.md` (`references/output-format.md`).
@@ -380,7 +440,9 @@ Never disparage a competitor with claims you can't source.
 1. Ask (or read) what happened: last touch, what they said, what was promised, pricing shared, objections.
    Read `{PIPE} show <slug>` and the prospect folder.
 2. Pick the scenario (`references/playbook.md` Step 2): post-meeting, post-demo, post-proposal, ghost recovery
-   or nurture, and its cadence.
+   or nurture, and its cadence. Post-meeting recap goes out within 24 hours: what they said (their words),
+   what you agreed, the next step with a date. Post-proposal: day 2 walkthrough offer, day 5 one question on
+   the option they liked, day 10 a deadline that is real (start slot, price validity), day 20 breakup.
 3. Write the emails plus LinkedIn/phone/SMS touches only where appropriate (SMS only for warm leads who
    shared their number). Reference real details from the conversation.
 4. Claim-check every email.
@@ -403,17 +465,21 @@ Never disparage a competitor with claims you can't source.
 "intro": """You make the user the best-prepared person in the meeting, using what is already known first.""",
 "body": f"""## Steps
 
-1. Load everything known: `{PIPE} show <slug>`, all files in `prospects/<slug>/` (post quote, SITE-AUDIT,
-   research, contacts, outreach, replies the user pasted). Ask for the meeting time, attendees and goal if unknown.
+1. Load everything known: `{PIPE} show <slug>`, `{MEET} list`, all files in `prospects/<slug>/` (`DOSSIER.md`,
+   post quote, SITE-AUDIT, research, contacts, outreach, replies). If there's no dossier, run `{SCAN} <url>` first.
+   Ask for the meeting goal if unknown.
 2. Fill gaps with fresh research on the company and each attendee (`references/playbook.md` Step 1).
 3. Build the brief (Step 2): cheat sheet first; then snapshot, attendees, their original request in their own
    words, audit facts, the conversation so far, qualification status (budget, timeline, decision maker, scope —
    mark unknowns), talking points, 10 discovery questions aimed at the unknowns, objections, landmines,
    success metrics, next steps to propose, and an agenda (Step 3) for 15/30/60 minutes.
-4. Write `prospects/<slug>/MEETING-PREP.md` (`references/output-format.md`, `references/template-meeting-prep.md`).
-5. Record: `{PIPE} attach <slug> prospects/<slug>/MEETING-PREP.md --kind meeting-prep`. If the meeting isn't in
+4. Add a **3-minute screen-share plan**: open their site on a phone view, show the top 2 audit facts, show one
+   competitor doing it better — then ask, don't pitch. End the brief with the exact ask for the meeting's close
+   ("Shall I send a proposal with 2 options by Friday?").
+5. Write `prospects/<slug>/MEETING-PREP.md` (`references/output-format.md`, `references/template-meeting-prep.md`).
+6. Record: `{PIPE} attach <slug> prospects/<slug>/MEETING-PREP.md --kind meeting-prep`. If the meeting isn't in
    the pipeline yet, book it with `sales-book` (`{MEET} book ...`) so reminders and outcomes are tracked.
-6. Give the user the reminder message to send the day before (from `{MEET} list`) and, after the call,
+7. Give the user the reminder message to send the day before (from `{MEET} list`) and, after the call,
    record the outcome: `{MEET} outcome <id> held --notes "<budget, scope, decision date>"`.
 """,
 "refs": [("playbook.md", "research steps, the 11 brief sections, agendas"), ("output-format.md", "MEETING-PREP.md format"),
@@ -432,8 +498,12 @@ Never disparage a competitor with claims you can't source.
    and real case studies — from `IDEAL-CUSTOMER-PROFILE.md`, their notes, or ask. Never invent prices,
    timelines or results: use `[TO CONFIRM]` until the user gives them.
 2. **Write** the 11 sections (Step 2) using `references/template-proposal-template.md`. Three options
-   (e.g. Essential / Growth / Complete) anchored to the stated need; ROI only with explicit, conservative
-   assumptions.
+   (e.g. Essential / Growth / Complete) anchored to the stated need — the middle one is the one you recommend;
+   ROI only with explicit, conservative assumptions. Make it easy to say yes:
+   - Price in their currency (₹ with GST noted for India; $ / £ / A$ abroad), what's included and **not** included.
+   - Payment terms (e.g. 50% to start, 50% on launch, or milestones), timeline per phase, revision rounds.
+   - Validity date (e.g. 14 days) and a start slot if real; acceptance = reply "approved Option B".
+   - Their words from the post/meeting in the "Situation" section, and 2-3 audit facts as the "why".
 3. **Follow-up sequence** after sending (Step 3).
 4. Claim-check the whole proposal and its emails.
 5. Write `prospects/<slug>/CLIENT-PROPOSAL.md` (`references/output-format.md`).
@@ -459,7 +529,10 @@ Never disparage a competitor with claims you can't source.
 3. Industry, competitive and pricing objections (Steps 4-6); prevention tactics (Step 7). For agencies include
    "my nephew/freelancer will do it cheaper", "we tried an agency before", "can you guarantee page 1?"
    (never promise rankings).
-4. Write `OBJECTION-PLAYBOOK.md` in the working-directory root (or `prospects/<slug>/` for one prospect), using
+4. Map each objection to the reply categories `reply_triage.py` detects (`objection_price`, `objection_timing`,
+   `objection_has_vendor`, `not_interested`) so `sales-reply` can use the right answer, and include a short
+   email/WhatsApp version (≤ 60 words) and a Hinglish version for the top 5.
+5. Write `OBJECTION-PLAYBOOK.md` in the working-directory root (or `prospects/<slug>/` for one prospect), using
    `references/template-objection-playbook.md`. Proof points must be real — otherwise `[ADD REAL CUSTOMER RESULT]`.
 """,
 "refs": [("playbook.md", "frameworks, 15 objections, industry/competitive/pricing, prevention"),
@@ -480,8 +553,12 @@ Never disparage a competitor with claims you can't source.
 3. Build the framework (Steps 2-7): firmographics, technographics, behavioural and **intent signals** (the exact
    phrases buyers post, e.g. "need a website for my clinic", "website banwana hai", "koi SEO wala batao"),
    pain map, budget qualifiers, channels, negative ICP, a 0-100 scoring rubric, 2-3 personas, prospecting playbook.
-4. Write `IDEAL-CUSTOMER-PROFILE.md` in the working-directory root (`references/output-format.md`). Include a
-   "Search queries" section with 5-10 X-ray queries for `sales-hunt`.
+4. Write `IDEAL-CUSTOMER-PROFILE.md` in the working-directory root (`references/output-format.md`). Include:
+   - **Hunt settings**: services as codes (`web, app, seo, marketing, design, software, ecommerce, video`),
+     location (city/country, or "remote"), languages (EN/Hinglish), price floor.
+   - **Search queries**: run `{QL} --services <codes> --location <city>` and keep the 5-10 best LinkedIn
+     boolean queries, X-ray queries, subreddits and Google Maps categories for this ICP (add niche words).
+   - **Proof**: 2-3 real results the user can cite (or `[ADD REAL CUSTOMER RESULT]`), so outreach has evidence.
 """,
 "refs": [("playbook.md", "the 7 ICP steps and rubric"), ("output-format.md", "IDEAL-CUSTOMER-PROFILE.md template"), ("rules.md", "quality rules")],
 },
@@ -594,8 +671,8 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
    | 4 | `stale` — idle deal | `sales-followup` (ghost recovery), or move to `nurture` / `lost` |
    | 5 | `new-lead` — best untouched prospects | `sales-audit` + `sales-contacts` → `sales-outreach` |
 3. **Refill the funnel.** If the agenda tip says open leads are low (under 20), run `sales-hunt` for the ICP
-   (`{SRC} hunt ...` with Apify), judge the buyers, then for each: `sales-audit` + `{SRC} research` →
-   `sales-contacts` (verified email) → `sales-outreach` → approve the 5-email sequence.
+   (`{SRC} hunt ...`, plus `{SRC} maps` / `{SRC} producthunt` for outbound), judge the buyers, then for each:
+   `{SCAN} <url> --post-text "<post>"` (dossier + verified email) → `sales-outreach` → approve the 5-email sequence.
 4. **Batch approvals.** Draft every message for the session, claim-check each one, then show them together:
    recipient, subject, body, claim-check result. Queue approved sequences with `{OUT} approve ...`; send one-off
    replies with `{OUT} send ... --send`, or the user sends and you run `{OUT} log ...`. `{OUT} queue` shows what is
@@ -630,7 +707,8 @@ in the next 24 hours · funnel ≥ 20 open leads.
 2. Fill in from files: for prospects in `prospects/*/` not yet in the pipeline, read their files and add them
    (`{PIPE} add ...`, `{PIPE} score ...`) so the report is complete.
 3. Analyse (`references/playbook.md`): pipeline health, stuck deals and why, which sources/queries produce
-   replies and meetings, score distribution, gaps (e.g. no verified contacts).
+   replies and meetings (`by_source`), which sequence step gets replies (`{OUT} queue` statuses), score
+   distribution, gaps (e.g. no verified contacts, sequences not approved, inbox not connected).
 4. Write `SALES-REPORT.md` (`references/output-format.md`): summary, funnel table, top prospects, stale deals,
    source performance, action plan (today / this week / this month) with one concrete action per prospect.
 5. Offer `sales-report-pdf` for a shareable version.

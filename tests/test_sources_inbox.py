@@ -109,8 +109,9 @@ def test_hunt_reports_failed_sources_without_crashing(monkeypatch):
         if "linkedin" in url:
             return 201, LI_ITEMS
         return 500, {"error": {"message": "boom"}}
-    posts, errors = lead_sources.hunt(["web"], call=call)
-    assert len(posts) == 2 and len(errors) == 2 and all("boom" in e for e in errors)
+    posts, errors, ran = lead_sources.hunt(["web"], call=call)
+    assert len(posts) == 2 and ran == ["linkedin:2"] and len(errors) == 4     # hackernews, reddit, google, x failed
+    assert any(e.startswith("hackernews") for e in errors)
 
 
 # ------------------------------------------------------------------ email waterfall

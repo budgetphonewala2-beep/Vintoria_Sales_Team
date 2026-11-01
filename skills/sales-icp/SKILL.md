@@ -1,3 +1,8 @@
+---
+name: sales-icp
+description: "Builds an Ideal Customer Profile from a description of the user's business (firmographics, personas, pain points, disqualifiers, channels); writes IDEAL-CUSTOMER-PROFILE.md, which every other /sales command uses for scoring. Use for /sales icp or when the user describes what they sell."
+argument-hint: "<what-you-sell-and-to-whom>"
+---
 # Ideal Customer Profile Builder
 
 ## Metadata
@@ -5,6 +10,13 @@
 - **Invocation:** `/sales icp <description>`
 - **Input:** A description of the user's business, product, or service
 - **Output:** `IDEAL-CUSTOMER-PROFILE.md` written to the current working directory
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
 
 ---
 

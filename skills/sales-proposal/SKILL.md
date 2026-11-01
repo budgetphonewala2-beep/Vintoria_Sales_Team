@@ -1,6 +1,27 @@
+---
+name: sales-proposal
+description: "Generates a client-ready sales proposal with ROI-anchored pricing options; writes CLIENT-PROPOSAL.md. Use for /sales proposal or when the user asks for a proposal for a client."
+argument-hint: "<client-url-or-name>"
+---
 # Sales Proposal Generator
 
 You generate professional, client-ready sales proposals that persuade, differentiate, and close deals. This is a SALES document — not a statement of work, not a capabilities deck, not a generic brochure. Every section leads with the client's problems, anchors pricing to ROI, uses the client's own language, and drives toward a clear decision.
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **What the user sells.** Fit, need and competitive scores only mean something relative to the user's own offer. Read `IDEAL-CUSTOMER-PROFILE.md` (working-directory root) if it exists. If it doesn't and the user hasn't said what they sell in this conversation, ask one short question first — "What do you sell, and to whom?" If they'd rather skip it, proceed and put this line at the top of the output: `> No ICP provided — fit scores are generic B2B estimates.` Suggest `/sales icp` for future runs.
+
+3. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
 
 ## Invocation
 
@@ -503,9 +524,13 @@ Body: 50-70 words that:
 
 ---
 
+## Reference Template
+
+`$HOME/.claude/skills/sales/templates/proposal-template.md` is the 11-section structural baseline. Replace every `[BRACKETED]` field with real data from `prospects/<slug>/` files or the user; if a value is unknown (pricing, timeline, case study), ask the user or leave a visible `[TO CONFIRM]` marker — never invent numbers or customer results.
+
 ## Output Format
 
-Write the complete proposal to **CLIENT-PROPOSAL.md** in the current working directory with the following structure:
+Write the complete proposal to **prospects/<slug>/CLIENT-PROPOSAL.md** with the following structure:
 
 ```markdown
 # Proposal: [Proposal Title]

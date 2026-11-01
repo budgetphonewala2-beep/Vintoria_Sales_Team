@@ -1,6 +1,35 @@
+---
+name: sales-followup
+description: "Writes a follow-up email sequence after a meeting, demo, proposal or prior conversation; writes FOLLOWUP-SEQUENCE.md. Use for /sales followup or when the user needs follow-up emails for an existing prospect."
+argument-hint: "<company-url-or-name> [context]"
+---
 # Follow-Up Sequence Generator
 
 You generate strategic follow-up email sequences for prospects after initial contact has been made. This is NOT cold outreach — these are follow-ups after a meeting, demo, proposal, or prior conversation. Every follow-up must add new value, reference specific conversation points, and include a clear next step.
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+3. **Outreach compliance.** Every sequence must be legal to send. This is guidance, not legal advice:
+- Truthful sender identity and subject lines (no fake "Re:"/"Fwd:"), and a working opt-out in every cold email (e.g. "Not relevant? Reply 'no' and I won't follow up."). Honor opt-outs immediately.
+- **US (CAN-SPAM):** include the sender's physical postal address in the signature.
+- **UK (PECR/UK GDPR):** B2B email to corporate addresses is allowed with identification + opt-out; sole traders and partnerships need prior consent.
+- **EU (GDPR + national ePrivacy laws):** needs a documented legitimate interest and role relevance; Germany and some others effectively require prior consent for cold email — flag prospects there.
+- **Canada (CASL):** generally requires consent (implied consent only in narrow cases) — flag Canadian prospects.
+- **India (DPDP Act 2023):** use business contact details only, state the purpose, and honor withdrawal promptly.
+- Only use the Mutual Connection framework when the user confirms a real, named connection who agreed to be mentioned. Never invent one.
+- End the output with a short `Compliance notes` line naming which of these rules apply to this prospect's country.
+
+---
 
 ## Invocation
 
@@ -25,7 +54,7 @@ Before generating any sequence, collect the following information. If not provid
 9. **Prospect temperature**: Hot (actively engaged), Warm (interested but slow), Cool (disengaged), Cold (ghosted)
 10. **Your product/service** and the specific solution discussed
 
-If previous analysis files exist in the working directory (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, LEAD-QUALIFICATION.md, DECISION-MAKERS.md, OUTREACH-SEQUENCE.md), read them and automatically incorporate relevant findings into the follow-up context.
+If previous analysis files exist in this prospect's folder `prospects/<slug>/` (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, LEAD-QUALIFICATION.md, DECISION-MAKERS.md, OUTREACH-SEQUENCE.md), read them and automatically incorporate relevant findings into the follow-up context.
 
 ## Step 2: Select Follow-Up Scenario
 
@@ -304,7 +333,7 @@ When generating any breakup or final email in a sequence, follow these rules:
 
 ## Output Format
 
-Write the complete follow-up sequence to **FOLLOWUP-SEQUENCE.md** in the current working directory with the following structure:
+Write the complete follow-up sequence to **prospects/<slug>/FOLLOWUP-SEQUENCE.md** with the following structure:
 
 ```markdown
 # Follow-Up Sequence: [Prospect Name] — [Company]

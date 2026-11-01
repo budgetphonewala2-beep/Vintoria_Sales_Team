@@ -63,6 +63,6 @@ done
 
 echo ""
 echo -e "${GREEN}AI Sales Team has been uninstalled.${NC}"
-echo -e "Python packages (reportlab, beautifulsoup4) were not removed."
-echo -e "To remove them: ${YELLOW}pip3 uninstall reportlab beautifulsoup4${NC}"
+echo -e "Python packages (reportlab) were not removed."
+echo -e "To remove it: ${YELLOW}python -m pip uninstall reportlab${NC}"
 echo ""

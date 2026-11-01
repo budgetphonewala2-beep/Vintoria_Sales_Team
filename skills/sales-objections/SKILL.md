@@ -1,6 +1,25 @@
+---
+name: sales-objections
+description: "Generates a word-for-word objection handling playbook for a topic, industry or specific prospect; writes OBJECTION-PLAYBOOK.md. Use for /sales objections or when the user needs responses to sales objections."
+argument-hint: "<topic-or-industry>"
+---
 # Objection Handling Playbook
 
 You generate comprehensive objection response scripts that salespeople can use in real-time during calls, meetings, and email exchanges. Every objection response is word-for-word ready to use, not a summary or framework description. This playbook covers 15 universal objections, industry-specific objections, competitive objections, and pricing deep-dives.
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
 
 ## Invocation
 
@@ -21,7 +40,7 @@ Before generating the playbook, collect or infer:
 5. **Average deal size**: Affects how pricing objections are handled
 6. **Your strongest proof points**: Best case studies, metrics, and testimonials available
 
-If previous analysis files exist in the working directory (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, COMPETITIVE-INTEL.md), read them and automatically customize the playbook to the specific prospect.
+If previous analysis files exist in this prospect's folder `prospects/<slug>/` (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, COMPETITIVE-INTEL.md), read them and automatically customize the playbook to the specific prospect.
 
 If the user provides a URL instead of a topic, fetch the website using WebFetch and determine the industry, company size, and likely objections based on the research.
 
@@ -504,6 +523,10 @@ Customized For: [Prospect company if applicable]
 
 ---
 
+## Reference Template
+
+Use `$HOME/.claude/skills/sales/templates/objection-playbook.md` (15 universal objections) as the structural baseline, then tailor every response to the user's offer and the prospect/industry given.
+
 ## Rules and Constraints
 
 1. **Word-for-word scripts.** Every response must be ready to speak aloud or copy-paste into an email. No summaries, frameworks-only, or "something like this" approximations.
@@ -513,6 +536,6 @@ Customized For: [Prospect company if applicable]
 5. **Both frameworks for every objection.** Always provide both FFR and ABC versions so the salesperson can choose the one that fits the moment and their style.
 6. **Follow-up questions are mandatory.** An objection response without a follow-up question leaves the conversation dead. Every response must continue the dialogue.
 7. **Include walk-away criteria.** Real salespeople need to know when to stop pushing. Every objection must include guidance on when the objection is genuine and the deal should be deprioritized.
-8. **Proof points must be specific.** "Customers love us" is not a proof point. "[Company Name] increased [metric] by [X%] in [timeframe]" is a proof point. If specific customer data is not available, generate realistic placeholder examples and note that they should be replaced with real data.
-9. **If previous analysis files exist** in the working directory, incorporate competitive intelligence, prospect challenges, and qualification data into the objection responses.
+8. **Proof points must be specific.** "Customers love us" is not a proof point. "[Company Name] increased [metric] by [X%] in [timeframe]" is a proof point. If specific customer data is not available, write the sentence with a clearly visible `[ADD REAL CUSTOMER RESULT: metric, timeframe, customer type]` marker. Never invent a customer name or number — fabricated proof points destroy credibility the moment a prospect checks.
+9. **If previous analysis files exist** in this prospect's folder `prospects/<slug>/`, incorporate competitive intelligence, prospect challenges, and qualification data into the objection responses.
 10. **Natural language.** Scripts should sound like a real human talking, not a sales robot. Use contractions, conversational transitions, and genuine empathy.

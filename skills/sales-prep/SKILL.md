@@ -1,6 +1,29 @@
+---
+name: sales-prep
+description: "Builds a meeting preparation brief for an upcoming prospect call: company context, attendee profiles, talking points, discovery questions, objections, cheat sheet; writes MEETING-PREP.md. Use for /sales prep or before a sales meeting."
+argument-hint: "<company-url>"
+---
 # Meeting Preparation Brief
 
 You generate comprehensive meeting preparation briefs that give salespeople everything they need before walking into a prospect meeting. The brief combines company research, attendee intelligence, competitive context, and tactical preparation into a single actionable document.
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **What the user sells.** Fit, need and competitive scores only mean something relative to the user's own offer. Read `IDEAL-CUSTOMER-PROFILE.md` (working-directory root) if it exists. If it doesn't and the user hasn't said what they sell in this conversation, ask one short question first — "What do you sell, and to whom?" If they'd rather skip it, proceed and put this line at the top of the output: `> No ICP provided — fit scores are generic B2B estimates.` Suggest `/sales icp` for future runs.
+
+3. **Helper scripts** are installed in `$HOME/.claude/skills/sales/scripts/`. Run them with `python` on Windows (where `python3` is often a Microsoft Store stub) or `python3` on macOS/Linux — use whichever prints a real version for `--version`. Example: `python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url https://acme.com`. Script output is heuristic: treat it as leads to verify, not facts.
+
+4. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
 
 ## Invocation
 
@@ -255,6 +278,10 @@ For each, provide:
 
 ---
 
+## Reference Template
+
+`$HOME/.claude/skills/sales/templates/meeting-prep.md` shows the expected brief structure. Fill it with this prospect's real data; omit sections you have no evidence for rather than padding them.
+
 ## Step 3: Agenda Template
 
 Generate a suggested meeting structure based on the meeting type and duration:
@@ -282,7 +309,7 @@ Generate a suggested meeting structure based on the meeting type and duration:
 
 ## Output Format
 
-Write the complete meeting preparation brief to **MEETING-PREP.md** in the current working directory with the following structure:
+Write the complete meeting preparation brief to **prospects/<slug>/MEETING-PREP.md** with the following structure:
 
 ```markdown
 # Meeting Preparation Brief: [Company Name]
@@ -380,7 +407,7 @@ Prepared By: AI Sales Assistant
 3. **Respect the prospect's intelligence.** Do not include manipulative tactics, NLP tricks, or psychological pressure techniques. This is preparation for a professional business conversation.
 4. **Actionable over comprehensive.** A salesperson should be able to read the Cheat Sheet in 60 seconds and walk into the meeting confident. Depth is in the supporting sections.
 5. **If attendee names are not provided**, still generate the Attendee Profiles section using likely attendees based on the meeting type and company size. Label these as "Predicted Attendees" and note the confidence level.
-6. **If previous analysis files exist** in the working directory (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, LEAD-QUALIFICATION.md, COMPETITIVE-INTEL.md, DECISION-MAKERS.md), read them and incorporate their findings. Do not re-research what has already been analyzed.
+6. **If previous analysis files exist** in this prospect's folder `prospects/<slug>/` (PROSPECT-ANALYSIS.md, COMPANY-RESEARCH.md, LEAD-QUALIFICATION.md, COMPETITIVE-INTEL.md, DECISION-MAKERS.md), read them and incorporate their findings. Do not re-research what has already been analyzed.
 7. **Time-sensitive accuracy.** Use WebSearch to verify any information that may have changed recently (leadership, funding, product launches). Note the date of each source.
 8. **The Cheat Sheet is the most important section.** If the salesperson reads nothing else, the Cheat Sheet alone should make them meaningfully more prepared than walking in blind.
 9. **Discovery questions must be genuinely curious.** They should be questions the salesperson actually wants to know the answer to — not leading questions designed to manipulate the prospect into a predetermined conclusion.

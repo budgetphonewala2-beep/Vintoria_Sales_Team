@@ -1,11 +1,34 @@
+---
+name: sales-contacts
+description: "Maps the buying committee at a prospect company: decision makers, roles, personalization anchors, warm paths and multi-threading plan; writes DECISION-MAKERS.md. Use for /sales contacts or when the user asks who to contact at a company."
+argument-hint: "<company-url>"
+---
 # Decision Maker Intelligence & Contact Strategy
 
 You are the decision maker intelligence engine for `/sales contacts <url>`. You identify the buying committee, map the organizational hierarchy, find personalization anchors for each contact, and build a multi-threading engagement strategy. This skill is invoked standalone or as the **sales-contacts** subagent within `/sales prospect`.
 
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **What the user sells.** Fit, need and competitive scores only mean something relative to the user's own offer. Read `IDEAL-CUSTOMER-PROFILE.md` (working-directory root) if it exists. If it doesn't and the user hasn't said what they sell in this conversation, ask one short question first — "What do you sell, and to whom?" If they'd rather skip it, proceed and put this line at the top of the output: `> No ICP provided — fit scores are generic B2B estimates.` Suggest `/sales icp` for future runs.
+
+3. **Helper scripts** are installed in `$HOME/.claude/skills/sales/scripts/`. Run them with `python` on Windows (where `python3` is often a Microsoft Store stub) or `python3` on macOS/Linux — use whichever prints a real version for `--version`. Example: `python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url https://acme.com`. Script output is heuristic: treat it as leads to verify, not facts.
+
+4. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
+
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `/sales contacts <url>`. Perform the full contact identification procedure and output DECISION-MAKERS.md.
-- **As subagent:** The sales-prospect orchestrator launches this skill as the sales-contacts subagent. You receive a discovery briefing with pre-fetched page content. Use it to skip redundant fetches. Return a Contact Access Score (0-100) with structured data.
+- **Within `/sales prospect`:** this work is done by the dedicated `sales-contacts` agent (`~/.claude/agents/sales-contacts.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 
@@ -29,6 +52,16 @@ Use `WebFetch` to fetch these pages (skip any already provided in the discovery 
 3. Capture bio text for personalization research
 4. Note email patterns (e.g., firstname@company.com vs f.lastname@company.com)
 5. Record profile photos presence (helps confirm identity on LinkedIn)
+
+### 1.1b Automated First Pass (optional, fast)
+
+Run the contact finder to pull names/titles from the team, about and leadership pages in one go:
+
+```bash
+python "$HOME/.claude/skills/sales/scripts/contact_finder.py" --url <url>
+```
+
+(`python3` on macOS/Linux.) Each contact comes back with `seniority`, `department`, a title-based `buying_role` guess and a LinkedIn URL when one is in that person's own card. Use it as a starting list: confirm current roles via LinkedIn/WebSearch before putting anyone in the buying committee (team pages go stale), and don't treat `buying_role` as fact.
 
 ### 1.2 LinkedIn Research
 
@@ -432,7 +465,7 @@ Multi-threading means engaging multiple stakeholders within the prospect organiz
 
 ## Output Format: DECISION-MAKERS.md
 
-Write the full output to `DECISION-MAKERS.md` in the current directory:
+Write the full output to `prospects/<slug>/DECISION-MAKERS.md`:
 
 ```markdown
 # Decision Maker Intelligence: [Company Name]
@@ -599,7 +632,7 @@ Email Pattern: [pattern]
 Recommended First Contact: [Name] ([Role])
 Recommended Channel: [Email/LinkedIn/Both]
 
-Full report saved to: DECISION-MAKERS.md
+Full report saved to: prospects/<slug>/DECISION-MAKERS.md
 ```
 
 ---

@@ -1,326 +1,280 @@
 #!/usr/bin/env python3
 """
 Lead Scorer — AI Sales Team for Claude Code
-Implements BANT + MEDDIC scoring algorithm for lead qualification.
+Deterministic BANT (0-100) + MEDDIC completeness scoring from structured signals.
+Use it as a cross-check on the qualitative BANT assessment in /sales qualify.
+
+Grade scale (shared by every skill and the PDF report):
+    90-100 A+  Hot Lead        75-89 A  Strong        60-74 B  Qualified
+    40-59  C   Lukewarm        0-39  D  Poor Fit
 
 Usage:
-    python3 lead_scorer.py <input.json>
-    cat input.json | python3 lead_scorer.py
-    python3 lead_scorer.py --help
+    python lead_scorer.py input.json
+    cat input.json | python lead_scorer.py
+    python lead_scorer.py --example        # print a sample input file
+
+Input JSON (every field optional; omit what you don't know — do NOT guess):
+{
+  "company": "Acme",
+  "budget_signals":    {"funding_amount": "$12M", "employee_count": "120",
+                        "pricing_visible": true, "tech_spend_indicators": ["HubSpot", "Segment"]},
+  "authority_signals": {"decision_makers_found": 3, "c_suite_identified": true, "org_chart_mapped": false},
+  "need_signals":      {"pain_points_detected": 2, "job_posts_relevant": true,
+                        "reviews_mention_pain": false, "competitor_complaints": 1},
+  "timeline_signals":  {"hiring_for_role": true, "recent_funding": true,
+                        "contract_renewal": false, "urgency_mentions": 1}
+}
 """
 
 import argparse
 import json
-import math
+import re
 import sys
 
+EXPECTED_FIELDS = {
+    "budget_signals": ["funding_amount", "employee_count", "pricing_visible", "tech_spend_indicators"],
+    "authority_signals": ["decision_makers_found", "c_suite_identified", "org_chart_mapped"],
+    "need_signals": ["pain_points_detected", "job_posts_relevant", "reviews_mention_pain", "competitor_complaints"],
+    "timeline_signals": ["hiring_for_role", "recent_funding", "contract_renewal", "urgency_mentions"],
+}
+
+GRADES = [  # (min score, grade, label, action)
+    (90, "A+", "Hot Lead", "Prioritize immediately: multi-thread outreach to the buying committee within 24 hours."),
+    (75, "A", "Strong Prospect", "Schedule a discovery call — confirm budget and timeline early."),
+    (60, "B", "Qualified Lead", "Run the standard outreach sequence; strengthen the weakest MEDDIC area."),
+    (40, "C", "Lukewarm", "Nurture with value-add content; fill research gaps before hard selling."),
+    (0, "D", "Poor Fit", "Deprioritize — long-term nurture only. Revisit in 90 days or on a trigger event."),
+]
+
+
 # ---------------------------------------------------------------------------
-# BANT Scoring (each dimension 0-25, total 0-100)
+# Input coercion — LLM-produced JSON often has "$10M", "120+", "yes"
 # ---------------------------------------------------------------------------
 
-def score_budget(signals):
-    """Score budget signals (0-25)."""
+_MULT = {"k": 1e3, "thousand": 1e3, "m": 1e6, "mm": 1e6, "million": 1e6,
+         "b": 1e9, "bn": 1e9, "billion": 1e9, "cr": 1e7, "crore": 1e7,
+         "l": 1e5, "lakh": 1e5, "lac": 1e5}
+
+
+def to_number(value):
+    """'$12.5M' -> 12500000, '120+' -> 120, '50-200' -> 50 (conservative), None/'' -> 0."""
+    if value is None or isinstance(value, bool):
+        return 0
+    if isinstance(value, (int, float)):
+        return max(0, value)
+    s = str(value).strip().lower().replace(",", "")
+    m = re.search(r"(\d+(?:\.\d+)?)\s*(thousand|million|billion|crore|lakh|lac|mm|bn|cr|k|m|b|l)?\b", s)
+    if not m:
+        return 0
+    return float(m.group(1)) * _MULT.get(m.group(2) or "", 1)
+
+
+def to_bool(value):
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value > 0
+    if isinstance(value, str):
+        return value.strip().lower() in ("true", "yes", "y", "1", "found", "confirmed")
+    if isinstance(value, (list, dict)):
+        return len(value) > 0
+    return False
+
+
+def to_list(value):
+    if isinstance(value, list):
+        return [v for v in value if v]
+    if isinstance(value, str) and value.strip():
+        return [v.strip() for v in value.split(",") if v.strip()]
+    return []
+
+
+# ---------------------------------------------------------------------------
+# BANT (each 0-25)
+# ---------------------------------------------------------------------------
+
+def score_budget(s):
     score = 0
-    funding = signals.get("funding_amount", 0)
-    if funding >= 50_000_000:
-        score += 10
-    elif funding >= 10_000_000:
-        score += 8
-    elif funding >= 5_000_000:
-        score += 6
-    elif funding >= 1_000_000:
-        score += 4
-    elif funding > 0:
-        score += 2
-
-    emp_count = signals.get("employee_count", 0)
-    if emp_count >= 500:
-        score += 5
-    elif emp_count >= 100:
-        score += 4
-    elif emp_count >= 50:
+    funding = to_number(s.get("funding_amount"))
+    score += 10 if funding >= 50e6 else 8 if funding >= 10e6 else 6 if funding >= 5e6 else \
+        4 if funding >= 1e6 else 2 if funding > 0 else 0
+    emp = to_number(s.get("employee_count"))
+    score += 5 if emp >= 500 else 4 if emp >= 100 else 3 if emp >= 50 else 2 if emp >= 10 else 1 if emp > 0 else 0
+    if to_bool(s.get("pricing_visible")):
         score += 3
-    elif emp_count >= 10:
-        score += 2
-    elif emp_count > 0:
-        score += 1
-
-    if signals.get("pricing_visible"):
-        score += 3
-
-    tech_spend = signals.get("tech_spend_indicators", [])
-    score += min(len(tech_spend) * 2, 7)
-
+    score += min(len(to_list(s.get("tech_spend_indicators"))) * 2, 7)
     return min(score, 25)
 
 
-def score_authority(signals):
-    """Score authority signals (0-25)."""
+def score_authority(s):
     score = 0
-    dm_count = signals.get("decision_makers_found", 0)
-    if dm_count >= 5:
-        score += 10
-    elif dm_count >= 3:
+    dm = to_number(s.get("decision_makers_found"))
+    score += 10 if dm >= 5 else 8 if dm >= 3 else 5 if dm >= 1 else 0
+    if to_bool(s.get("c_suite_identified")):
         score += 8
-    elif dm_count >= 1:
-        score += 5
-
-    if signals.get("c_suite_identified"):
-        score += 8
-
-    if signals.get("org_chart_mapped"):
+    if to_bool(s.get("org_chart_mapped")):
         score += 7
-    elif dm_count > 1:
+    elif dm > 1:
         score += 3
-
     return min(score, 25)
 
 
-def score_need(signals):
-    """Score need signals (0-25)."""
+def score_need(s):
     score = 0
-    pain_points = signals.get("pain_points_detected", 0)
-    if pain_points >= 5:
-        score += 8
-    elif pain_points >= 3:
+    pains = to_number(s.get("pain_points_detected"))
+    score += 8 if pains >= 5 else 6 if pains >= 3 else 3 if pains >= 1 else 0
+    if to_bool(s.get("job_posts_relevant")):
         score += 6
-    elif pain_points >= 1:
-        score += 3
-
-    if signals.get("job_posts_relevant"):
-        score += 6
-
-    if signals.get("reviews_mention_pain"):
+    if to_bool(s.get("reviews_mention_pain")):
         score += 5
-
-    complaints = signals.get("competitor_complaints", 0)
-    if complaints >= 3:
-        score += 6
-    elif complaints >= 1:
-        score += 4
-
+    complaints = to_number(s.get("competitor_complaints"))
+    score += 6 if complaints >= 3 else 4 if complaints >= 1 else 0
     return min(score, 25)
 
 
-def score_timeline(signals):
-    """Score timeline signals (0-25)."""
+def score_timeline(s):
     score = 0
-    if signals.get("hiring_for_role"):
+    if to_bool(s.get("hiring_for_role")):
         score += 7
-
-    if signals.get("recent_funding"):
+    if to_bool(s.get("recent_funding")):
         score += 7
-
-    if signals.get("contract_renewal"):
+    if to_bool(s.get("contract_renewal")):
         score += 6
-
-    urgency = signals.get("urgency_mentions", 0)
-    if urgency >= 3:
-        score += 5
-    elif urgency >= 1:
-        score += 3
-
+    urgency = to_number(s.get("urgency_mentions"))
+    score += 5 if urgency >= 3 else 3 if urgency >= 1 else 0
     return min(score, 25)
 
 
 # ---------------------------------------------------------------------------
-# MEDDIC Completeness Assessment
+# MEDDIC completeness (% of evidence present per element)
 # ---------------------------------------------------------------------------
+
+def _pct(flags):
+    return int(round(sum(1 for f in flags if f) / len(flags) * 100))
+
 
 def assess_meddic(data):
-    """
-    Assess MEDDIC completeness as a percentage for each dimension.
-    MEDDIC: Metrics, Economic Buyer, Decision Criteria, Decision Process,
-             Identify Pain, Champion
-    """
-    budget = data.get("budget_signals", {})
-    authority = data.get("authority_signals", {})
-    need = data.get("need_signals", {})
-    timeline = data.get("timeline_signals", {})
-
-    metrics_signals = [
-        budget.get("funding_amount", 0) > 0,
-        budget.get("employee_count", 0) > 0,
-        need.get("pain_points_detected", 0) > 0,
-    ]
-    metrics = int(sum(metrics_signals) / len(metrics_signals) * 100)
-
-    econ_buyer_signals = [
-        authority.get("c_suite_identified", False),
-        authority.get("decision_makers_found", 0) >= 1,
-    ]
-    economic_buyer = int(sum(econ_buyer_signals) / len(econ_buyer_signals) * 100)
-
-    decision_criteria_signals = [
-        budget.get("pricing_visible", False),
-        len(budget.get("tech_spend_indicators", [])) > 0,
-        need.get("reviews_mention_pain", False),
-    ]
-    decision_criteria = int(sum(decision_criteria_signals) / len(decision_criteria_signals) * 100)
-
-    decision_process_signals = [
-        authority.get("org_chart_mapped", False),
-        authority.get("decision_makers_found", 0) >= 2,
-        timeline.get("contract_renewal", False),
-    ]
-    decision_process = int(sum(decision_process_signals) / len(decision_process_signals) * 100)
-
-    pain_signals = [
-        need.get("pain_points_detected", 0) >= 1,
-        need.get("job_posts_relevant", False),
-        need.get("competitor_complaints", 0) >= 1,
-    ]
-    identify_pain = int(sum(pain_signals) / len(pain_signals) * 100)
-
-    champion_signals = [
-        authority.get("decision_makers_found", 0) >= 1,
-        need.get("reviews_mention_pain", False),
-        timeline.get("hiring_for_role", False),
-    ]
-    champion = int(sum(champion_signals) / len(champion_signals) * 100)
-
-    overall = int((metrics + economic_buyer + decision_criteria +
-                   decision_process + identify_pain + champion) / 6)
-
-    return {
-        "metrics": metrics,
-        "economic_buyer": economic_buyer,
-        "decision_criteria": decision_criteria,
-        "decision_process": decision_process,
-        "identify_pain": identify_pain,
-        "champion": champion,
-        "overall": overall,
+    b = data.get("budget_signals", {}) or {}
+    a = data.get("authority_signals", {}) or {}
+    n = data.get("need_signals", {}) or {}
+    t = data.get("timeline_signals", {}) or {}
+    dm = to_number(a.get("decision_makers_found"))
+    m = {
+        "metrics": _pct([to_number(b.get("funding_amount")) > 0, to_number(b.get("employee_count")) > 0,
+                         to_number(n.get("pain_points_detected")) > 0]),
+        "economic_buyer": _pct([to_bool(a.get("c_suite_identified")), dm >= 1]),
+        "decision_criteria": _pct([to_bool(b.get("pricing_visible")), len(to_list(b.get("tech_spend_indicators"))) > 0,
+                                   to_bool(n.get("reviews_mention_pain"))]),
+        "decision_process": _pct([to_bool(a.get("org_chart_mapped")), dm >= 2, to_bool(t.get("contract_renewal"))]),
+        "identify_pain": _pct([to_number(n.get("pain_points_detected")) >= 1, to_bool(n.get("job_posts_relevant")),
+                               to_number(n.get("competitor_complaints")) >= 1]),
+        "champion": _pct([dm >= 1, to_bool(n.get("reviews_mention_pain")), to_bool(t.get("hiring_for_role"))]),
     }
+    m["overall"] = int(round(sum(m.values()) / 6))
+    return m
 
 
 # ---------------------------------------------------------------------------
-# Grading + Recommendations
+# Grade, confidence, action
 # ---------------------------------------------------------------------------
 
-def compute_grade(score):
-    """Return letter grade based on total score."""
-    if score >= 75:
-        return "A"
-    elif score >= 50:
-        return "B"
-    elif score >= 25:
-        return "C"
-    return "D"
+def grade_for(score):
+    for floor, grade, label, action in GRADES:
+        if score >= floor:
+            return grade, label, action
+    return GRADES[-1][1:]
 
 
 def compute_confidence(data):
-    """Compute a confidence level based on data completeness."""
-    total_fields = 0
-    filled_fields = 0
-    for section in ("budget_signals", "authority_signals", "need_signals", "timeline_signals"):
-        signals = data.get(section, {})
-        for key, val in signals.items():
-            total_fields += 1
-            if isinstance(val, bool) and val:
-                filled_fields += 1
-            elif isinstance(val, (int, float)) and val > 0:
-                filled_fields += 1
-            elif isinstance(val, list) and len(val) > 0:
-                filled_fields += 1
-            elif isinstance(val, str) and val:
-                filled_fields += 1
-    if total_fields == 0:
-        return "low"
-    ratio = filled_fields / total_fields
-    if ratio >= 0.7:
-        return "high"
-    elif ratio >= 0.4:
-        return "medium"
-    return "low"
+    """How much of the expected evidence was actually researched (field present and not null).
+    A researched 'false' counts as known — confidence is about coverage, not positivity."""
+    total = known = 0
+    for section, fields in EXPECTED_FIELDS.items():
+        sec = data.get(section, {}) or {}
+        for f in fields:
+            total += 1
+            if f in sec and sec[f] is not None and sec[f] != "":
+                known += 1
+    ratio = known / total
+    level = "high" if ratio >= 0.75 else "medium" if ratio >= 0.45 else "low"
+    return level, int(round(ratio * 100))
 
 
-def recommend_action(grade, meddic):
-    """Recommend next action based on grade and MEDDIC gaps."""
-    if grade == "A":
-        return "Schedule discovery call — high-priority prospect. Focus on confirming budget and timeline."
-    elif grade == "B":
-        weakest = min(meddic.items(), key=lambda x: x[1] if x[0] != "overall" else 999)
-        return f"Nurture with targeted content — strengthen {weakest[0].replace('_', ' ')} ({weakest[1]}% complete). Build champion relationship."
-    elif grade == "C":
-        gaps = [k for k, v in meddic.items() if v < 50 and k != "overall"]
-        gap_str = ", ".join(g.replace("_", " ") for g in gaps[:3])
-        return f"Research needed — fill gaps in: {gap_str}. Consider multi-threaded outreach."
-    return "Low priority — add to long-term nurture sequence. Revisit in 90 days."
+def recommend_action(grade, base_action, meddic):
+    gaps = sorted(((k, v) for k, v in meddic.items() if k != "overall"), key=lambda x: x[1])
+    weakest = [k.replace("_", " ") for k, v in gaps if v < 50][:3]
+    if grade in ("B", "C") and weakest:
+        return f"{base_action} Biggest MEDDIC gaps: {', '.join(weakest)}."
+    return base_action
 
-
-# ---------------------------------------------------------------------------
-# Main scoring pipeline
-# ---------------------------------------------------------------------------
 
 def score_lead(data):
-    """Run full BANT + MEDDIC scoring on input data."""
-    budget = data.get("budget_signals", {})
-    authority = data.get("authority_signals", {})
-    need = data.get("need_signals", {})
-    timeline = data.get("timeline_signals", {})
-
-    b_score = score_budget(budget)
-    a_score = score_authority(authority)
-    n_score = score_need(need)
-    t_score = score_timeline(timeline)
-    total = b_score + a_score + n_score + t_score
-
-    grade = compute_grade(total)
+    b = score_budget(data.get("budget_signals", {}) or {})
+    a = score_authority(data.get("authority_signals", {}) or {})
+    n = score_need(data.get("need_signals", {}) or {})
+    t = score_timeline(data.get("timeline_signals", {}) or {})
+    total = b + a + n + t
+    grade, label, base_action = grade_for(total)
     meddic = assess_meddic(data)
-    confidence = compute_confidence(data)
-    action = recommend_action(grade, meddic)
-
+    confidence, coverage = compute_confidence(data)
     return {
         "company": data.get("company", "Unknown"),
         "bant_score": total,
         "bant_breakdown": {
-            "budget": {"score": b_score, "max": 25},
-            "authority": {"score": a_score, "max": 25},
-            "need": {"score": n_score, "max": 25},
-            "timeline": {"score": t_score, "max": 25},
+            "budget": {"score": b, "max": 25},
+            "authority": {"score": a, "max": 25},
+            "need": {"score": n, "max": 25},
+            "timeline": {"score": t, "max": 25},
         },
         "meddic_completeness": meddic,
         "lead_grade": grade,
+        "grade_label": label,
         "confidence_level": confidence,
-        "recommended_action": action,
+        "data_coverage_pct": coverage,
+        "recommended_action": recommend_action(grade, base_action, meddic),
     }
 
 
-# ---------------------------------------------------------------------------
-# CLI
-# ---------------------------------------------------------------------------
+EXAMPLE = {
+    "company": "Acme",
+    "budget_signals": {"funding_amount": "$12M", "employee_count": "120", "pricing_visible": True,
+                       "tech_spend_indicators": ["HubSpot", "Segment"]},
+    "authority_signals": {"decision_makers_found": 3, "c_suite_identified": True, "org_chart_mapped": False},
+    "need_signals": {"pain_points_detected": 2, "job_posts_relevant": True, "reviews_mention_pain": False,
+                     "competitor_complaints": 1},
+    "timeline_signals": {"hiring_for_role": True, "recent_funding": True, "contract_renewal": None,
+                         "urgency_mentions": 1},
+}
+
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Lead Scorer — BANT + MEDDIC scoring algorithm for lead qualification.",
-        epilog="Example: python3 lead_scorer.py input.json",
+        description="Lead Scorer — BANT + MEDDIC scoring for lead qualification.",
+        epilog="Example: python lead_scorer.py input.json   (see --example for the input format)",
     )
-    parser.add_argument("input_file", nargs="?", help="Path to input JSON file (reads stdin if omitted)")
+    parser.add_argument("input_file", nargs="?", help="Path to input JSON (reads stdin if omitted)")
+    parser.add_argument("--example", action="store_true", help="Print an example input JSON and exit")
     args = parser.parse_args()
 
-    if args.input_file:
-        try:
-            with open(args.input_file, "r") as f:
+    if args.example:
+        print(json.dumps(EXAMPLE, indent=2))
+        return
+    try:
+        if args.input_file:
+            with open(args.input_file, "r", encoding="utf-8-sig") as f:  # tolerate BOM (PowerShell)
                 data = json.load(f)
-        except FileNotFoundError:
-            print(f"Error: File not found: {args.input_file}", file=sys.stderr)
-            sys.exit(1)
-        except json.JSONDecodeError as exc:
-            print(f"Error: Invalid JSON in {args.input_file}: {exc}", file=sys.stderr)
-            sys.exit(1)
-    else:
-        if sys.stdin.isatty():
-            print("Error: No input file provided and no stdin data.", file=sys.stderr)
-            print("Usage: python3 lead_scorer.py <input.json>", file=sys.stderr)
-            sys.exit(1)
-        try:
-            data = json.load(sys.stdin)
-        except json.JSONDecodeError as exc:
-            print(f"Error: Invalid JSON from stdin: {exc}", file=sys.stderr)
-            sys.exit(1)
+        else:
+            if sys.stdin.isatty():
+                parser.error("no input file given and nothing on stdin (try --example)")
+            data = json.loads(sys.stdin.read().lstrip("Feff"))
+    except FileNotFoundError:
+        sys.exit(f"Error: file not found: {args.input_file}")
+    except json.JSONDecodeError as exc:
+        sys.exit(f"Error: invalid JSON: {exc}")
+    if not isinstance(data, dict):
+        sys.exit("Error: input must be a JSON object")
 
-    result = score_lead(data)
-    print(json.dumps(result, indent=2, ensure_ascii=False))
+    print(json.dumps(score_lead(data), indent=2, ensure_ascii=False))
 
 
 if __name__ == "__main__":

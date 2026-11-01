@@ -1,11 +1,44 @@
+---
+name: sales-outreach
+description: "Writes a personalized, compliant cold outreach sequence (email + LinkedIn touches) for a prospect; writes OUTREACH-SEQUENCE.md. Use for /sales outreach or when the user asks for cold emails to a company or person."
+argument-hint: "<company-url-or-name>"
+---
 # Cold Outreach Sequence Generator
 
 You are the cold outreach engine for `/sales outreach <prospect>`. You generate complete, personalized, ready-to-send cold email sequences with integrated LinkedIn touchpoints. Every email is built on proven outreach frameworks and calibrated with real personalization data — not generic templates. This skill is invoked standalone or as the **sales-strategy** subagent within `/sales prospect`.
 
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **What the user sells.** Fit, need and competitive scores only mean something relative to the user's own offer. Read `IDEAL-CUSTOMER-PROFILE.md` (working-directory root) if it exists. If it doesn't and the user hasn't said what they sell in this conversation, ask one short question first — "What do you sell, and to whom?" If they'd rather skip it, proceed and put this line at the top of the output: `> No ICP provided — fit scores are generic B2B estimates.` Suggest `/sales icp` for future runs.
+
+3. **Helper scripts** are installed in `$HOME/.claude/skills/sales/scripts/`. Run them with `python` on Windows (where `python3` is often a Microsoft Store stub) or `python3` on macOS/Linux — use whichever prints a real version for `--version`. Example: `python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url https://acme.com`. Script output is heuristic: treat it as leads to verify, not facts.
+
+4. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+5. **Outreach compliance.** Every sequence must be legal to send. This is guidance, not legal advice:
+- Truthful sender identity and subject lines (no fake "Re:"/"Fwd:"), and a working opt-out in every cold email (e.g. "Not relevant? Reply 'no' and I won't follow up."). Honor opt-outs immediately.
+- **US (CAN-SPAM):** include the sender's physical postal address in the signature.
+- **UK (PECR/UK GDPR):** B2B email to corporate addresses is allowed with identification + opt-out; sole traders and partnerships need prior consent.
+- **EU (GDPR + national ePrivacy laws):** needs a documented legitimate interest and role relevance; Germany and some others effectively require prior consent for cold email — flag prospects there.
+- **Canada (CASL):** generally requires consent (implied consent only in narrow cases) — flag Canadian prospects.
+- **India (DPDP Act 2023):** use business contact details only, state the purpose, and honor withdrawal promptly.
+- Only use the Mutual Connection framework when the user confirms a real, named connection who agreed to be mentioned. Never invent one.
+- End the output with a short `Compliance notes` line naming which of these rules apply to this prospect's country.
+
+---
+
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `/sales outreach <prospect>`. The `<prospect>` can be a URL, company name, or reference to an existing analysis. Perform personalization research and output OUTREACH-SEQUENCE.md.
-- **As subagent:** The sales-prospect orchestrator launches this skill as the sales-strategy subagent. You receive a discovery briefing with pre-fetched page content. Use it to skip redundant research. Return an Outreach Readiness Score (0-100) with the full sequence.
+- **Within `/sales prospect`:** this work is done by the dedicated `sales-strategy` agent (`~/.claude/agents/sales-strategy.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 
@@ -183,6 +216,7 @@ Select the best framework based on the personalization research results:
 ```
 
 **When to use:**
+- ONLY when the user has confirmed a real, named mutual connection who agreed to be mentioned — or a verifiable shared community/background (same alma mater, same public community). Never infer or invent a connection; if unsure, ask the user or pick another framework.
 - You have a genuine mutual connection, shared community, or common background
 - The shared element is meaningful (not just "we're both on LinkedIn")
 - Best for building trust quickly with senior decision makers
@@ -199,7 +233,7 @@ Do you have a hot company trigger event?
   YES → Use Framework 3 (Trigger Event)
   NO ↓
 
-Do you have a mutual connection or shared community?
+Has the USER confirmed a real mutual connection or shared community?
   YES → Use Framework 4 (Mutual Connection)
   NO ↓
 
@@ -527,7 +561,8 @@ Include these instructions in the output:
 | **Email warmup** | Warm new email addresses for 2-3 weeks before cold outreach |
 | **Domain setup** | Use a separate sending domain (e.g., mail.company.com) to protect primary domain reputation |
 | **Authentication** | Ensure SPF, DKIM, and DMARC are configured |
-| **Unsubscribe** | Include an unsubscribe option (CAN-SPAM compliance) |
+| **Opt-out** | Every cold email ends with a simple opt-out line and honors it (CAN-SPAM, PECR, GDPR, CASL, DPDP — see Shared Conventions) |
+| **Sender identity** | Real name, company and — for US recipients — a physical postal address in the signature |
 | **Bounce handling** | Remove bounced addresses immediately |
 | **Spam testing** | Test emails through mail-tester.com before sending |
 
@@ -566,9 +601,16 @@ When running as a subagent, calculate the Outreach Readiness Score:
 
 ---
 
+## Reference Templates
+
+Structural references installed with this skill (read the one that fits; personalize everything — never send them verbatim):
+- Cold, 5 emails: `$HOME/.claude/skills/sales/templates/outreach-cold.md`
+- Warm intro, 3 emails: `$HOME/.claude/skills/sales/templates/outreach-warm.md`
+- Referral, 3 emails: `$HOME/.claude/skills/sales/templates/outreach-referral.md`
+
 ## Output Format: OUTREACH-SEQUENCE.md
 
-Write the full output to `OUTREACH-SEQUENCE.md` in the current directory:
+Write the full output to `prospects/<slug>/OUTREACH-SEQUENCE.md`:
 
 ```markdown
 # Cold Outreach Sequence: [Company Name]
@@ -786,7 +828,7 @@ LinkedIn Touchpoints: 4 (Day 0, 5, 10, 18)
 Best Send Time: [day/time recommendation]
 Email Pattern: [detected pattern]
 
-Full sequence saved to: OUTREACH-SEQUENCE.md
+Full sequence saved to: prospects/<slug>/OUTREACH-SEQUENCE.md
 ```
 
 ---

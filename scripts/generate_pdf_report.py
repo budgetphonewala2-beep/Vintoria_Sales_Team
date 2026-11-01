@@ -6,27 +6,30 @@ Generates a professional, multi-page PDF sales pipeline report with score gauges
 bar charts, prospect cards, pipeline summary tables, and prioritized action plans.
 
 Usage:
-    python3 generate_pdf_report.py <json_data_file> [output_pdf_file]
-    python3 generate_pdf_report.py  # generates a sample report in demo mode
+    python generate_pdf_report.py <json_data_file> [output_pdf_file]
+    python generate_pdf_report.py --demo [output_pdf_file]   # sample report with fake data
+
+Input schema: see skills/sales-report-pdf/SKILL.md. The script is tolerant: action_items
+may be a list or a {quick_wins, this_week, this_month} object; categories, pipeline_health
+and grades are derived from the prospects list when missing.
 """
 
 import json
-import math
 import sys
 import os
+from xml.sax.saxutils import escape as _xml_escape
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.platypus import (
     SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle,
     PageBreak, KeepTogether
 )
-from reportlab.graphics.shapes import Drawing, Circle, String, Line, Rect, Wedge
+from reportlab.graphics.shapes import Drawing, Circle, String, Wedge
 from reportlab.graphics.charts.barcharts import HorizontalBarChart
-from reportlab.graphics import renderPDF
 
 # --- Color Palette (Sales-focused) ---
 PRIMARY = colors.HexColor("#1B2A4A")       # dark navy
@@ -44,6 +47,42 @@ GRADE_A_BG = colors.HexColor("#ECFDF5")
 GRADE_B_BG = colors.HexColor("#EFF6FF")
 GRADE_C_BG = colors.HexColor("#FFFBEB")
 GRADE_D_BG = colors.HexColor("#FEF2F2")
+DARK_GREEN = colors.HexColor("#047857")
+
+# Single grade scale shared by every skill, lead_scorer.py and this report.
+GRADE_SCALE = [
+    (90, "A+", "Hot Lead", "Prioritize immediately; multi-thread within 24 hours"),
+    (75, "A", "Strong Prospect", "Personalized outreach within 48 hours"),
+    (60, "B", "Qualified Lead", "Standard outreach sequence; watch for triggers"),
+    (40, "C", "Lukewarm", "Nurture with value-add content; re-evaluate in 30-60 days"),
+    (0, "D", "Poor Fit", "Deprioritize; long-term nurture only"),
+]
+DEFAULT_WEIGHTS = [
+    ("Company Fit", 25, "Size, industry, growth trajectory, tech sophistication, budget signals"),
+    ("Contact Access", 20, "Decision makers identified, contact quality, personalization, warm paths"),
+    ("Opportunity Quality", 20, "BANT + MEDDIC: budget, authority, need severity, timeline urgency"),
+    ("Competitive Position", 15, "Current solution, switching feasibility, exploitable gaps, win probability"),
+    ("Outreach Readiness", 20, "Personalization, channel strategy, messaging fit, timing"),
+]
+
+
+def esc(value):
+    """Escape user/LLM-provided text for reportlab Paragraph markup ('AT&T <Ent>' safe)."""
+    return _xml_escape("" if value is None else str(value))
+
+
+def to_score(value):
+    try:
+        return max(0, min(100, int(round(float(str(value).split("/")[0].strip())))))
+    except (TypeError, ValueError):
+        return 0
+
+
+def grade_for(score):
+    for floor, grade, *_ in GRADE_SCALE:
+        if score >= floor:
+            return grade
+    return "D"
 
 
 def score_color(score):
@@ -60,14 +99,99 @@ def score_color(score):
 
 def grade_color(grade):
     """Return color based on letter grade."""
-    grade_map = {"A": SUCCESS, "B": ACCENT, "C": WARNING, "D": DANGER}
+    grade_map = {"A+": DARK_GREEN, "A": SUCCESS, "B": ACCENT, "C": WARNING, "D": DANGER}
     return grade_map.get(grade, SECONDARY_TEXT)
 
 
 def grade_bg(grade):
     """Return background color for grade."""
-    bg_map = {"A": GRADE_A_BG, "B": GRADE_B_BG, "C": GRADE_C_BG, "D": GRADE_D_BG}
+    bg_map = {"A+": GRADE_A_BG, "A": GRADE_A_BG, "B": GRADE_B_BG, "C": GRADE_C_BG, "D": GRADE_D_BG}
     return bg_map.get(grade, LIGHT_BG)
+
+
+# ---------------------------------------------------------------------------
+# Input normalisation — accept the documented schema and older/looser variants
+# ---------------------------------------------------------------------------
+
+_COMPONENT_LABELS = {
+    "company_fit": "Company Fit", "contact_access": "Contact Access",
+    "opportunity_quality": "Opportunity Quality", "competitive_position": "Competitive Position",
+    "outreach_readiness": "Outreach Readiness",
+}
+
+
+def normalize_data(data):
+    data = dict(data or {})
+
+    # Prospects: numeric scores, derived grades, sorted best-first
+    prospects = []
+    for p in data.get("prospects") or []:
+        if not isinstance(p, dict):
+            continue
+        p = dict(p)
+        p["score"] = to_score(p.get("score"))
+        g = str(p.get("grade") or "").strip().upper()
+        p["grade"] = g if g in ("A+", "A", "B", "C", "D") else grade_for(p["score"])
+        prospects.append(p)
+    prospects.sort(key=lambda x: -x["score"])
+    data["prospects"] = prospects
+
+    # Overall score
+    if data.get("overall_pipeline_score") is None and prospects:
+        data["overall_pipeline_score"] = round(sum(p["score"] for p in prospects) / len(prospects))
+    data["overall_pipeline_score"] = to_score(data.get("overall_pipeline_score", 0))
+
+    # Categories for the bar chart: explicit, else averaged component scores
+    cats = data.get("categories")
+    if isinstance(cats, dict) and cats:
+        data["categories"] = {k: {"score": to_score(v.get("score") if isinstance(v, dict) else v)}
+                              for k, v in cats.items()}
+    else:
+        sums, counts = {}, {}
+        for p in prospects:
+            for k, v in (p.get("component_scores") or {}).items():
+                label = _COMPONENT_LABELS.get(k, k.replace("_", " ").title())
+                sums[label] = sums.get(label, 0) + to_score(v)
+                counts[label] = counts.get(label, 0) + 1
+        data["categories"] = {k: {"score": round(sums[k] / counts[k])} for k in sums}
+
+    # Pipeline health: fill anything missing from the prospects list
+    ph = dict(data.get("pipeline_health") or {})
+    counts = {g: sum(1 for p in prospects if p["grade"] == g) for g in ("A+", "A", "B", "C", "D")}
+    ph.setdefault("total_prospects", data.get("total_prospects") or len(prospects))
+    ph.setdefault("avg_score", ph.get("average_score",
+                  round(sum(p["score"] for p in prospects) / len(prospects)) if prospects else 0))
+    for g, key in (("A+", "a_plus_grade"), ("A", "a_grade"), ("B", "b_grade"), ("C", "c_grade"), ("D", "d_grade")):
+        ph.setdefault(key, ph.get(f"{key}_count", counts[g]))
+    if data.get("health_rating"):
+        ph.setdefault("health_rating", data["health_rating"])
+    data["pipeline_health"] = ph
+
+    # Action items: dict of buckets, or a flat list of strings / objects
+    ai = data.get("action_items")
+    buckets = {"quick_wins": [], "this_week": [], "this_month": []}
+    if isinstance(ai, dict):
+        for k in buckets:
+            buckets[k] = [_action_text(x) for x in ai.get(k) or []]
+    elif isinstance(ai, list):
+        for x in ai:
+            urgency = str(x.get("urgency", "")).lower() if isinstance(x, dict) else ""
+            key = ("quick_wins" if urgency in ("immediate", "today", "urgent", "high", "now")
+                   else "this_month" if urgency in ("this month", "month", "low", "long-term", "pipeline building")
+                   else "this_week")
+            buckets[key].append(_action_text(x))
+    data["action_items"] = buckets
+    return data
+
+
+def _action_text(x):
+    if isinstance(x, dict):
+        action = x.get("action") or x.get("task") or ""
+        company = x.get("company")
+        reason = x.get("reason")
+        text = f"<b>{esc(company)}:</b> {esc(action)}" if company else esc(action)
+        return text + (f" <i>— {esc(reason)}</i>" if reason else "")
+    return esc(x)
 
 
 def build_styles():
@@ -202,15 +326,7 @@ def draw_score_gauge(score, size=180):
                  fontSize=9, fontName="Helvetica",
                  fillColor=SECONDARY_TEXT, textAnchor="middle"))
 
-    # Grade label
-    if score >= 75:
-        grade = "A"
-    elif score >= 50:
-        grade = "B"
-    elif score >= 25:
-        grade = "C"
-    else:
-        grade = "D"
+    grade = grade_for(score)
 
     d.add(String(cx, cy - 30, f"Grade: {grade}",
                  fontSize=12, fontName="Helvetica-Bold",
@@ -309,7 +425,12 @@ def add_header_footer(canvas, doc, report_title=""):
 def generate_report(data, output_path):
     """Generate the full PDF report from data dict."""
     styles = build_styles()
-    report_date = data.get("date", "")
+    data = normalize_data(data)
+    report_date = esc(data.get("date", ""))
+    report_title = esc(data.get("title") or "Sales Pipeline Report")
+
+    out_dir = os.path.dirname(os.path.abspath(output_path))
+    os.makedirs(out_dir, exist_ok=True)
 
     doc = SimpleDocTemplate(
         output_path,
@@ -324,7 +445,7 @@ def generate_report(data, output_path):
 
     # ==================== PAGE 1: COVER ====================
     story.append(Spacer(1, 1.2 * inch))
-    story.append(Paragraph("Sales Pipeline Report", styles["CoverTitle"]))
+    story.append(Paragraph(report_title, styles["CoverTitle"]))
     story.append(Spacer(1, 40))
     story.append(Paragraph(f"<b>{report_date}</b>", styles["CoverSubtitle"]))
 
@@ -332,7 +453,11 @@ def generate_report(data, output_path):
     total_prospects = pipeline_health.get("total_prospects", 0)
     if total_prospects:
         story.append(Spacer(1, 30))
-        story.append(Paragraph(f"{total_prospects} Prospects Analyzed", styles["CoverSubtitle"]))
+        rating = pipeline_health.get("health_rating")
+        line = f"{esc(total_prospects)} Prospects Analyzed"
+        if rating:
+            line += f" &nbsp;·&nbsp; Pipeline Health: <b>{esc(rating)}</b>"
+        story.append(Paragraph(line, styles["CoverSubtitle"]))
     story.append(Spacer(1, 60))
 
     # Overall pipeline score gauge
@@ -345,7 +470,7 @@ def generate_report(data, output_path):
     summary = data.get("executive_summary", "")
     if summary:
         story.append(Paragraph("Executive Summary", styles["SubSection"]))
-        story.append(Paragraph(summary, styles["BodyText2"]))
+        story.append(Paragraph(esc(summary), styles["BodyText2"]))
 
     story.append(PageBreak())
 
@@ -381,7 +506,7 @@ def generate_report(data, output_path):
                 label = "Critical"
 
             table_data.append([
-                Paragraph(cat_name, styles["TableCell"]),
+                Paragraph(esc(cat_name), styles["TableCell"]),
                 Paragraph(f"<b>{s}/100</b>", styles["TableCell"]),
                 Paragraph(f'<font color="{hex_col}"><b>{label}</b></font>', styles["TableCell"]),
             ])
@@ -425,12 +550,15 @@ def generate_report(data, output_path):
 
         # Show top 5 as detailed cards
         for i, prospect in enumerate(prospects[:5]):
-            name = prospect.get("name", "Unknown")
+            name = esc(prospect.get("name", "Unknown"))
             p_score = prospect.get("score", 0)
             p_grade = prospect.get("grade", "?")
-            stage = prospect.get("stage", "Unknown")
-            url = prospect.get("url", "")
-            next_action = prospect.get("next_action", "")
+            stage = esc(prospect.get("stage") or "N/A")
+            url = esc(prospect.get("url", ""))
+            next_action = esc(prospect.get("next_action", ""))
+            extras = [f"{label}: <b>{esc(prospect[k])}</b>" for k, label in
+                      (("key_contact", "Contact"), ("est_value", "Est. value"),
+                       ("key_pain_point", "Pain"), ("risk_factors", "Risk")) if prospect.get(k)]
 
             col = score_color(p_score)
             hex_col = col.hexval() if hasattr(col, 'hexval') else str(col)
@@ -450,18 +578,19 @@ def generate_report(data, output_path):
                     Paragraph("Grade", styles["SmallText"]),
                 ],
             ]
+            full_rows = []
+            for extra in extras:
+                card_data.append([Paragraph(extra, styles["ProspectDetail"]), "", ""])
+                full_rows.append(len(card_data) - 1)
             if next_action:
-                card_data.append([
-                    Paragraph(f'Next: <i>{next_action}</i>', styles["ProspectDetail"]),
-                    Paragraph("", styles["SmallText"]),
-                    Paragraph("", styles["SmallText"]),
-                ])
+                card_data.append([Paragraph(f'Next: <i>{next_action}</i>', styles["ProspectDetail"]), "", ""])
+                full_rows.append(len(card_data) - 1)
 
             card = Table(card_data, colWidths=[340, 50, 50])
             card_style = [
                 ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
                 ("ALIGN", (1, 0), (-1, -1), "CENTER"),
-                ("SPAN", (0, -1), (-1, -1)) if next_action else ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                *[("SPAN", (0, r), (-1, r)) for r in full_rows],
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
                 ("TOPPADDING", (0, 0), (-1, -1), 3),
                 ("BOX", (0, 0), (-1, -1), 1, BORDER),
@@ -497,11 +626,11 @@ def generate_report(data, output_path):
             hex_g = g_col.hexval() if hasattr(g_col, 'hexval') else str(g_col)
 
             table_data.append([
-                Paragraph(prospect.get("name", ""), styles["TableCell"]),
+                Paragraph(esc(prospect.get("name", "")), styles["TableCell"]),
                 Paragraph(f'<font color="{hex_col}"><b>{p_score}</b></font>', styles["TableCell"]),
                 Paragraph(f'<font color="{hex_g}"><b>{p_grade}</b></font>', styles["TableCell"]),
-                Paragraph(prospect.get("stage", ""), styles["TableCell"]),
-                Paragraph(prospect.get("next_action", ""), styles["TableCell"]),
+                Paragraph(esc(prospect.get("stage") or "N/A"), styles["TableCell"]),
+                Paragraph(esc(prospect.get("next_action") or "N/A"), styles["TableCell"]),
             ])
 
         col_widths = [110, 45, 40, 80, 225]
@@ -528,25 +657,13 @@ def generate_report(data, output_path):
             story.append(Spacer(1, 16))
             story.append(Paragraph("Pipeline Health", styles["SubSection"]))
 
+            cols = [("Total", "total_prospects"), ("Avg Score", "avg_score"), ("A+", "a_plus_grade"),
+                    ("A", "a_grade"), ("B", "b_grade"), ("C", "c_grade"), ("D", "d_grade")]
             health_data = [
-                [
-                    Paragraph("<b>Total Prospects</b>", styles["TableCell"]),
-                    Paragraph("<b>Avg Score</b>", styles["TableCell"]),
-                    Paragraph("<b>A-Grade</b>", styles["TableCell"]),
-                    Paragraph("<b>B-Grade</b>", styles["TableCell"]),
-                    Paragraph("<b>C-Grade</b>", styles["TableCell"]),
-                    Paragraph("<b>D-Grade</b>", styles["TableCell"]),
-                ],
-                [
-                    Paragraph(str(pipeline_health.get("total_prospects", 0)), styles["TableCell"]),
-                    Paragraph(str(pipeline_health.get("avg_score", 0)), styles["TableCell"]),
-                    Paragraph(str(pipeline_health.get("a_grade", 0)), styles["TableCell"]),
-                    Paragraph(str(pipeline_health.get("b_grade", 0)), styles["TableCell"]),
-                    Paragraph(str(pipeline_health.get("c_grade", 0)), styles["TableCell"]),
-                    Paragraph(str(pipeline_health.get("d_grade", 0)), styles["TableCell"]),
-                ],
+                [Paragraph(f"<b>{label}</b>", styles["TableCell"]) for label, _ in cols],
+                [Paragraph(esc(pipeline_health.get(key, 0)), styles["TableCell"]) for _, key in cols],
             ]
-            ht = Table(health_data, colWidths=[83, 83, 83, 83, 83, 83])
+            ht = Table(health_data, colWidths=[72] * 7)
             ht_style = [
                 ("BACKGROUND", (0, 0), (-1, 0), PRIMARY),
                 ("TEXTCOLOR", (0, 0), (-1, 0), WHITE),
@@ -566,6 +683,25 @@ def generate_report(data, output_path):
     story.append(Spacer(1, 8))
 
     action_items = data.get("action_items", {})
+
+    # This week's focus (ranked accounts with their actions)
+    weekly_focus = [w for w in (data.get("weekly_focus") or []) if isinstance(w, dict)]
+    if weekly_focus:
+        story.append(Paragraph("This Week's Focus Accounts", styles["SubSection"]))
+        for n, w in enumerate(weekly_focus[:5], 1):
+            rank = esc(w.get("rank", n))
+            head = f'<b>{rank}. {esc(w.get("company", ""))}</b>'
+            if w.get("score") is not None:
+                head += f' &nbsp;({esc(w.get("score"))}/100)'
+            if w.get("reason"):
+                head += f' — <i>{esc(w["reason"])}</i>'
+            story.append(Paragraph(head, styles["ActionItem"]))
+            for act in w.get("actions") or []:
+                story.append(Paragraph(f"&bull; {esc(act)}", styles["ActionItem"]))
+        story.append(Spacer(1, 12))
+
+    if not weekly_focus and not any(action_items.get(k) for k in ("quick_wins", "this_week", "this_month")):
+        story.append(Paragraph("No action items provided.", styles["BodyText2"]))
 
     # Quick Wins
     quick_wins = action_items.get("quick_wins", [])
@@ -606,34 +742,29 @@ def generate_report(data, output_path):
     story.append(Spacer(1, 8))
 
     story.append(Paragraph(
-        "This sales pipeline report uses a BANT + MEDDIC scoring framework to evaluate and rank "
-        "prospects. Each prospect is scored 0-100 based on four BANT dimensions (Budget, Authority, "
-        "Need, Timeline), each weighted equally at 25 points. MEDDIC completeness is assessed "
-        "as a supplementary qualification metric across six dimensions.",
+        "Each prospect receives a composite Prospect Score (0-100): a weighted average of five "
+        "category scores, each produced by a dedicated research agent from publicly available "
+        "information. Opportunity Quality incorporates BANT and MEDDIC qualification. Scores are "
+        "evidence-based estimates, not guarantees — verify key facts in discovery.",
         styles["BodyText2"]
     ))
     story.append(Spacer(1, 10))
 
-    # Methodology table
+    # Methodology table — weights from the input if provided
     method_header = [
-        Paragraph("<b>Dimension</b>", styles["TableHeader"]),
+        Paragraph("<b>Category</b>", styles["TableHeader"]),
         Paragraph("<b>Weight</b>", styles["TableHeader"]),
         Paragraph("<b>Signals Measured</b>", styles["TableHeader"]),
     ]
     method_data = [method_header]
-
-    method_rows = [
-        ("Budget", "25 pts", "Funding amount, employee count, pricing visibility, tech spend indicators, enterprise tool usage"),
-        ("Authority", "25 pts", "Decision makers identified, C-suite contacts found, org chart completeness, buying committee mapped"),
-        ("Need", "25 pts", "Pain points detected, relevant job postings, review complaints, competitor dissatisfaction signals"),
-        ("Timeline", "25 pts", "Active hiring for relevant roles, recent funding events, contract renewal timing, urgency mentions"),
-    ]
-
-    for dim, weight, desc in method_rows:
+    weights_in = data.get("methodology") or {}
+    for label, default_w, desc in DEFAULT_WEIGHTS:
+        key = label.lower().replace(" ", "_") + "_weight"
+        w = weights_in.get(key, default_w)
         method_data.append([
-            Paragraph(f"<b>{dim}</b>", styles["TableCell"]),
-            Paragraph(weight, styles["TableCell"]),
-            Paragraph(desc, styles["TableCell"]),
+            Paragraph(f"<b>{esc(label)}</b>", styles["TableCell"]),
+            Paragraph(f"{esc(w)}%", styles["TableCell"]),
+            Paragraph(esc(desc), styles["TableCell"]),
         ])
 
     t = Table(method_data, colWidths=[100, 60, 340])
@@ -665,12 +796,11 @@ def generate_report(data, output_path):
         Paragraph("<b>Recommended Action</b>", styles["TableHeader"]),
     ]
     grade_data = [grade_header]
-    grade_rows = [
-        ("75-100", "A", "High-value prospect", "Schedule discovery call immediately"),
-        ("50-74", "B", "Promising prospect", "Nurture with targeted content"),
-        ("25-49", "C", "Needs development", "Research and multi-thread outreach"),
-        ("0-24", "D", "Low priority", "Add to long-term nurture sequence"),
-    ]
+    grade_rows = []
+    upper = 100
+    for floor, grade, label, action in GRADE_SCALE:
+        grade_rows.append((f"{floor}-{upper}", grade, label, action))
+        upper = floor - 1
     for score_range, grade, interp, action in grade_rows:
         g_col = grade_color(grade)
         hex_g = g_col.hexval() if hasattr(g_col, 'hexval') else str(g_col)
@@ -707,8 +837,8 @@ def generate_report(data, output_path):
 
 
 def main():
-    if len(sys.argv) < 2:
-        # Demo mode — generate sample report with realistic fake data
+    if len(sys.argv) < 2 or sys.argv[1] in ("--demo", "-d"):
+        # Demo mode — generate sample report with clearly fictional data
         sample_data = {
             "date": "March 6, 2026",
             "overall_pipeline_score": 72,
@@ -719,18 +849,18 @@ def main():
                 "include deepening contact access and strengthening competitive positioning intelligence."
             ),
             "prospects": [
-                {"name": "TechFlow Inc", "url": "https://techflow.io", "score": 92, "grade": "A", "stage": "Discovery Call", "next_action": "Schedule demo with VP Engineering"},
-                {"name": "DataBridge Corp", "url": "https://databridge.com", "score": 85, "grade": "A", "stage": "Qualified", "next_action": "Send proposal with 3-tier pricing"},
-                {"name": "CloudScale AI", "url": "https://cloudscale.ai", "score": 78, "grade": "A", "stage": "Engaged", "next_action": "Connect with CTO via warm intro"},
-                {"name": "FinanceHub Pro", "url": "https://financehub.pro", "score": 71, "grade": "B", "stage": "Researching", "next_action": "Send cold outreach sequence"},
-                {"name": "RetailEdge", "url": "https://retailedge.com", "score": 68, "grade": "B", "stage": "Nurturing", "next_action": "Share case study from similar company"},
-                {"name": "SecureNet Labs", "url": "https://securenet.io", "score": 65, "grade": "B", "stage": "Qualified", "next_action": "Prepare meeting brief for next call"},
-                {"name": "EduPlatform", "url": "https://eduplatform.co", "score": 62, "grade": "B", "stage": "Engaged", "next_action": "Follow up on pricing discussion"},
-                {"name": "GreenEnergy AI", "url": "https://greenenergy.ai", "score": 58, "grade": "B", "stage": "Researching", "next_action": "Identify decision makers"},
-                {"name": "MediaStack", "url": "https://mediastack.io", "score": 45, "grade": "C", "stage": "Initial Research", "next_action": "Complete prospect analysis"},
-                {"name": "LogiTrack", "url": "https://logitrack.com", "score": 42, "grade": "C", "stage": "Cold", "next_action": "Research company and find contacts"},
-                {"name": "HealthFirst", "url": "https://healthfirst.com", "score": 38, "grade": "C", "stage": "Cold", "next_action": "Validate ICP fit before outreach"},
-                {"name": "BuildCo Tools", "url": "https://buildco.tools", "score": 22, "grade": "D", "stage": "Unqualified", "next_action": "Add to long-term nurture list"},
+                {"name": "TechFlow Inc", "url": "https://techflow.io", "score": 92, "stage": "Discovery Call", "next_action": "Schedule demo with VP Engineering"},
+                {"name": "DataBridge Corp", "url": "https://databridge.com", "score": 85, "stage": "Qualified", "next_action": "Send proposal with 3-tier pricing"},
+                {"name": "CloudScale AI", "url": "https://cloudscale.ai", "score": 78, "stage": "Engaged", "next_action": "Connect with CTO via warm intro"},
+                {"name": "FinanceHub Pro", "url": "https://financehub.pro", "score": 71, "stage": "Researching", "next_action": "Send cold outreach sequence"},
+                {"name": "RetailEdge", "url": "https://retailedge.com", "score": 68, "stage": "Nurturing", "next_action": "Share case study from similar company"},
+                {"name": "SecureNet Labs", "url": "https://securenet.io", "score": 65, "stage": "Qualified", "next_action": "Prepare meeting brief for next call"},
+                {"name": "EduPlatform", "url": "https://eduplatform.co", "score": 62, "stage": "Engaged", "next_action": "Follow up on pricing discussion"},
+                {"name": "GreenEnergy AI", "url": "https://greenenergy.ai", "score": 58, "stage": "Researching", "next_action": "Identify decision makers"},
+                {"name": "MediaStack", "url": "https://mediastack.io", "score": 45, "stage": "Initial Research", "next_action": "Complete prospect analysis"},
+                {"name": "LogiTrack", "url": "https://logitrack.com", "score": 42, "stage": "Cold", "next_action": "Research company and find contacts"},
+                {"name": "HealthFirst", "url": "https://healthfirst.com", "score": 38, "stage": "Cold", "next_action": "Validate ICP fit before outreach"},
+                {"name": "BuildCo Tools", "url": "https://buildco.tools", "score": 22, "stage": "Unqualified", "next_action": "Add to long-term nurture list"},
             ],
             "categories": {
                 "Company Fit": {"score": 75},
@@ -760,28 +890,30 @@ def main():
                     "Establish referral network for warm introductions",
                 ],
             },
-            "pipeline_health": {
-                "total_prospects": 12,
-                "avg_score": 65,
-                "a_grade": 3,
-                "b_grade": 5,
-                "c_grade": 3,
-                "d_grade": 1,
-            },
+            "pipeline_health": {"health_rating": "Good"},
+            "title": "Sales Pipeline Report (SAMPLE DATA)",
         }
-        output = "SALES-REPORT-sample.pdf"
+        output = sys.argv[2] if len(sys.argv) > 2 else "SALES-REPORT-sample.pdf"
         generate_report(sample_data, output)
-        print(f"Sample report generated: {output}")
+        print(f"Sample report generated: {os.path.abspath(output)}")
         return
 
     json_path = sys.argv[1]
     output_path = sys.argv[2] if len(sys.argv) > 2 else "SALES-REPORT.pdf"
 
-    with open(json_path, "r") as f:
-        data = json.load(f)
+    try:
+        with open(json_path, "r", encoding="utf-8-sig") as f:  # tolerate BOM (PowerShell)
+            data = json.load(f)
+    except FileNotFoundError:
+        sys.exit(f"Error: input file not found: {json_path}")
+    except json.JSONDecodeError as exc:
+        sys.exit(f"Error: invalid JSON in {json_path}: {exc}")
+    if not isinstance(data, dict):
+        sys.exit("Error: input JSON must be an object")
 
     generate_report(data, output_path)
-    print(f"Report generated: {output_path}")
+    size_kb = os.path.getsize(output_path) / 1024
+    print(f"Report generated: {os.path.abspath(output_path)} ({size_kb:.1f} KB)")
 
 
 if __name__ == "__main__":

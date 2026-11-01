@@ -27,3 +27,8 @@ venv/
 *.swp
 *.swo
 .DS_Store
+
+# Per-prospect output folders and temp files created by the skills
+/prospects/
+/_pdf_input.json
+_bant_signals.json

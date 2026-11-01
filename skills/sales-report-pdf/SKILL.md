@@ -1,3 +1,7 @@
+---
+name: sales-report-pdf
+description: "Turns SALES-REPORT.md into a professional PDF pipeline report (gauges, charts, tables) via the bundled ReportLab script; writes SALES-REPORT-<date>.pdf. Use for /sales report-pdf or when the user wants the pipeline report as a PDF."
+---
 # Professional Sales Report PDF Generator
 
 ## Metadata
@@ -5,7 +9,21 @@
 - **Invocation:** `/sales report-pdf`
 - **Input:** None (reads SALES-REPORT.md and prospect files from current directory)
 - **Output:** `SALES-REPORT-{YYYY-MM-DD}.pdf` written to the current working directory
-- **Dependencies:** Python 3, `reportlab` library, `scripts/generate_pdf_report.py`
+- **Dependencies:** Python 3, `reportlab`, and the bundled script `$HOME/.claude/skills/sales/scripts/generate_pdf_report.py`
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **Helper scripts** are installed in `$HOME/.claude/skills/sales/scripts/`. Run them with `python` on Windows (where `python3` is often a Microsoft Store stub) or `python3` on macOS/Linux — use whichever prints a real version for `--version`. Example: `python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url https://acme.com`. Script output is heuristic: treat it as leads to verify, not facts.
+
+---
 
 ---
 
@@ -29,23 +47,21 @@ Check that `SALES-REPORT.md` exists in the current working directory.
 
 **If SALES-REPORT.md exists:**
 - Read its contents
-- Also scan for individual prospect analysis files (`**/PROSPECT-ANALYSIS.md`, `**/COMPANY-RESEARCH.md`, etc.) to enrich the PDF with additional detail
+- Also read the per-prospect files in `prospects/*/` (`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, etc.) to enrich the PDF with additional detail
 
-### Step 2: Check for reportlab
+### Step 2: Check Python and reportlab
 
-Verify that the `reportlab` Python library is available by running:
+Find a working Python (on Windows `python3` is often a Microsoft Store stub that prints "Python was not found"):
+
 ```bash
-python3 -c "import reportlab; print(reportlab.Version)"
+python -c "import reportlab, sys; print(sys.version.split()[0], reportlab.Version)"   # Windows
+python3 -c "import reportlab, sys; print(sys.version.split()[0], reportlab.Version)"  # macOS/Linux
 ```
 
-**If reportlab is NOT installed:**
-- Inform the user: "The `reportlab` Python library is required for PDF generation. Install it with: `pip install reportlab`"
-- Offer to run the install command for them: `pip install reportlab`
-- After installation, continue with PDF generation
+Use whichever command succeeds as `<python>` below.
 
-**If Python 3 is NOT available:**
-- Inform the user: "Python 3 is required for PDF generation. Please install Python 3 and the reportlab library."
-- Stop execution.
+- **reportlab missing:** tell the user it's required and offer to run `<python> -m pip install reportlab`, then continue.
+- **No Python at all:** tell the user to install Python 3 from https://python.org, then stop.
 
 ### Step 3: Parse Report Data
 
@@ -123,85 +139,71 @@ Extract the prioritized action list:
 ```
 
 ### Step 4: Build JSON Input File
+<!-- PDF-INPUT-SCHEMA v2 -->
 
-Write a JSON file at `_pdf_input.json` in the current working directory containing all extracted data:
+Write `_pdf_input.json` in the working directory, **exactly in this shape** (it is what the script reads). Every field except `prospects` is optional — omit unknowns rather than inventing them; the script derives grades, averages, grade counts and category averages from `prospects` when they're missing.
 
 ```json
 {
   "title": "Sales Pipeline Report",
-  "date": "2025-01-15",
+  "date": "2026-11-01",
+  "executive_summary": "2-4 sentence plain-text summary.",
   "overall_pipeline_score": 72,
   "health_rating": "Good",
-  "total_prospects": 10,
   "prospects": [
     {
-      "name": "...",
-      "url": "...",
+      "name": "Acme Corp",
+      "url": "https://acme.com",
       "score": 85,
       "grade": "A",
       "stage": "Qualified",
-      "next_action": "...",
-      "est_value": "...",
-      "component_scores": { ... },
-      "key_pain_point": "...",
-      "key_contact": "...",
-      "risk_factors": "..."
+      "next_action": "Send intro email to VP Engineering",
+      "est_value": "$24,000 ARR",
+      "key_contact": "Jane Smith, VP Engineering",
+      "key_pain_point": "Manual API monitoring causing outages",
+      "risk_factors": "Long procurement cycle",
+      "component_scores": {
+        "company_fit": 88, "contact_access": 75, "opportunity_quality": 90,
+        "competitive_position": 82, "outreach_readiness": 80
+      }
     }
   ],
-  "top_prospects": [ ... ],
-  "action_items": [ ... ],
-  "pipeline_health": { ... },
-  "score_distribution": {
-    "A+": { "count": 1, "pct": 10, "prospects": ["Acme Corp"] },
-    "A": { "count": 2, "pct": 20, "prospects": ["Beta Inc", "Gamma Ltd"] },
-    "B": { "count": 4, "pct": 40, "prospects": ["..."] },
-    "C": { "count": 2, "pct": 20, "prospects": ["..."] },
-    "D": { "count": 1, "pct": 10, "prospects": ["..."] }
-  },
+  "action_items": [
+    {"company": "Acme Corp", "action": "Send personalized email to VP Engineering",
+      "urgency": "immediate", "reason": "Recent funding round creates a budget window"}
+  ],
   "weekly_focus": [
-    {
-      "rank": 1,
-      "company": "Acme Corp",
-      "score": 92,
-      "reason": "Highest score with active trigger event",
-      "actions": ["Send intro email", "Connect on LinkedIn", "Schedule demo"]
-    }
+    {"rank": 1, "company": "Acme Corp", "score": 85, "reason": "Highest score with an active trigger event",
+      "actions": ["Send intro email", "Connect on LinkedIn"]}
   ],
   "methodology": {
-    "company_fit_weight": 25,
-    "contact_access_weight": 20,
-    "opportunity_quality_weight": 20,
-    "competitive_position_weight": 15,
-    "outreach_readiness_weight": 20
+    "company_fit_weight": 25, "contact_access_weight": 20, "opportunity_quality_weight": 20,
+    "competitive_position_weight": 15, "outreach_readiness_weight": 20
   }
 }
 ```
 
-### Step 5: Locate or Create the PDF Generation Script
+Notes:
+- `grade` must be one of `A+`, `A`, `B`, `C`, `D` (90/75/60/40 thresholds) — or omit it and the script computes it from `score`.
+- `action_items[].urgency`: `immediate` → Quick Wins, `this week` → This Week, `this month` → This Month.
+- Plain text only in string fields (no Markdown); the script escapes special characters like `&` and `<`.
+- Validate the JSON (e.g. `<python> -m json.tool _pdf_input.json`) before running the script.
 
-Check if the PDF generation script exists at `scripts/generate_pdf_report.py` relative to the project root.
+### Step 5: Locate the PDF Generation Script
 
-**Finding the project root:** Look for the `scripts/` directory in these locations (in order):
-1. The ai-sales-team-claude project directory (where the agents/ and skills/ folders are)
-2. The current working directory
-3. One level up from the current working directory
-
-**If the script does NOT exist:**
-- Inform the user: "The PDF generation script was not found at `scripts/generate_pdf_report.py`. This script is part of the AI Sales Team project setup. Please ensure the project is properly installed."
-- Stop execution.
-
-**If the script exists:**
-- Proceed to execution.
+The installer puts it at `$HOME/.claude/skills/sales/scripts/generate_pdf_report.py`. If it isn't there, check `scripts/generate_pdf_report.py` in a local clone of ai-sales-team-claude. If neither exists, tell the user to re-run the installer (`install.sh`) and stop.
 
 ### Step 6: Generate the PDF
 
-Run the PDF generation script:
-
 ```bash
-python3 scripts/generate_pdf_report.py _pdf_input.json "SALES-REPORT-$(date +%Y-%m-%d).pdf"
+<python> "$HOME/.claude/skills/sales/scripts/generate_pdf_report.py" _pdf_input.json "SALES-REPORT-$(date +%Y-%m-%d).pdf"
 ```
 
-The script should produce a PDF with these sections:
+On Windows PowerShell, build the date with `$(Get-Date -Format yyyy-MM-dd)` instead of `$(date +%Y-%m-%d)`. The script prints the absolute output path and file size.
+
+To preview the layout with clearly fictional sample data: `<python> "$HOME/.claude/skills/sales/scripts/generate_pdf_report.py" --demo`.
+
+The PDF contains these sections:
 
 #### PDF Section 1: Cover Page
 - Title: "Sales Pipeline Report"
@@ -211,9 +213,8 @@ The script should produce a PDF with these sections:
 - Quick stats: total prospects, average score, top grade count
 
 #### PDF Section 2: Score Breakdown
-- Horizontal bar chart showing score distribution by grade band
-- Color coded: A+ = dark green, A = green, B = blue, C = orange, D = red
-- Each bar labeled with count and percentage
+- Horizontal bar chart of average category scores (from `component_scores`)
+- Category table with Strong / Good / Needs Work / Critical status
 
 #### PDF Section 3: Prospect Comparison Table
 - Full table of all prospects with columns: Rank, Company, Score, Grade, Stage, Next Action, Est. Value
@@ -272,9 +273,9 @@ Please install Python 3 from https://python.org and then run:
 
 ### Script Not Found
 ```
-The PDF generation script was not found at scripts/generate_pdf_report.py.
-This script is part of the AI Sales Team project. Please ensure the project
-directory structure is intact.
+The PDF generation script was not found at
+$HOME/.claude/skills/sales/scripts/generate_pdf_report.py.
+Re-run the AI Sales Team installer (install.sh) to restore it.
 ```
 
 ### No Report Data

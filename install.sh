@@ -42,7 +42,7 @@ if [ -z "${SCRIPT_DIR:-}" ] || [ ! -d "${SOURCE_DIR:-}" ]; then
     echo -e "${YELLOW}Cloning from GitHub...${NC}"
     TEMP_DIR=$(mktemp -d)
     if command -v git &>/dev/null; then
-        git clone --depth 1 "https://github.com/$GITHUB_REPO.git" "$TEMP_DIR/repo" 2>/dev/null
+        git clone --quiet --depth 1 "https://github.com/$GITHUB_REPO.git" "$TEMP_DIR/repo" || { echo -e "${RED}Error: git clone failed (network or repo unavailable).${NC}"; exit 1; }
         SOURCE_DIR="$TEMP_DIR/repo"
     else
         echo -e "${RED}Error: git is required for remote installation.${NC}"
@@ -74,6 +74,8 @@ fi
 echo -e "${BLUE}Creating directories...${NC}"
 mkdir -p "$SKILLS_DIR/sales/scripts"
 mkdir -p "$SKILLS_DIR/sales/templates"
+# Remove scripts from older installs so renamed/removed files do not linger
+rm -f "$SKILLS_DIR"/sales/scripts/*.py
 echo -e "  ${GREEN}✓${NC} Skills directory ready"
 
 mkdir -p "$AGENTS_DIR"
@@ -152,7 +154,7 @@ done
 echo -e "${BLUE}Installing scripts...${NC}"
 
 SCRIPT_COUNT=0
-for script in "$SOURCE_DIR"/scripts/*.py; do
+for script in "$SOURCE_DIR"/scripts/*.py; do  # includes shared module sales_common.py
     if [ -f "$script" ]; then
         cp "$script" "$SKILLS_DIR/sales/scripts/"
         echo -e "  ${GREEN}✓${NC} $(basename "$script")"
@@ -179,26 +181,44 @@ done
 # ---------------------------------------------------------------------------
 echo -e "${BLUE}Checking Python environment...${NC}"
 
-if command -v python3 &>/dev/null; then
-    echo -e "  ${GREEN}✓${NC} Python 3 found: $(python3 --version 2>&1)"
-else
-    echo -e "  ${RED}✗${NC} Python 3 not found — required for scripts"
-fi
+# Find a *working* Python 3. On Windows, `python3` is often a Microsoft Store
+# stub that exits with "Python was not found", so test each candidate for real.
+PYTHON=""
+for candidate in python3 python py; do
+    if command -v "$candidate" &>/dev/null && \
+       "$candidate" -c "import sys; sys.exit(0 if sys.version_info >= (3, 8) else 1)" &>/dev/null; then
+        PYTHON="$candidate"
+        break
+    fi
+done
 
-# Check reportlab
-if python3 -c "import reportlab" 2>/dev/null; then
-    echo -e "  ${GREEN}✓${NC} reportlab installed"
-else
-    echo -e "  ${YELLOW}⚠${NC} reportlab not installed (needed for PDF reports)"
-    echo -e "      Install with: ${CYAN}pip3 install reportlab${NC}"
-fi
+if [ -n "$PYTHON" ]; then
+    echo -e "  ${GREEN}✓${NC} Python found: $($PYTHON --version 2>&1)  (command: ${CYAN}$PYTHON${NC})"
 
-# Check beautifulsoup4
-if python3 -c "import bs4" 2>/dev/null; then
-    echo -e "  ${GREEN}✓${NC} beautifulsoup4 installed"
+    if [ "${SKIP_PIP:-0}" != "1" ] && ! $PYTHON -c "import reportlab" &>/dev/null; then
+        echo -e "  ${YELLOW}…${NC} Installing Python dependencies (reportlab for PDF reports)"
+        $PYTHON -m pip install --quiet --disable-pip-version-check -r "$SOURCE_DIR/requirements.txt" \
+            || $PYTHON -m pip install --quiet --user --disable-pip-version-check -r "$SOURCE_DIR/requirements.txt" \
+            || echo -e "  ${YELLOW}⚠${NC} pip install failed — run: ${CYAN}$PYTHON -m pip install -r requirements.txt${NC}"
+    fi
+
+    if $PYTHON -c "import reportlab" &>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} reportlab installed (PDF reports enabled)"
+    else
+        echo -e "  ${YELLOW}⚠${NC} reportlab not installed — PDF reports disabled"
+        echo -e "      Install with: ${CYAN}$PYTHON -m pip install reportlab${NC}"
+    fi
+
+    # Smoke-test the installed scripts (offline: argument parsing + imports only)
+    if $PYTHON "$SKILLS_DIR/sales/scripts/lead_scorer.py" --example \
+         | $PYTHON "$SKILLS_DIR/sales/scripts/lead_scorer.py" &>/dev/null && \
+       $PYTHON "$SKILLS_DIR/sales/scripts/contact_finder.py" --title "VP Sales" &>/dev/null; then
+        echo -e "  ${GREEN}✓${NC} Scripts smoke-tested"
+    else
+        echo -e "  ${RED}✗${NC} Script smoke test failed — check the Python installation"
+    fi
 else
-    echo -e "  ${YELLOW}⚠${NC} beautifulsoup4 not installed (optional, enhances parsing)"
-    echo -e "      Install with: ${CYAN}pip3 install beautifulsoup4${NC}"
+    echo -e "  ${RED}✗${NC} Python 3.8+ not found — scripts and PDF reports need it (https://python.org)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -243,5 +263,5 @@ echo -e "  ${CYAN}/sales competitors <url>${NC}       Competitive intelligence"
 echo -e "  ${CYAN}/sales report${NC}                  Sales pipeline report (Markdown)"
 echo -e "  ${CYAN}/sales report-pdf${NC}              Sales pipeline report (PDF)"
 echo ""
-echo -e "  ${YELLOW}Tip:${NC} Start with ${CYAN}/sales prospect <url>${NC} for a full analysis!"
+echo -e "  ${YELLOW}Tip:${NC} Start with ${CYAN}/sales icp "<what you sell, to whom>"${NC}, then ${CYAN}/sales prospect <url>${NC}"
 echo ""

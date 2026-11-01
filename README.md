@@ -5,7 +5,7 @@
 <p align="center">
   <a href="#quick-start"><img src="https://img.shields.io/badge/install-one--liner-blue?style=for-the-badge" alt="Install"></a>
   <a href="#commands"><img src="https://img.shields.io/badge/14_skills-ready-8b5cf6?style=for-the-badge" alt="14 Skills"></a>
-  <a href="#how-it-works"><img src="https://img.shields.io/badge/5_parallel-agents-22c55e?style=for-the-badge" alt="5 Agents"></a>
+  <a href="#how-it-works"><img src="https://img.shields.io/badge/5_specialist-agents-22c55e?style=for-the-badge" alt="5 Agents"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License"></a>
 </p>
 
@@ -21,7 +21,7 @@ Type a command in Claude Code and get instant, actionable sales intelligence:
 ```
 > /sales prospect https://acme.com
 
-Launching 5 parallel agents...
+Launching 4 research agents in parallel, then strategy...
   ✓ Company Research & Firmographics    — Fit Score: 82/100
   ✓ Decision Maker Identification       — 4 contacts found
   ✓ Opportunity Assessment (BANT)       — Score: 78/100
@@ -37,7 +37,7 @@ Launching 5 parallel agents...
 │  Action: Invest significant effort              │
 └─────────────────────────────────────────────────┘
 
-Full analysis saved to PROSPECT-ANALYSIS.md
+Full analysis saved to prospects/acme.com/PROSPECT-ANALYSIS.md
 ```
 
 ---
@@ -119,7 +119,7 @@ Installing templates...
 
 | Command | Description | Output |
 |:--------|:------------|:-------|
-| `/sales prospect <url>` | Full prospect audit — **5 parallel agents** | `PROSPECT-ANALYSIS.md` |
+| `/sales prospect <url>` | Full prospect audit — **4 parallel agents + strategy agent** | `PROSPECT-ANALYSIS.md` |
 | `/sales quick <url>` | 60-second prospect snapshot | Terminal output |
 | `/sales research <url>` | Company research & firmographics | `COMPANY-RESEARCH.md` |
 | `/sales qualify <url>` | BANT + MEDDIC lead scoring | `LEAD-QUALIFICATION.md` |
@@ -133,6 +133,31 @@ Installing templates...
 | `/sales competitors <url>` | Competitive intelligence | `COMPETITIVE-INTEL.md` |
 | `/sales report` | Pipeline report (Markdown) | `SALES-REPORT.md` |
 | `/sales report-pdf` | Pipeline report (PDF) | `SALES-REPORT-*.pdf` |
+
+---
+
+
+## Where Output Goes
+
+Each prospect gets its own folder, so analyses never overwrite each other:
+
+```
+your-working-folder/
+├── IDEAL-CUSTOMER-PROFILE.md      ← /sales icp (used to score every prospect)
+├── OBJECTION-PLAYBOOK.md          ← /sales objections
+├── SALES-REPORT.md / *.pdf        ← /sales report, /sales report-pdf
+└── prospects/
+    ├── acme.com/
+    │   ├── PROSPECT-ANALYSIS.md
+    │   ├── OUTREACH-SEQUENCE.md
+    │   └── MEETING-PREP.md
+    └── globex.io/
+        └── PROSPECT-ANALYSIS.md
+```
+
+**Run `/sales icp` first.** Fit, need and competitive scores are measured against what *you* sell; without an ICP the skills will ask, or fall back to generic B2B scoring and say so.
+
+**Honesty & compliance built in:** the skills never invent contacts, mutual connections or customer results (missing proof points are left as visible `[ADD REAL CUSTOMER RESULT]` markers), label pattern-guessed emails, and add opt-outs plus country notes (CAN-SPAM, PECR/GDPR, CASL, India DPDP) to every outreach sequence. This is guidance, not legal advice.
 
 ---
 
@@ -157,8 +182,8 @@ The system uses a three-layer architecture — one orchestrator skill routes com
                  │                   │                      │
                  ▼                   ▼                      ▼
           ┌─────────────┐   ┌───────────────┐       ┌──────────────┐
-          │ Fetch site   │   │ 5 agents run  │       │ Aggregate    │
-          │ Extract data │   │ simultaneously│       │ Score (0-100)│
+          │ Fetch site   │   │ 4 agents in   │       │ Aggregate    │
+          │ Extract data │   │ parallel, then│       │ Score (0-100)│
           │ Detect type  │   │               │       │ Action plan  │
           │ Run scripts  │   │               │       │ First email  │
           └─────────────┘   └───────┬───────┘       └──────────────┘
@@ -388,14 +413,15 @@ ai-sales-team-claude/
 │   ├── sales-report/SKILL.md             Pipeline report (Markdown)
 │   └── sales-report-pdf/SKILL.md         Pipeline report (PDF)
 │
-├── agents/                            ← 5 parallel subagents
+├── agents/                            ← 5 specialist subagents (4 parallel + strategy)
 │   ├── sales-company.md                  Company fit & firmographics (25%)
 │   ├── sales-contacts.md                 Decision maker mapping (20%)
 │   ├── sales-opportunity.md              Opportunity & BANT scoring (20%)
 │   ├── sales-competitive.md              Competitive positioning (15%)
 │   └── sales-strategy.md                 Outreach strategy & messaging (20%)
 │
-├── scripts/                           ← Python utilities
+├── scripts/                           ← Python utilities (stdlib only, except PDF)
+│   ├── sales_common.py                   Shared fetching / HTML parsing helpers
 │   ├── analyze_prospect.py               Website scraping & data extraction
 │   ├── lead_scorer.py                    BANT/MEDDIC scoring engine
 │   ├── contact_finder.py                 Team & leadership extraction
@@ -480,9 +506,9 @@ ai-sales-team-claude/
 |:------------|:------:|:------|
 | **Claude Code** | Required | [Install Claude Code](https://docs.anthropic.com/en/docs/claude-code) |
 | **Python 3.8+** | Optional | For scripts and PDF generation |
-| **reportlab** | Optional | `pip install reportlab` — PDF reports |
-| **beautifulsoup4** | Optional | `pip install beautifulsoup4` — enhanced parsing |
-| **requests** | Optional | `pip install requests` — fallback URL fetching |
+| **reportlab** | Optional | Installed automatically by `install.sh` — PDF reports |
+
+The scraping scripts use only the Python standard library. On **Windows**, use `python` (not `python3`, which is usually a Microsoft Store stub); the skills already handle this.
 
 ---
 

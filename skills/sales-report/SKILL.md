@@ -1,3 +1,7 @@
+---
+name: sales-report
+description: "Compiles every prospect in prospects/*/ into a pipeline report with scores, stages and prioritized actions; writes SALES-REPORT.md. Use for /sales report or when the user asks for a pipeline overview."
+---
 # Sales Pipeline Report Generator
 
 ## Metadata
@@ -5,6 +9,20 @@
 - **Invocation:** `/sales report`
 - **Input:** None (scans current directory for prospect analysis files)
 - **Output:** `SALES-REPORT.md` written to the current working directory
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+---
 
 ---
 
@@ -22,7 +40,7 @@ When the user invokes `/sales report`, follow this process:
 
 ### Step 1: Scan for Prospect Data
 
-Search the current working directory and its immediate subdirectories for these file types:
+Each prospect lives in its own folder `prospects/<slug>/`. Search those folders (and, for backward compatibility, the working-directory root) for these file types:
 
 - `PROSPECT-ANALYSIS.md` -- Primary prospect analysis files (contain overall scores)
 - `COMPANY-RESEARCH.md` -- Company research subagent output
@@ -32,14 +50,18 @@ Search the current working directory and its immediate subdirectories for these 
 
 Use the Glob tool to search for these files:
 ```
-**/PROSPECT-ANALYSIS.md
-**/COMPANY-RESEARCH.md
-**/LEAD-QUALIFICATION.md
-**/DECISION-MAKERS.md
-**/OUTREACH-SEQUENCE.md
+prospects/*/PROSPECT-ANALYSIS.md
+prospects/*/COMPANY-RESEARCH.md
+prospects/*/LEAD-QUALIFICATION.md
+prospects/*/DECISION-MAKERS.md
+prospects/*/OUTREACH-SEQUENCE.md
+prospects/*/FOLLOWUP-SEQUENCE.md
+prospects/*/MEETING-PREP.md
+prospects/*/CLIENT-PROPOSAL.md
+PROSPECT-ANALYSIS*.md            (legacy, root)
 ```
 
-Also search for any files matching `*-prospect-analysis.md` or `*-company-research.md` patterns in case users renamed files.
+**One prospect = one folder.** Group files by folder; a prospect with no `PROSPECT-ANALYSIS.md` still appears (stage New/Researched). Legacy root-level files belong to whichever company their `**URL:**` line names — if that company also has a folder, prefer the folder and mention the duplicate. Suggest moving legacy files into `prospects/<slug>/`.
 
 ### Step 2: Handle Empty Pipeline
 
@@ -58,7 +80,7 @@ Write a `SALES-REPORT.md` that contains:
 
 ## Pipeline Status: Empty
 
-No prospect analysis files were found in the current directory.
+No prospect files were found in `prospects/*/` (or the working-directory root).
 
 ### Getting Started
 
@@ -107,9 +129,9 @@ Assign each prospect to a pipeline stage based on available data:
 | **New** | URL identified but minimal research | No analysis files exist |
 | **Researched** | Company research completed | COMPANY-RESEARCH.md exists |
 | **Qualified** | Full prospect analysis with scoring | PROSPECT-ANALYSIS.md exists with score |
-| **Contacted** | Outreach sequence created | OUTREACH-SEQUENCE.md exists |
-| **Meeting** | Analysis mentions meeting scheduled | Meeting reference in any file |
-| **Proposal** | Analysis mentions proposal sent | Proposal reference in any file |
+| **Contacted** | Outreach sequence created | OUTREACH-SEQUENCE.md or FOLLOWUP-SEQUENCE.md exists |
+| **Meeting** | Meeting prepared or scheduled | MEETING-PREP.md exists, or a meeting is mentioned |
+| **Proposal** | Proposal drafted or sent | CLIENT-PROPOSAL.md exists, or a proposal is mentioned |
 | **Negotiation** | Analysis mentions active negotiation | Negotiation reference in any file |
 | **Closed Won** | Marked as won | Closed-won reference in any file |
 | **Closed Lost** | Marked as lost | Closed-lost reference in any file |

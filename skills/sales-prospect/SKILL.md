@@ -1,6 +1,39 @@
+---
+name: sales-prospect
+description: "Full prospect audit of a company URL: runs 4 research agents in parallel (company fit, contacts, opportunity/BANT, competitive) then an outreach-strategy agent, and writes a scored PROSPECT-ANALYSIS.md with a ready-to-send first email. Use for /sales prospect or when the user asks to analyze/score a prospect company."
+argument-hint: "<company-url>"
+---
 # Full Prospect Analysis Orchestrator
 
-You are the full prospect audit engine for `/sales prospect <url>`. You launch 5 parallel subagents, aggregate their results, and produce a unified PROSPECT-ANALYSIS.md report that is ready-to-use and deal-focused.
+You are the full prospect audit engine for `/sales prospect <url>`. You launch 4 research subagents in parallel, then an outreach-strategy subagent that builds on their findings, aggregate the results, and produce a unified `prospects/<slug>/PROSPECT-ANALYSIS.md` report that is ready-to-use and deal-focused.
+
+<!-- shared-conventions v2 -->
+## Shared Conventions (apply before anything else)
+
+1. **Prospect folder.** Per-prospect files never go in the working-directory root. They live in `prospects/<slug>/`:
+`PROSPECT-ANALYSIS.md`, `COMPANY-RESEARCH.md`, `LEAD-QUALIFICATION.md`, `DECISION-MAKERS.md`, `COMPETITIVE-INTEL.md`, `OUTREACH-SEQUENCE.md`, `FOLLOWUP-SEQUENCE.md`, `MEETING-PREP.md`, `CLIENT-PROPOSAL.md`.
+- `<slug>` = the prospect's domain, lowercase, without protocol, `www.`, path or trailing slash (`https://www.Acme.com/about` → `acme.com`).
+- Given a company name instead of a URL: first look for an existing `prospects/*/` folder for it (folder name, or the `**URL:**` / title line inside its files). If none exists, find the official domain with WebSearch and use that. Only if no domain can be found, use the kebab-case name (`acme-corp`).
+- Whenever this skill says to read or write one of those files — including "if `X.md` exists" — it means `prospects/<slug>/X.md` for **this prospect only**. Never use another prospect's folder as context. Create the folder if needed.
+- Shared files stay in the working-directory root: `IDEAL-CUSTOMER-PROFILE.md`, `OBJECTION-PLAYBOOK.md`, `SALES-REPORT.md`, `SALES-REPORT-*.pdf`.
+
+2. **What the user sells.** Fit, need and competitive scores only mean something relative to the user's own offer. Read `IDEAL-CUSTOMER-PROFILE.md` (working-directory root) if it exists. If it doesn't and the user hasn't said what they sell in this conversation, ask one short question first — "What do you sell, and to whom?" If they'd rather skip it, proceed and put this line at the top of the output: `> No ICP provided — fit scores are generic B2B estimates.` Suggest `/sales icp` for future runs.
+
+3. **Helper scripts** are installed in `$HOME/.claude/skills/sales/scripts/`. Run them with `python` on Windows (where `python3` is often a Microsoft Store stub) or `python3` on macOS/Linux — use whichever prints a real version for `--version`. Example: `python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url https://acme.com`. Script output is heuristic: treat it as leads to verify, not facts.
+
+4. **Facts, not fiction.** Never invent people, titles, email addresses, mutual connections, customer results, funding, or metrics. If something can't be verified, write "Not found" or label it "Unverified". Email addresses built from a detected pattern must be marked `pattern-guessed — verify before sending`. When a deliverable needs a proof point you don't have, leave a visible `[ADD REAL CUSTOMER RESULT]` marker instead of making one up.
+
+5. **Outreach compliance.** Every sequence must be legal to send. This is guidance, not legal advice:
+- Truthful sender identity and subject lines (no fake "Re:"/"Fwd:"), and a working opt-out in every cold email (e.g. "Not relevant? Reply 'no' and I won't follow up."). Honor opt-outs immediately.
+- **US (CAN-SPAM):** include the sender's physical postal address in the signature.
+- **UK (PECR/UK GDPR):** B2B email to corporate addresses is allowed with identification + opt-out; sole traders and partnerships need prior consent.
+- **EU (GDPR + national ePrivacy laws):** needs a documented legitimate interest and role relevance; Germany and some others effectively require prior consent for cold email — flag prospects there.
+- **Canada (CASL):** generally requires consent (implied consent only in narrow cases) — flag Canadian prospects.
+- **India (DPDP Act 2023):** use business contact details only, state the purpose, and honor withdrawal promptly.
+- Only use the Mutual Connection framework when the user confirms a real, named connection who agreed to be mentioned. Never invent one.
+- End the output with a short `Compliance notes` line naming which of these rules apply to this prospect's country.
+
+---
 
 ## When This Skill Is Invoked
 
@@ -97,23 +130,22 @@ Determine the prospect's primary industry vertical from these categories:
 
 ### 1.5 Run Structured Data Extraction
 
-Execute the Python analysis script for machine-readable data extraction:
+Run the analysis script (it fetches ~17 common subpages concurrently, skips SPA soft-404s, and returns JSON):
 
 ```bash
-python3 scripts/analyze_prospect.py --url <url> --output json
+python "$HOME/.claude/skills/sales/scripts/analyze_prospect.py" --url <url>
 ```
 
-This script extracts:
-- Structured company metadata
-- Technology stack detection
-- Social media profile links
-- Contact information patterns
-- SEO and traffic signals
+(Use `python3` instead of `python` on macOS/Linux.) It returns: company name, description, `slug`, industry signals, tech stack (vendor-script detection), applicant-tracking system (hiring signal), social profiles, team members with seniority/department/likely buying role, pricing tiers, public contact emails/phones, size/funding/location/founded signals, and `warnings`.
 
-**If the script is not available or fails:**
-1. Log the error but continue the analysis
-2. Perform manual extraction using WebFetch data
+**Treat the output as leads, not facts.** Verify anything you put in the report. If `warnings` says the site is JavaScript-rendered, rely on WebFetch/WebSearch instead.
+
+**If the script is unavailable or fails:**
+1. Note the error and continue
+2. Extract the same data manually from the WebFetch results
 3. Note in the report that automated extraction was unavailable
+
+Also check `prospects/<slug>/` for earlier outputs (`COMPANY-RESEARCH.md`, `DECISION-MAKERS.md`, `LEAD-QUALIFICATION.md`, `COMPETITIVE-INTEL.md`). If any exist, include them in the briefing as **prior research to verify and update**, noting their date.
 
 ### 1.6 Compile Discovery Briefing
 
@@ -133,6 +165,8 @@ Pricing Page Content: [stored content or "not found"]
 Blog Content: [stored content or "not found"]
 Careers Content: [stored content or "not found"]
 Script Output: [JSON data or "unavailable"]
+Prior Research: [contents of existing prospects/<slug>/ files, with dates, or "none"]
+What The User Sells: [summary of IDEAL-CUSTOMER-PROFILE.md or the user's answer, or "not provided — generic B2B scoring"]
 Initial Signals: [key observations from discovery]
 ```
 
@@ -140,105 +174,32 @@ This briefing is passed to every subagent as context.
 
 ---
 
-## Phase 2: Parallel Analysis (5 Subagents Simultaneously)
+## Phase 2: Agent Analysis (4 in parallel, then 1)
 
-Launch all 5 subagents simultaneously using Claude Code's Task tool. Each subagent receives the full discovery briefing. All subagents run with `subagent_type: "general-purpose"`.
+The five specialist agents are installed in `~/.claude/agents/`. Each agent file defines its own research steps, its 5-dimension scoring rubric (each 0-10, scaled to a 0-100 category score) and its output format — do not restate or override those rubrics in the prompt.
 
-**CRITICAL:** Launch all 5 in parallel. Do NOT run them sequentially. Each subagent is independent and does not depend on the others.
+**How to launch:** use the Agent/Task tool with `subagent_type` set to the agent name (`sales-company`, `sales-contacts`, `sales-opportunity`, `sales-competitive`, `sales-strategy`). If an agent type is not available in this session, fall back to `subagent_type: "general-purpose"` and start the prompt with: *"Read `$HOME/.claude/agents/<name>.md` and follow it exactly."*
 
-### Subagent 1: sales-company (Company Research & Firmographics)
+**Every agent prompt must contain:** the prospect URL and company name, the full discovery briefing (including script output and prior research), the "What The User Sells" context, and this instruction: *"Return your analysis in your Output Format as your final message. Do not write any files."*
 
-**Skill file:** `skills/sales-research/SKILL.md`
-**Weight:** 25% of Prospect Score
-**Focus:** Company research, firmographics, financial signals, growth trajectory
+### Wave 1 — launch these four in a single message so they run in parallel
 
-**Task prompt must include:**
-- The full discovery briefing
-- Instruction to produce a Company Fit Score (0-100)
-- Instruction to return structured data: company name, founding date, employee count, funding total, revenue estimate, growth rate, tech stack, key strengths, key risks
+| Agent | Category | Weight | Returns |
+|-------|----------|--------|---------|
+| `sales-company` | Company Fit | 25% | Firmographics, growth, tech stack, budget signals, risks |
+| `sales-contacts` | Contact Access | 20% | Buying committee map, priority contacts, personalization anchors, warm paths |
+| `sales-opportunity` | Opportunity Quality | 20% | BANT scorecard, pain points, timeline, champion potential, red flags |
+| `sales-competitive` | Competitive Position | 15% | Current tools/vendors, switching costs, gaps, positioning angles |
 
-**Expected output:** Company Fit Score (0-100) with breakdown across:
-- Size fit (0-20): Is the company the right size for your solution?
-- Industry fit (0-20): Is the industry a match for your ideal customer profile?
-- Growth trajectory (0-20): Is the company growing, stable, or declining?
-- Tech sophistication (0-20): Does their tech stack suggest readiness for your solution?
-- Budget signals (0-20): Are there signals of adequate budget?
+### Wave 2 — after all four have returned
 
-### Subagent 2: sales-contacts (Decision Maker Intelligence)
+| Agent | Category | Weight | Returns |
+|-------|----------|--------|---------|
+| `sales-strategy` | Outreach Readiness | 20% | Channel plan, messaging framework, per-contact personalization, objections, timing, first-email draft |
 
-**Skill file:** `skills/sales-contacts/SKILL.md`
-**Weight:** 20% of Prospect Score
-**Focus:** Decision maker identification, org chart mapping, personalization anchors
+Pass the four Wave 1 outputs to `sales-strategy` in full (it needs the real contacts, pain points and competitive angles — that is why it runs second).
 
-**Task prompt must include:**
-- The full discovery briefing
-- Instruction to produce a Contact Access Score (0-100)
-- Instruction to return structured data: buying committee map (name, title, role, personalization anchor), org chart, top 3 priority contacts, multi-threading strategy
-
-**Expected output:** Contact Access Score (0-100) with breakdown across:
-- Decision makers identified (0-25): How many key decision makers were found?
-- Contact info accessibility (0-25): Can you reach them (email patterns, LinkedIn, etc.)?
-- Personalization anchors (0-25): Quality of personalization hooks found per contact
-- Warm paths available (0-25): Shared connections, communities, mutual contacts
-
-### Subagent 3: sales-opportunity (Opportunity & Budget Assessment)
-
-**Skill file:** `skills/sales-qualify/SKILL.md`
-**Weight:** 20% of Prospect Score
-**Focus:** Lead qualification (BANT + MEDDIC), pain point detection, budget signals, buying timeline
-
-**Task prompt must include:**
-- The full discovery briefing
-- Instruction to produce an Opportunity Quality Score (0-100)
-- Instruction to return structured data: BANT scorecard, MEDDIC assessment, buying signals, red flags, recommended approach
-
-**Expected output:** Opportunity Quality Score (0-100) with breakdown across:
-- Budget signals (0-25): Evidence of budget availability
-- Authority mapped (0-25): Clarity on who decides and how
-- Need confirmed (0-25): Strength of pain point evidence
-- Timeline urgency (0-25): Signals of near-term buying intent
-
-### Subagent 4: sales-competitive (Competitive Positioning)
-
-**Skill file:** `skills/sales-competitors/SKILL.md` (if available) or general-purpose competitive analysis
-**Weight:** 15% of Prospect Score
-**Focus:** Current solutions the prospect uses, switching costs, competitive gaps, positioning strategy
-
-**Task prompt must include:**
-- The full discovery briefing
-- Instruction to produce a Competitive Position Score (0-100)
-- Instruction to analyze: current vendor signals, technology stack, switching costs, competitive vulnerabilities, positioning angles
-
-**Expected output:** Competitive Position Score (0-100) with breakdown across:
-- Current vendor identified (0-25): Do we know what they use today?
-- Switching cost assessment (0-25): How hard would it be to switch? (Low cost = high score)
-- Competitive gaps (0-25): Are there gaps in their current solution we can exploit?
-- Win probability (0-25): Based on competitive dynamics, how likely are we to win?
-
-**Research methodology for the competitive subagent:**
-1. Scan the prospect's website for technology signals (built-with indicators, integration mentions, vendor logos)
-2. Check job postings for tool/platform requirements (e.g., "Salesforce experience required")
-3. Search for the prospect company name alongside competitor product names
-4. Look for review or case study mentions that reveal their current stack
-5. Analyze their tech requirements from careers page
-6. Search web for "[prospect name] uses [competitor]" or "[prospect name] partnered with [vendor]"
-
-### Subagent 5: sales-strategy (Outreach Strategy & Messaging)
-
-**Skill file:** `skills/sales-outreach/SKILL.md`
-**Weight:** 20% of Prospect Score
-**Focus:** Outreach strategy, messaging, channel selection, first email draft
-
-**Task prompt must include:**
-- The full discovery briefing
-- Instruction to produce an Outreach Readiness Score (0-100)
-- Instruction to return: recommended outreach framework, personalization research, channel strategy, first email draft, objection preparation
-
-**Expected output:** Outreach Readiness Score (0-100) with breakdown across:
-- Personalization depth (0-25): Quality and quantity of personalization anchors
-- Trigger events found (0-25): Recent events that create natural outreach timing
-- Channel strategy clarity (0-25): Clear path to reach decision makers
-- Message-market fit (0-25): Strength of the value proposition match
+**Cost note:** this command makes many web requests across five agents. If the user asked for something quick, use `/sales quick` instead.
 
 ---
 
@@ -307,7 +268,8 @@ Based on the Prospect Score and subagent findings, create a three-tier action pl
 ### 3.4 Create Ready-to-Use First Email
 
 Using the outreach strategy subagent's findings, craft the actual first outreach email. This must be:
-- Copy-paste ready (not a template with placeholders)
+- Copy-paste ready — the only allowed placeholders are the sender's own signature details (`[Your name]`, `[Company]`, `[Postal address]` where CAN-SPAM applies)
+- Ends with a one-line opt-out (e.g. "Not relevant? Just reply 'no' and I won't follow up.")
 - Personalized to the specific prospect (reference real data found during research)
 - Under 100 words in the body
 - Using one of the four outreach frameworks from the sales-outreach skill
@@ -330,7 +292,7 @@ Rate the overall confidence of the analysis:
 
 ## Output Format: PROSPECT-ANALYSIS.md
 
-Write the final report to `PROSPECT-ANALYSIS.md` in the current directory with this exact structure:
+Write the final report to `prospects/<slug>/PROSPECT-ANALYSIS.md` with this exact structure:
 
 ```markdown
 # Prospect Analysis: [Company Name]
@@ -563,7 +525,7 @@ Top 3 Risks:
 
 Next Step: [single most important action]
 
-Full report saved to: PROSPECT-ANALYSIS.md
+Full report saved to: prospects/<slug>/PROSPECT-ANALYSIS.md
 ============================================
 ```
 
@@ -606,9 +568,5 @@ Full report saved to: PROSPECT-ANALYSIS.md
 
 ## Cross-Skill Integration
 
-- If `COMPANY-RESEARCH.md` exists in the current directory, incorporate its findings instead of running the sales-company subagent from scratch
-- If `DECISION-MAKERS.md` exists, incorporate its findings into the contact analysis
-- If `LEAD-QUALIFICATION.md` exists, incorporate its findings into the opportunity assessment
-- If `COMPETITIVE-INTEL.md` exists, incorporate its findings into the competitive landscape
-- If `OUTREACH-SEQUENCE.md` exists, reference it in the outreach strategy section
-- Suggest follow-up commands: `/sales outreach` for full email sequence, `/sales prep` for meeting preparation, `/sales proposal` for deal-specific proposal
+- Prior files in `prospects/<slug>/` are passed to the agents as research to verify and update (see 1.5) — never copied blindly, and never taken from another prospect's folder.
+- After writing the report, suggest next commands: `/sales outreach <url>` for the full sequence, `/sales prep <url>` before a meeting, `/sales proposal <url>` for a deal-specific proposal, and `/sales report` once several prospects are analyzed.

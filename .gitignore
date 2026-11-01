@@ -32,3 +32,7 @@ venv/
 /prospects/
 /_pdf_input.json
 _bant_signals.json
+.pytest_cache/
+hunt.json
+_pdf_input.json
+SITE-AUDIT*.json

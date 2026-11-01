@@ -1,534 +1,147 @@
 <p align="center">
-  <img src="banner.svg" alt="AI Sales Team for Claude Code" width="100%">
+  <img src="banner.svg" alt="AI Sales Team" width="100%">
 </p>
 
 <p align="center">
-  <a href="#quick-start"><img src="https://img.shields.io/badge/install-one--liner-blue?style=for-the-badge" alt="Install"></a>
-  <a href="#commands"><img src="https://img.shields.io/badge/14_skills-ready-8b5cf6?style=for-the-badge" alt="14 Skills"></a>
-  <a href="#how-it-works"><img src="https://img.shields.io/badge/5_specialist-agents-22c55e?style=for-the-badge" alt="5 Agents"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License"></a>
+  <img src="https://img.shields.io/badge/16_skills-Agent_Skills_spec-8b5cf6?style=for-the-badge" alt="16 skills">
+  <img src="https://img.shields.io/badge/works_in-Claude_Code·Codex·Cursor·Gemini·OpenCode-0ea5e9?style=for-the-badge" alt="Agents">
+  <img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License">
 </p>
 
-> **Your AI-powered sales team, running inside Claude Code.**
-> Research any company, qualify leads with BANT + MEDDIC, map the buying committee, generate personalized outreach, prepare for meetings, and produce professional PDF pipeline reports — all from the command line.
+# AI Sales Team — portable sales skills for any coding agent
 
----
+Find people who are **asking** for what you sell, research and score them, find **verified** contacts, write
+outreach that only states **checked facts**, prep meetings, write proposals, and keep a **persistent
+pipeline** — from Claude Code, OpenAI Codex CLI, Cursor, Gemini CLI, OpenCode or any agent that supports the
+open [Agent Skills](https://agentskills.io/specification) format.
 
-## What This Does
+Built for B2B sellers and especially for **agencies, freelancers and consultants** (web, app, SEO, marketing,
+design) selling to SMBs in India, the US, UK and Australia. Posts and replies can be English, Hindi or Hinglish.
 
-Type a command in Claude Code and get instant, actionable sales intelligence:
+> v3 is a portable upgrade of [zubair-trabzada/ai-sales-team-claude](https://github.com/zubair-trabzada/ai-sales-team-claude)
+> (MIT). See [AUDIT.md](AUDIT.md) for what was wrong with v1/v2 and [CHANGELOG.md](CHANGELOG.md) for what changed.
 
-```
-> /sales prospect https://acme.com
+## What's new in v3
 
-Launching 4 research agents in parallel, then strategy...
-  ✓ Company Research & Firmographics    — Fit Score: 82/100
-  ✓ Decision Maker Identification       — 4 contacts found
-  ✓ Opportunity Assessment (BANT)       — Score: 78/100
-  ✓ Competitive Intelligence            — 3 competitors mapped
-  ✓ Outreach Strategy & Messaging       — 5-email sequence ready
+| | v2 | v3 |
+|---|---|---|
+| Agents | Claude Code only | Any Agent Skills agent (spec-only frontmatter, validated with `skills-ref`) |
+| Lead sources | You bring a URL | **`sales-hunt`**: finds public posts asking for your service (EN/HI/Hinglish), filters sellers, job seekers and job ads |
+| Proof for outreach | Generic research | **`sales-audit`**: fact-only website audit, every fact with evidence |
+| Emails | Pattern guesses | **`find_email.py`**: website + JSON-LD extraction, Hunter verification; guesses always labelled |
+| Hallucination guard | Prompt rules | **`claim_check.py`**: flags every sentence no evidence supports (numbers and quotes must match) |
+| Memory | Loose Markdown files | **`pipeline.py`**: SQLite pipeline with stages, contacts, history, stale-deal and source reports |
+| Scoring | US-SaaS signals only | BANT/MEDDIC **plus an agency-buyer model** (intent, urgency, freshness, contactability) |
+| Prospect roles | 5 Claude subagents (never actually loaded) | 5 role playbooks any agent runs in sequence; optional Claude subagents for parallelism |
+| Install | bash only | `python install.py` on Windows, macOS, Linux |
+| Skill size | 320-850 lines each | 50-110 lines each, details in `references/` |
+| Tests | none | pytest suite + skill validator |
 
-┌─────────────────────────────────────────────────┐
-│  PROSPECT SCORE                                 │
-│                                                 │
-│  ██████████████████████████████████░░░░  85/100  │
-│                                                 │
-│  Grade: A  —  Strong Prospect                   │
-│  Action: Invest significant effort              │
-└─────────────────────────────────────────────────┘
-
-Full analysis saved to prospects/acme.com/PROSPECT-ANALYSIS.md
-```
-
----
-
-## Quick Start
-
-### One-Command Install
+## Install
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/zubair-trabzada/ai-sales-team-claude/main/install.sh | bash
+git clone https://github.com/radianmarketingg-collab/Sales_Team.git
+cd Sales_Team
+python install.py                 # ~/.agents/skills (Codex, Cursor, Gemini, OpenCode) + ~/.claude/skills
 ```
 
-### Manual Install
+Options: `--agent claude-code|codex|cursor|gemini|opencode|agents|all` (repeatable), `--link` (symlink, edits
+apply immediately), `--with-claude-agents` (parallel prospect roles in Claude Code), `--project <dir>`
+(install into `<dir>/.agents/skills`), `--uninstall`, `--dry-run`. Existing copies are backed up to
+`~/.ai-sales-team/backups/` before an upgrade.
+
+Requirements: Python 3.9+. `pip install -r requirements.txt` adds ReportLab (PDF reports) and certifi (TLS on
+some Windows/macOS Pythons). Everything else is the standard library.
+
+**Optional API keys** — put them in `~/.ai-sales-team/.env` (never in the repo):
+
+```ini
+BRIGHTDATA_API_KEY=...   # Google search for sales-hunt / web_search.py (Bright Data SERP API)
+BRIGHTDATA_ZONE=serp_api1
+HUNTER_API_KEY=...       # email finder + verifier
+```
+
+Without keys everything still works: your agent's own web tools (or `fetch_page.py`) do the research, and
+emails are labelled `unverified` / `pattern-guessed` instead of `verified`.
+
+## Skills
+
+| Skill | Ask your agent... | Output |
+|---|---|---|
+| `sales` | "use the sales skill" — routes to the rest | — |
+| `sales-icp` | "build my ideal customer profile: we build websites for clinics" | `IDEAL-CUSTOMER-PROFILE.md` |
+| `sales-hunt` | "find people looking for a web developer this week" / "clients dhundo" | candidates → pipeline |
+| `sales-audit` | "audit sweetcrumbs.in" | `SITE-AUDIT.json` + `.md` |
+| `sales-prospect` | "full prospect analysis of acme.com" | `PROSPECT-ANALYSIS.md` (0-100 score) |
+| `sales-research` | "research acme.com" | `COMPANY-RESEARCH.md` |
+| `sales-qualify` | "qualify this lead (BANT/MEDDIC)" | `LEAD-QUALIFICATION.md` |
+| `sales-contacts` | "who should I contact at acme.com, get their email" | `DECISION-MAKERS.md` |
+| `sales-competitors` | "who is their current agency, battle card" | `COMPETITIVE-INTEL.md` |
+| `sales-outreach` | "write a cold email to acme.com" | `OUTREACH-SEQUENCE.md` (claim-checked) |
+| `sales-followup` | "they went quiet after the proposal" | `FOLLOWUP-SEQUENCE.md` |
+| `sales-prep` | "prep me for tomorrow's call with acme" | `MEETING-PREP.md` |
+| `sales-proposal` | "write a proposal for acme" | `CLIENT-PROPOSAL.md` |
+| `sales-objections` | "client says it's too expensive" / "bahut mehenga hai" | `OBJECTION-PLAYBOOK.md` |
+| `sales-report` | "how is my pipeline, what should I do today" | `SALES-REPORT.md` |
+| `sales-report-pdf` | "PDF of the pipeline" | `SALES-REPORT-<date>.pdf` |
+
+In Claude Code you can also type `/sales <command> <input>`.
+
+## A typical week
+
+```
+sales-icp       "We build websites + local SEO for clinics and restaurants in India, US and UK"
+sales-hunt      → 14 candidates, 5 real buyers judged with exact quotes, added to the pipeline
+sales-audit     sweetcrumbs.in → "no mobile viewport", "© 2019 footer", "no Book/Call button"
+sales-contacts  sweetcrumbs.in → Anita Desai, Founder, anita@sweetcrumbs.in (verified via Hunter)
+sales-outreach  sweetcrumbs.in → 96-word first email, claim check: 4/4 sentences supported
+...you send it, then: pipeline.py stage sweetcrumbs.in contacted
+sales-report    Monday review: funnel, stale deals, which hunt queries produced meetings
+```
+
+## Helper scripts (`skills/sales/scripts/`)
+
+Every script prints one JSON object and is safe to run from any agent or by hand.
+
+| Script | What it does |
+|---|---|
+| `pipeline.py` | `add`, `list`, `show`, `stage`, `score`, `note`, `contact`, `attach`, `next`, `report [--pdf-input]`, `remove` |
+| `intent_scan.py` | `--serp` (Bright Data X-ray queries, recency filter, `--max-calls` cap), `--file`, `--text`; dedupes across runs |
+| `site_audit.py` | Fact-only homepage audit; robots.txt respected; `--save` |
+| `find_email.py` | Post text → website contact pages → Hunter finder → Hunter verifier → labelled guesses |
+| `claim_check.py` | Exit 1 if any factual sentence or `[PLACEHOLDER]` is unsupported by the evidence files |
+| `fetch_page.py` / `web_search.py` | Web access for agents without web tools |
+| `analyze_prospect.py` / `contact_finder.py` | Site scrape for company signals and team members |
+| `lead_scorer.py` | BANT + MEDDIC, or `--mode agency` |
+| `generate_pdf_report.py` | PDF pipeline report (`--demo` for a sample) |
+
+Your data lives in `~/.ai-sales-team/` (override with `AI_SALES_HOME`): `pipeline.db`, `.env`, backups.
+Per-prospect files go in `prospects/<domain>/` in your working folder.
+
+## Safety and honesty (built in)
+
+- No invented people, emails, connections, results or metrics. Unknown = "Not found".
+- `claim_check.py` blocks unsupported numbers and quotes before a draft is shown.
+- Guessed emails are always marked; only `verified` addresses are recommended for cold email.
+- Compliance notes per country (CAN-SPAM, UK PECR, EU GDPR/ePrivacy, CASL, India DPDP) in every email skill.
+- Skills write drafts only. They never send email, post, comment or DM on social platforms.
+- robots.txt respected; paid API calls capped per run; keys never written to files or output.
+
+## Development
 
 ```bash
-git clone https://github.com/zubair-trabzada/ai-sales-team-claude.git
-cd ai-sales-team-claude
-./install.sh
+pip install pytest reportlab skills-ref
+python -m pytest tests            # scripts, installer, skill validation
+python tools/validate_skills.py   # Agent Skills spec + portability checks (uses skills-ref if installed)
+python tools/build_skills.py      # regenerate SKILL.md files from tools/skill_specs.py
 ```
 
-### Optional: PDF Reports & Enhanced Parsing
-
-```bash
-pip install -r requirements.txt
-```
-
-<details>
-<summary><strong>What the installer does</strong></summary>
-
-```
-╔══════════════════════════════════════════════════════════╗
-║  AI Sales Team — Claude Code Skills                     ║
-║  14 Skills · 5 Agents · 4 Scripts · PDF                 ║
-╚══════════════════════════════════════════════════════════╝
-
-Installing skills...
-  ✓ sales (orchestrator)
-  ✓ sales-prospect
-  ✓ sales-research
-  ✓ sales-qualify
-  ✓ sales-contacts
-  ✓ sales-outreach
-  ✓ sales-followup
-  ✓ sales-prep
-  ✓ sales-proposal
-  ✓ sales-objections
-  ✓ sales-icp
-  ✓ sales-competitors
-  ✓ sales-report
-  ✓ sales-report-pdf
-
-Installing agents...
-  ✓ sales-company
-  ✓ sales-contacts
-  ✓ sales-opportunity
-  ✓ sales-competitive
-  ✓ sales-strategy
-
-Installing scripts...
-  ✓ analyze_prospect.py
-  ✓ lead_scorer.py
-  ✓ contact_finder.py
-  ✓ generate_pdf_report.py
-
-Installing templates...
-  ✓ outreach-cold.md
-  ✓ outreach-warm.md
-  ✓ outreach-referral.md
-  ✓ meeting-prep.md
-  ✓ proposal-template.md
-  ✓ objection-playbook.md
-```
-
-</details>
-
----
-
-## Commands
-
-| Command | Description | Output |
-|:--------|:------------|:-------|
-| `/sales prospect <url>` | Full prospect audit — **4 parallel agents + strategy agent** | `PROSPECT-ANALYSIS.md` |
-| `/sales quick <url>` | 60-second prospect snapshot | Terminal output |
-| `/sales research <url>` | Company research & firmographics | `COMPANY-RESEARCH.md` |
-| `/sales qualify <url>` | BANT + MEDDIC lead scoring | `LEAD-QUALIFICATION.md` |
-| `/sales contacts <url>` | Decision maker identification | `DECISION-MAKERS.md` |
-| `/sales outreach <prospect>` | Cold outreach email sequence | `OUTREACH-SEQUENCE.md` |
-| `/sales followup <prospect>` | Follow-up email sequence | `FOLLOWUP-SEQUENCE.md` |
-| `/sales prep <url>` | Meeting preparation brief | `MEETING-PREP.md` |
-| `/sales proposal <client>` | Client proposal generator | `CLIENT-PROPOSAL.md` |
-| `/sales objections <topic>` | Objection handling playbook | `OBJECTION-PLAYBOOK.md` |
-| `/sales icp <description>` | Ideal Customer Profile builder | `IDEAL-CUSTOMER-PROFILE.md` |
-| `/sales competitors <url>` | Competitive intelligence | `COMPETITIVE-INTEL.md` |
-| `/sales report` | Pipeline report (Markdown) | `SALES-REPORT.md` |
-| `/sales report-pdf` | Pipeline report (PDF) | `SALES-REPORT-*.pdf` |
-
----
-
-
-## Where Output Goes
-
-Each prospect gets its own folder, so analyses never overwrite each other:
-
-```
-your-working-folder/
-├── IDEAL-CUSTOMER-PROFILE.md      ← /sales icp (used to score every prospect)
-├── OBJECTION-PLAYBOOK.md          ← /sales objections
-├── SALES-REPORT.md / *.pdf        ← /sales report, /sales report-pdf
-└── prospects/
-    ├── acme.com/
-    │   ├── PROSPECT-ANALYSIS.md
-    │   ├── OUTREACH-SEQUENCE.md
-    │   └── MEETING-PREP.md
-    └── globex.io/
-        └── PROSPECT-ANALYSIS.md
-```
-
-**Run `/sales icp` first.** Fit, need and competitive scores are measured against what *you* sell; without an ICP the skills will ask, or fall back to generic B2B scoring and say so.
-
-**Honesty & compliance built in:** the skills never invent contacts, mutual connections or customer results (missing proof points are left as visible `[ADD REAL CUSTOMER RESULT]` markers), label pattern-guessed emails, and add opt-outs plus country notes (CAN-SPAM, PECR/GDPR, CASL, India DPDP) to every outreach sequence. This is guidance, not legal advice.
-
----
-
-## How It Works
-
-### Architecture
-
-The system uses a three-layer architecture — one orchestrator skill routes commands to 13 sub-skills, with the flagship `/sales prospect` command launching 5 specialized agents in parallel:
-
-```
-                         ┌──────────────────────────┐
-                         │     /sales prospect       │
-                         │      (Orchestrator)       │
-                         └────────────┬─────────────┘
-                                      │
-                    ┌─────────────────┼─────────────────┐
-                    ▼                 ▼                  ▼
-          ┌─────────────┐   ┌─────────────────┐   ┌──────────────┐
-          │   PHASE 1    │   │     PHASE 2      │   │   PHASE 3    │
-          │  Discovery   │   │ Parallel Analysis │   │  Synthesis   │
-          └──────┬──────┘   └────────┬──────────┘   └──────┬───────┘
-                 │                   │                      │
-                 ▼                   ▼                      ▼
-          ┌─────────────┐   ┌───────────────┐       ┌──────────────┐
-          │ Fetch site   │   │ 4 agents in   │       │ Aggregate    │
-          │ Extract data │   │ parallel, then│       │ Score (0-100)│
-          │ Detect type  │   │               │       │ Action plan  │
-          │ Run scripts  │   │               │       │ First email  │
-          └─────────────┘   └───────┬───────┘       └──────────────┘
-                                    │
-                 ┌──────────────────┼──────────────────┐
-                 │                  │                   │
-        ┌────────────────┐  ┌──────────────┐  ┌───────────────┐
-        │ ┌────────────┐ │  │ ┌──────────┐ │  │ ┌───────────┐ │
-        │ │  Company   │ │  │ │ Contacts │ │  │ │Opportunity│ │
-        │ │  Research  │ │  │ │  Finder  │ │  │ │  Scoring  │ │
-        │ │            │ │  │ │          │ │  │ │           │ │
-        │ │ Fit: 25%   │ │  │ │Access:20%│ │  │ │Quality:20%│ │
-        │ └────────────┘ │  │ └──────────┘ │  │ └───────────┘ │
-        └────────────────┘  └──────────────┘  └───────────────┘
-        ┌────────────────┐  ┌──────────────┐
-        │ ┌────────────┐ │  │ ┌──────────┐ │
-        │ │Competitive │ │  │ │ Outreach │ │
-        │ │  Analysis  │ │  │ │ Strategy │ │
-        │ │            │ │  │ │          │ │
-        │ │Position:15%│ │  │ │Ready: 20%│ │
-        │ └────────────┘ │  │ └──────────┘ │
-        └────────────────┘  └──────────────┘
-```
-
-### Cross-Skill Integration
-
-Skills automatically detect and build on each other's output:
-
-```
-/sales prospect  ──►  PROSPECT-ANALYSIS.md
-                            │
-       ┌────────────────────┼────────────────────┐
-       ▼                    ▼                     ▼
-/sales outreach      /sales prep           /sales proposal
- (uses contacts,     (uses all prior       (uses qualification,
-  research data)      analysis data)        competitive intel)
-       │                    │                     │
-       ▼                    ▼                     ▼
-  OUTREACH-              MEETING-              CLIENT-
-  SEQUENCE.md            PREP.md               PROPOSAL.md
-```
-
----
-
-## Prospect Scoring
-
-Every prospect gets a **weighted composite score (0-100)** calculated from 5 dimensions:
-
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                                                                     │
-│   PROSPECT SCORE FORMULA                                            │
-│                                                                     │
-│   Company Fit ............ 25%   ████████████░░░░░░░░  Size,        │
-│                                                        industry,    │
-│                                                        growth       │
-│                                                                     │
-│   Contact Access ......... 20%   █████████░░░░░░░░░░░  Decision     │
-│                                                        makers,      │
-│                                                        warm paths   │
-│                                                                     │
-│   Opportunity Quality .... 20%   █████████░░░░░░░░░░░  BANT score,  │
-│                                                        pain points  │
-│                                                                     │
-│   Competitive Position ... 15%   ███████░░░░░░░░░░░░░  Current      │
-│                                                        solutions,   │
-│                                                        switching    │
-│                                                                     │
-│   Outreach Readiness ..... 20%   █████████░░░░░░░░░░░  Channels,    │
-│                                                        messaging,   │
-│                                                        anchors      │
-│                                                                     │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-### Grade Interpretation
-
-```
-  Score    Grade    Action
- ───────────────────────────────────────────────────────────
-  90-100    A+      🔥  Hot Lead — prioritize immediately
-  75-89     A       ✅  Strong Prospect — invest significant effort
-  60-74     B       📊  Qualified Lead — pursue with standard approach
-  40-59     C       🔄  Lukewarm — nurture, don't hard sell
-   0-39     D       ⏸️   Poor Fit — deprioritize or disqualify
-```
-
-### Qualification Frameworks
-
-<details>
-<summary><strong>BANT Scoring (0-100)</strong></summary>
-
-Each dimension scored 0-25 from publicly available signals:
-
-| Dimension | Max | Signals |
-|-----------|-----|---------|
-| **Budget** | 25 | Funding, employee count, pricing pages, tech spend |
-| **Authority** | 25 | Decision makers found, C-suite identified, org chart |
-| **Need** | 25 | Pain points, job posts, reviews, competitor gaps |
-| **Timeline** | 25 | Recent funding, hiring, contract cycles, urgency |
-
-</details>
-
-<details>
-<summary><strong>MEDDIC Assessment (0-100%)</strong></summary>
-
-Each dimension assessed for completeness:
-
-- **M**etrics — Can we quantify the business impact?
-- **E**conomic Buyer — Who controls the budget?
-- **D**ecision Criteria — How will they evaluate solutions?
-- **D**ecision Process — What's their buying process?
-- **I**dentify Pain — Are pain points confirmed?
-- **C**hampion — Is there an internal advocate?
-
-</details>
-
----
-
-## Examples
-
-### Full Prospect Audit
-
-```
-> /sales prospect https://stripe.com
-
-Phase 1: Discovering company information...
-  ✓ Homepage fetched — SaaS / Fintech detected
-  ✓ 6 subpages extracted (about, team, pricing, careers, blog, contact)
-  ✓ analyze_prospect.py — 23 data points extracted
-
-Phase 2: Running parallel analysis (5 agents)...
-  ✓ Company Research      — Fit Score: 88/100
-  ✓ Contact Discovery     — 6 decision makers found
-  ✓ Opportunity Scoring   — BANT: 82/100
-  ✓ Competitive Intel     — 4 competitors mapped
-  ✓ Outreach Strategy     — 5-email sequence drafted
-
-Phase 3: Synthesizing results...
-  ✓ Prospect Score: 85/100 (Grade A)
-  ✓ Top contact: [CTO] — strong technical champion signal
-  ✓ Opening angle: recent Series D + engineering hiring surge
-
-Output: PROSPECT-ANALYSIS.md
-```
-
-### Lead Qualification
-
-```
-> /sales qualify https://notion.so
-
-Analyzing notion.so for lead qualification...
-
-  BANT Score: 78/100 (Grade A)
-  ┌────────────────────────────────────┐
-  │ Budget:    ██████████████████░░ 22  │
-  │ Authority: ████████████████░░░░ 18  │
-  │ Need:      ██████████████████░░ 20  │
-  │ Timeline:  ████████████████░░░░ 18  │
-  └────────────────────────────────────┘
-  MEDDIC Completeness: 72%
-
-Action: Schedule discovery call — high-priority prospect.
-Output: LEAD-QUALIFICATION.md
-```
-
-### Outreach Generation
-
-```
-> /sales outreach "Linear"
-
-Generating outreach sequence for Linear...
-  Type: Cold outreach (5-email sequence)
-  Framework: Observation → Connection → Ask
-  Personalized for: Engineering-focused B2B SaaS
-
-  Email 1: "Quick question about [specific pain point]"    Day 1
-  Email 2: "Saw your team's post about [trigger event]"    Day 3
-  Email 3: "[Mutual connection] suggested I reach out"     Day 7
-  Email 4: "3 ideas for [specific challenge]"              Day 14
-  Email 5: "Should I close the file?"                      Day 21
-
-Output: OUTREACH-SEQUENCE.md
-```
-
-### Meeting Prep
-
-```
-> /sales prep https://datadog.com
-
-Generating meeting brief for datadog.com...
-  ┌────────────────────────────────────────────┐
-  │  MEETING PREP BRIEF                        │
-  │                                            │
-  │  Company:       Datadog                    │
-  │  Attendees:     3 profiled                 │
-  │  Talking Points: 7 prepared                │
-  │  Discovery Qs:  10 ready                   │
-  │  Objections:    5 with responses           │
-  │  Cheat Sheet:   1 page                     │
-  └────────────────────────────────────────────┘
-
-Output: MEETING-PREP.md
-```
-
----
-
-## Project Structure
-
-```
-ai-sales-team-claude/
-│
-├── sales/SKILL.md                     ← Main orchestrator (routes all /sales commands)
-│
-├── skills/                            ← 13 sub-skills
-│   ├── sales-prospect/SKILL.md           Full prospect audit (launches 5 agents)
-│   ├── sales-research/SKILL.md           Company research & firmographics
-│   ├── sales-qualify/SKILL.md            Lead qualification (BANT + MEDDIC)
-│   ├── sales-contacts/SKILL.md           Decision maker identification
-│   ├── sales-outreach/SKILL.md           Cold outreach email sequences
-│   ├── sales-followup/SKILL.md           Follow-up email generation
-│   ├── sales-prep/SKILL.md               Meeting preparation brief
-│   ├── sales-proposal/SKILL.md           Client proposal generator
-│   ├── sales-objections/SKILL.md         Objection handling playbook
-│   ├── sales-icp/SKILL.md                Ideal Customer Profile builder
-│   ├── sales-competitors/SKILL.md        Competitive intelligence
-│   ├── sales-report/SKILL.md             Pipeline report (Markdown)
-│   └── sales-report-pdf/SKILL.md         Pipeline report (PDF)
-│
-├── agents/                            ← 5 specialist subagents (4 parallel + strategy)
-│   ├── sales-company.md                  Company fit & firmographics (25%)
-│   ├── sales-contacts.md                 Decision maker mapping (20%)
-│   ├── sales-opportunity.md              Opportunity & BANT scoring (20%)
-│   ├── sales-competitive.md              Competitive positioning (15%)
-│   └── sales-strategy.md                 Outreach strategy & messaging (20%)
-│
-├── scripts/                           ← Python utilities (stdlib only, except PDF)
-│   ├── sales_common.py                   Shared fetching / HTML parsing helpers
-│   ├── analyze_prospect.py               Website scraping & data extraction
-│   ├── lead_scorer.py                    BANT/MEDDIC scoring engine
-│   ├── contact_finder.py                 Team & leadership extraction
-│   └── generate_pdf_report.py            ReportLab PDF generator
-│
-├── templates/                         ← Output templates
-│   ├── outreach-cold.md                  5-email cold sequence
-│   ├── outreach-warm.md                  3-email warm intro sequence
-│   ├── outreach-referral.md              3-email referral sequence
-│   ├── meeting-prep.md                   Meeting prep brief
-│   ├── proposal-template.md              11-section client proposal
-│   └── objection-playbook.md             15 universal objections
-│
-├── install.sh                         ← One-command installer
-├── uninstall.sh                       ← Cleanup script
-├── requirements.txt                   ← Python deps (reportlab, bs4, requests)
-└── LICENSE                            ← MIT
-```
-
----
-
-## Use Cases
-
-<table>
-<tr>
-<td width="33%">
-
-### Founders & Solopreneurs
-
-```bash
-# Full prospect intelligence
-/sales prospect https://target.com
-
-# Ready-to-send email sequence
-/sales outreach "Target Company"
-
-# Prep before the call
-/sales prep https://target.com
-```
-
-</td>
-<td width="33%">
-
-### Sales Teams
-
-```bash
-# Qualify inbound leads
-/sales qualify https://lead.com
-
-# Map the buying committee
-/sales contacts https://lead.com
-
-# Handle pricing objections
-/sales objections "enterprise SaaS"
-```
-
-</td>
-<td width="33%">
-
-### Agency Owners
-
-```bash
-# Client proposal with pricing
-/sales proposal "Client Name"
-
-# Competitive positioning
-/sales competitors https://client.com
-
-# Define ideal customer
-/sales icp "B2B SaaS, 50-200 emp"
-```
-
-</td>
-</tr>
-</table>
-
----
-
-## Requirements
-
-| Requirement | Status | Notes |
-|:------------|:------:|:------|
-| **Claude Code** | Required | [Install Claude Code](https://docs.anthropic.com/en/docs/claude-code) |
-| **Python 3.8+** | Optional | For scripts and PDF generation |
-| **reportlab** | Optional | Installed automatically by `install.sh` — PDF reports |
-
-The scraping scripts use only the Python standard library. On **Windows**, use `python` (not `python3`, which is usually a Microsoft Store stub); the skills already handle this.
-
----
-
-## Uninstall
-
-```bash
-# From the repo directory
-./uninstall.sh
-
-# Or remotely
-curl -fsSL https://raw.githubusercontent.com/zubair-trabzada/ai-sales-team-claude/main/uninstall.sh | bash
-```
-
-Removes all skills, agents, scripts, and templates from `~/.claude/`. Python packages are not removed.
-
----
-
-<p align="center">
-  <strong>MIT License</strong> · Copyright (c) 2026 Zubair Trabzada
-  <br><br>
-  <a href="https://github.com/zubair-trabzada/ai-sales-team-claude/issues">Report Bug</a> ·
-  <a href="https://github.com/zubair-trabzada/ai-sales-team-claude/issues">Request Feature</a>
-</p>
+Layout: `skills/<name>/SKILL.md` (+ `references/`), shared scripts in `skills/sales/scripts/`, optional
+agent extras in `adapters/`, the installer in `install.py`.
+
+## Credits
+
+Original skill set, frameworks and PDF layout by [Zubair Trabzada](https://github.com/zubair-trabzada/ai-sales-team-claude) (MIT).
+Intent phrase scoring adapted from [lead-signal-listener](https://github.com/yangyixxxx/lead-signal-listener) (MIT);
+claim matching and bounce/reply ideas from [autonomous-sdr](https://github.com/RodricDib06/autonomous-sdr) (MIT).
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). License: [MIT](LICENSE).

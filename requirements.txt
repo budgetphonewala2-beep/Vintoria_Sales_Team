@@ -1,1 +1,2 @@
-reportlab>=4.0
+reportlab>=4.0      # PDF reports (sales-report-pdf)
+certifi>=2024.2.2   # trusted CA bundle for TLS on some Windows/macOS Pythons

@@ -46,7 +46,7 @@ HOOKS = [
     ("cta", lambda v: v is False, 3, "No clear call-to-action — offer a conversion-focused homepage"),
     ("contact_form", lambda v: v is False, 2, "No contact form on the homepage — enquiries are being lost"),
     ("click_to_call", lambda v: v is False, 2, "No tap-to-call link — easy win for mobile enquiries"),
-    ("whatsapp_link", lambda v: v is False, 1, "No WhatsApp button — common enquiry channel for Indian buyers"),
+    ("whatsapp_link", lambda v: v is False, 1, "No chat/WhatsApp button — an easy extra enquiry channel"),
     ("copyright_year", lambda v: isinstance(v, int) and v < THIS_YEAR - 1, 2, "Old footer year — site looks unmaintained"),
     ("response_time_ms", lambda v: (v or 0) > 3000, 2, "Slow first load — offer speed optimisation"),
     ("meta_description", lambda v: not v, 1, "No meta description — weak Google snippet; SEO quick win"),

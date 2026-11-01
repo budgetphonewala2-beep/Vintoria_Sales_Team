@@ -18,7 +18,7 @@ def _load(name, path):
 def test_every_skill_valid():
     v = _load("validate_skills", ROOT / "tools" / "validate_skills.py")
     skills = sorted(p for p in (ROOT / "skills").iterdir() if (p / "SKILL.md").exists())
-    assert len(skills) == 19
+    assert len(skills) == 20
     for d in skills:
         assert v.check(d) == [], d.name
         official = v.official(d)
@@ -40,7 +40,7 @@ def test_installer_copy_backup_uninstall(tmp_path, monkeypatch):
     r = subprocess.run([sys.executable, str(ROOT / "install.py"), "--with-claude-agents"], env=env, capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
     for base in (tmp_path / ".agents" / "skills", tmp_path / ".claude" / "skills"):
-        assert len([p for p in base.iterdir() if (p / "SKILL.md").exists()]) == 19
+        assert len([p for p in base.iterdir() if (p / "SKILL.md").exists()]) == 20
     assert (tmp_path / ".claude" / "skills" / "sales" / "scripts" / "pipeline.py").exists()
     assert not (tmp_path / ".claude" / "skills" / "sales" / "templates").exists()          # stale files gone
     assert list((tmp_path / ".ai-sales-team" / "backups").glob("*/*sales"))                  # but backed up

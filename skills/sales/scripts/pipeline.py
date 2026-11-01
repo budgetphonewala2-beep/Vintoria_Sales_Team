@@ -20,6 +20,7 @@ Usage (every command prints one JSON object):
     python pipeline.py report [--pdf-input out.json]     # funnel + stale deals + next actions
     python pipeline.py remove acme.com                   # delete a prospect and its records
     python pipeline.py today                             # the day's agenda: replies, meetings, follow-ups, new leads
+    python pipeline.py where acme.com --country US --tz America/Chicago   # where they are (send times, slots)
     python pipeline.py suppress priya@acme.com --reason "asked not to be contacted"   # or a whole domain: acme.com
     python pipeline.py suppressed                        # list the do-not-contact list
 
@@ -94,7 +95,34 @@ def connect(path=None):
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     conn.executescript(SCHEMA)
+    cols = {r[1] for r in conn.execute("PRAGMA table_info(prospects)")}
+    for col in ("country", "tz"):                          # added in 3.4 — migrate older databases in place
+        if col not in cols:
+            conn.execute(f"ALTER TABLE prospects ADD COLUMN {col} TEXT")
     return conn
+
+
+TLD_COUNTRY = {".co.uk": "UK", ".uk": "UK", ".com.au": "AU", ".au": "AU", ".ca": "CA", ".co.nz": "NZ", ".nz": "NZ",
+               ".ie": "IE", ".ae": "AE", ".sg": "SG", ".de": "DE", ".nl": "NL", ".in": "IN", ".co.in": "IN", ".us": "US"}
+
+
+def infer_country(slug):
+    s = (slug or "").lower()
+    for tld in sorted(TLD_COUNTRY, key=len, reverse=True):
+        if s.endswith(tld):
+            return TLD_COUNTRY[tld]
+    return None
+
+
+def set_where(conn, key, country=None, tz=None):
+    p = get(conn, key)
+    if tz:
+        import meeting
+        tz = meeting.tz(tz).key
+    with conn:
+        conn.execute("UPDATE prospects SET country = COALESCE(?, country), tz = COALESCE(?, tz), updated_at = ? WHERE id = ?",
+                     ((country or "").upper() or None, tz, now(), p["id"]))
+    return {"prospect": p["slug"], "country": (country or "").upper() or p.get("country"), "tz": tz or p.get("tz")}
 
 
 class UserError(Exception):
@@ -140,8 +168,8 @@ def add(conn, url=None, name=None, source=None, services=None, stage="new"):
         return {"created": False, "prospect": get(conn, slug)}
     ts = now()
     with conn:
-        cur = conn.execute("""INSERT INTO prospects(slug, name, url, stage, source, services, created_at, updated_at)
-                              VALUES (?,?,?,?,?,?,?,?)""", (slug, name, url, stage, source, services, ts, ts))
+        cur = conn.execute("""INSERT INTO prospects(slug, name, url, stage, source, services, created_at, updated_at, country)
+                              VALUES (?,?,?,?,?,?,?,?,?)""", (slug, name, url, stage, source, services, ts, ts, infer_country(slug)))
         event(conn, cur.lastrowid, "stage", "added" + (f" from {source}" if source else ""), None, stage)
     return {"created": True, "prospect": get(conn, slug)}
 
@@ -373,6 +401,7 @@ def main(argv=None):
     r = sub.add_parser("report"); r.add_argument("--pdf-input", help="also write generate_pdf_report.py input JSON here")
     rm = sub.add_parser("remove"); rm.add_argument("prospect")
     sub.add_parser("today")
+    wh = sub.add_parser("where"); wh.add_argument("prospect"); wh.add_argument("--country"); wh.add_argument("--tz")
     su = sub.add_parser("suppress"); su.add_argument("value", help="email address or domain"); su.add_argument("--reason", default="")
     sub.add_parser("suppressed")
     args = ap.parse_args(argv)
@@ -426,6 +455,11 @@ def main(argv=None):
             with conn:
                 conn.execute("DELETE FROM prospects WHERE id = ?", (p["id"],))
             out = {"removed": p["slug"]}
+        elif args.cmd == "where":
+            try:
+                out = set_where(conn, args.prospect, args.country, args.tz)
+            except Exception as exc:  # noqa: BLE001 - bad time zone name
+                raise UserError(str(exc))
         elif args.cmd == "today":
             out = today_agenda(conn)
         elif args.cmd == "suppress":

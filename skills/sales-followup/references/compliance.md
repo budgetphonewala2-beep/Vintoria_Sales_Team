@@ -9,7 +9,13 @@ Every sequence must be legal to send:
 - **EU (GDPR + national ePrivacy laws):** needs a documented legitimate interest and role relevance; Germany
   and some others effectively require prior consent for cold email — flag prospects there.
 - **Canada (CASL):** generally requires consent (implied consent only in narrow cases) — flag Canadian prospects.
-- **India (DPDP Act 2023):** use business contact details only, state the purpose, honour withdrawal promptly.
+- **Australia (Spam Act 2003):** needs consent — inferred consent only when the address is conspicuously published
+  for business AND your message relates to their role; identify the sender and include a working unsubscribe.
+  Flag Australian prospects whose address you found in a database (Apollo etc.) rather than published by them.
+- **New Zealand (Unsolicited Electronic Messages Act 2007):** similar consent rule (inferred from conspicuous
+  publication); sender details and unsubscribe required.
+- **If you are based in India (DPDP Act 2023):** applies to personal data of people in India; for overseas
+  prospects the rules above (their country) are the ones that matter.
 - Only mention a mutual connection the user confirmed is real and agreed to be named. Never invent one.
 - Never post, comment or DM on social platforms on the user's behalf; suggest the message, the user sends it.
 - WhatsApp: only to numbers the prospect published for business or shared with you, and only person-to-person

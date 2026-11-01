@@ -78,6 +78,10 @@ from both the demo data and the schema the skills document. Status column = stat
 - Hacker News (Algolia), Reddit JSON and Product Hunt GraphQL were implemented from their public API docs and tested
   with mocked responses; Reddit increasingly rate-limits unauthenticated requests, so the Apify actor is the
   dependable route. Product Hunt often redacts maker details; the product website is the lead.
+- Apollo data comes through third-party Apify actors; their input fields (`url`, `totalRecords`, Leads Finder filter
+  names) were taken from the actors' public pages and may change — override the actor with `APIFY_*_ACTOR` or pass
+  your own `--input`. Scraping Apollo may conflict with Apollo's terms; that is between you and Apollo. Database
+  emails are saved as `unverified` unless `--verify` passes.
 - Apify actor inputs/outputs are set by each actor's publisher and can change; the defaults were checked against
   the actors' public docs (2026-11) and outputs are read defensively, but run a small test (`--max 5`) after
   switching actors. Provider APIs (Prospeo, Findymail, Apollo, verifiers) were implemented from their public docs

@@ -10,6 +10,12 @@ PEOPLE ASKING (intent posts → intent_scan scoring, sellers/job ads/job seekers
     facebook     Public Facebook groups you name — Apify actor apify/facebook-groups-scraper
     google       Google X-ray across LinkedIn, Reddit, X, FB groups, Quora, Indie Hackers, Upwork jobs, Hinglish
                  (Apify apify/google-search-scraper, or Bright Data)
+PEOPLE DATABASES (decision makers matching your profile — lists, no intent; pair with a dossier):
+    apollo       Apollo.io people search via Apify (default code_crafter/apollo-scraper) — give an Apollo search URL,
+                 or let the seller profile build one (titles × countries × company size × niche keywords)
+    leads        Apollo-style filters without an Apollo account (default code_crafter/leads-finder)
+    people       LinkedIn profile search (harvestapi/linkedin-profile-search): title + location + niche keyword
+    employees    Decision makers at given companies (harvestapi/linkedin-company-employees)
 COMPANIES WITH A NEED (outbound targets with signals):
     maps         Google Maps businesses (Apify compass/crawler-google-places): no website, low rating, few reviews
     producthunt  New Product Hunt launches (PRODUCTHUNT_TOKEN, free developer token) — need growth, SEO, design
@@ -26,7 +32,11 @@ Usage (every command prints one JSON object):
     python lead_sources.py x [--services web] [--max 50]
     python lead_sources.py facebook --group-url https://www.facebook.com/groups/... [--max 50]
     python lead_sources.py google [--query '...'] [--services web] [--location Pune] [--country in]
-    python lead_sources.py maps --services web --location "Pune" [--max 40] [--add]
+    python lead_sources.py maps --services web --location "Austin" [--max 40] [--add]
+    python lead_sources.py apollo [--url "https://app.apollo.io/#/people?..."] [--max 200] [--add] [--verify]
+    python lead_sources.py leads [--max 200] [--add] [--verify]          # filters from SELLER-PROFILE.json
+    python lead_sources.py people [--query "skincare"] [--max 100] [--add] [--verify]
+    python lead_sources.py employees --company https://www.linkedin.com/company/acme [--max 20] [--add]
     python lead_sources.py producthunt [--days 7] [--max 30] [--add]
     python lead_sources.py actor some-user/some-actor --input input.json [--raw]
     python lead_sources.py research acme.com [--name "Acme Bakery"] [--city Pune]
@@ -39,6 +49,8 @@ APIFY_MAX_RUNS (actor runs per hunt, default 8).
 Apify: POST https://api.apify.com/v2/acts/<user>~<actor>/run-sync-get-dataset-items (Bearer token, ≤ 5 min).
 Hacker News: https://hn.algolia.com/api/v1 (no key). Product Hunt: POST https://api.producthunt.com/v2/api/graphql.
 Reddit fallback: https://www.reddit.com/r/<sub>/search.json (no key; Reddit may rate-limit — Apify is steadier).
+With a seller profile (SELLER-PROFILE.json) the queries, countries and exclusions come from it, and leads from
+excluded markets (e.g. India when you target US/UK/CA/AU) are dropped (`excluded_market`).
 Only public data; nothing is posted, liked or messaged. Emails/phones written in a post are attached to the lead
 (contact_in_post) so no email-finder credits are spent on them.
 """
@@ -61,7 +73,9 @@ HN_API = "https://hn.algolia.com/api/v1"
 PH_API = "https://api.producthunt.com/v2/api/graphql"
 DEFAULT_ACTORS = {"linkedin": "harvestapi/linkedin-post-search", "google": "apify/google-search-scraper",
                   "reddit": "trudax/reddit-scraper-lite", "x": "apidojo/tweet-scraper",
-                  "facebook": "apify/facebook-groups-scraper", "maps": "compass/crawler-google-places"}
+                  "facebook": "apify/facebook-groups-scraper", "maps": "compass/crawler-google-places",
+                  "apollo": "code_crafter/apollo-scraper", "leads": "code_crafter/leads-finder",
+                  "people": "harvestapi/linkedin-profile-search", "employees": "harvestapi/linkedin-company-employees"}
 POSTED = ["1h", "24h", "week", "month", "3months", "6months", "year"]
 
 
@@ -158,6 +172,12 @@ def google_items(items, query=None):
 
 def _services(s):
     return [x.strip() for x in (s or "web").split(",") if x.strip()]
+
+
+def seller_titles():
+    import seller_profile
+    prof = seller_profile.load()
+    return ((prof or {}).get("targets") or {}).get("buyer_titles") or []
 
 
 # ----------------------------------------------------------------------------------------------- people asking
@@ -269,6 +289,109 @@ def facebook(group_urls, max_items=50, call=api_json):
     return [normalize(i, "facebook") for i in run_actor(actor_for("facebook"), inp, max_items=max_items, call=call)]
 
 
+# ----------------------------------------------------------------------------------------------- people databases
+
+def normalize_person(item, source):
+    """Apollo / Leads Finder / LinkedIn profile items → one person record (several field spellings accepted)."""
+    first = _first(item, "first_name", "firstName")
+    last = _first(item, "last_name", "lastName")
+    name = _first(item, "name", "full_name", "fullName") or " ".join(x for x in (first, last) if x) or None
+    org = item.get("organization") if isinstance(item.get("organization"), dict) else {}
+    pos = (item.get("currentPosition") or item.get("experience") or [{}])
+    pos = pos[0] if isinstance(pos, list) and pos else (pos if isinstance(pos, dict) else {})
+    company = (_first(item, "organization_name", "company_name", "companyName", "company", "organization.name")
+               or org.get("name") or pos.get("companyName"))
+    if isinstance(company, dict):
+        company = company.get("name")
+    site = (_first(item, "organization_website_url", "company_website", "companyWebsite", "website", "organization.website_url",
+                   "company_domain", "organization_primary_domain") or org.get("website_url") or org.get("primary_domain"))
+    loc = _first(item, "location", "city", "country", "state")
+    if isinstance(loc, dict):
+        loc = _first(loc, "linkedinText", "parsed.text", "name", "city")
+    return {"name": name, "first": first or (name.split()[0] if name else None),
+            "last": last or (name.split()[-1] if name and len(name.split()) > 1 else None),
+            "title": _first(item, "title", "headline", "job_title", "jobTitle", "position") or pos.get("position"),
+            "company": company, "website": site, "email": (_first(item, "email", "work_email", "personal_email") or None),
+            "email_status": _first(item, "email_status", "emailStatus", "contact_email_status"),
+            "linkedin": _first(item, "linkedin_url", "linkedinUrl", "linkedin", "profileUrl", "url"),
+            "phone": _first(item, "phone", "mobile_number", "phone_number", "sanitized_phone"), "location": loc,
+            "industry": _first(item, "industry", "organization_industry", "organization.industry"), "source": source}
+
+
+def apollo(urls, max_items=200, call=api_json):
+    out = []
+    for u in urls:
+        if "apollo.io" not in u:
+            raise UserError(f"not an Apollo search URL: {u[:80]}")
+        inp = {"url": u, "totalRecords": int(max_items), "getPersonalEmails": False, "getWorkEmails": True}
+        out += [normalize_person(i, "apollo") for i in run_actor(actor_for("apollo"), inp, max_items=max_items, call=call)]
+    return out
+
+
+def leads_finder(filters, max_items=200, call=api_json):
+    inp = {k: v for k, v in filters.items() if v}
+    inp["fetch_count"] = int(max_items)
+    return [normalize_person(i, "leads") for i in run_actor(actor_for("leads"), inp, max_items=max_items, call=call)]
+
+
+def people(searches, max_items=100, call=api_json):
+    out = []
+    for srch in searches:
+        inp = {k: v for k, v in srch.items() if v}
+        inp["maxItems"] = int(max_items)
+        out += [normalize_person(i, "linkedin-people") for i in run_actor(actor_for("people"), inp, max_items=max_items, call=call)]
+    return out
+
+
+def employees(company_urls, titles=None, locations=None, max_items=20, call=api_json):
+    inp = {"companies": list(company_urls), "maxItems": int(max_items)}
+    if titles:
+        inp["jobTitles"] = list(titles)
+    if locations:
+        inp["locations"] = list(locations)
+    return [normalize_person(i, "linkedin-employees") for i in run_actor(actor_for("employees"), inp, max_items=max_items, call=call)]
+
+
+def dedupe_people(rows, exclude_markers=()):
+    seen, out, dropped = set(), [], 0
+    for r in rows:
+        key = (r.get("email") or r.get("linkedin") or f"{r.get('name')}|{r.get('company')}").lower()
+        loc = f"{r.get('location') or ''}".lower()
+        if exclude_markers and any(re.search(r"(?<!\w)" + re.escape(m) + r"(?!\w)", loc) for m in exclude_markers):
+            dropped += 1
+            continue
+        if key and key not in seen:
+            seen.add(key)
+            out.append(r)
+    return out, dropped
+
+
+def add_people(rows, source, verify=False, call=api_json):
+    """People → pipeline (prospect = their company domain). Emails are stored as unverified unless verified here."""
+    import find_email
+    import pipeline
+    conn = pipeline.connect()
+    added = []
+    try:
+        for r in rows:
+            site = r.get("website")
+            if not (site or r.get("company")):
+                continue
+            res = pipeline.add(conn, url=site, name=r.get("company"), source=source)
+            slug = res["prospect"]["slug"]
+            status = "unverified" if r.get("email") else None
+            if r.get("email") and verify:
+                v = find_email.verify_only(r["email"], call=call)
+                status = v["status"]
+            pipeline.add_contact(conn, slug, r.get("name") or r.get("email") or "Unknown", title=r.get("title"),
+                                 email=r.get("email"), email_status=status, email_source=r["source"], linkedin=r.get("linkedin"),
+                                 phone=r.get("phone"), role="decision maker")
+            added.append({"prospect": slug, "person": r.get("name"), "email": r.get("email"), "email_status": status})
+    finally:
+        conn.close()
+    return added
+
+
 # ----------------------------------------------------------------------------------------------- companies with a need
 
 def maps(searches, max_places=40, call=api_json):
@@ -356,17 +479,19 @@ def add_companies(companies, source):
 
 # ----------------------------------------------------------------------------------------------- all at once
 
-def hunt(services, location=None, posted="week", max_posts=30, country="", call=api_json):
-    """Every source you have keys for, best first. A failing source is reported, never fatal."""
-    lib = query_library.build(services, location)
+def hunt(services=None, location=None, posted="week", max_posts=30, country="", call=api_json, lib=None):
+    """Every source you have keys for, best first. A failing source is reported, never fatal.
+    With no services given, the seller profile drives the queries (query_library.auto)."""
+    lib = lib or query_library.auto(services, location)
+    country = country or (lib.get("google_countries") or [""])[0]
     max_runs = int(setting("APIFY_MAX_RUNS", "8"))
     have_apify = bool(secret("APIFY_TOKEN"))
     plan = [("hackernews", False, lambda: hackernews(lib["hackernews"][:6], 30, 30, True, call)),
-            ("linkedin", True, lambda: linkedin(lib["linkedin"][:8], posted, max_posts, call)),
+            ("linkedin", True, lambda: linkedin(lib["linkedin"][:10], posted, max_posts, call)),
             ("reddit", have_apify, lambda: reddit(lib["reddit"][:12], max_posts, call)),
-            ("google", True, lambda: google([q["query"] for q in lib["google_xray"] if q["platform"] != "signal"][:12],
+            ("google", True, lambda: google([q["query"] for q in lib["google_xray"] if q["platform"] != "signal"][:14],
                                             country, 1, call)),
-            ("x", True, lambda: x_posts(lib["x"][:3], max_posts, call))]
+            ("x", True, lambda: x_posts(lib["x"][:4], max_posts, call))]
     posts, errors, runs, ran = [], [], 0, []
     for name, uses_apify, fn in plan:
         if uses_apify and runs >= max_runs:
@@ -398,7 +523,7 @@ def research_queries(domain, name=None, city=None):
         "linkedin": f'site:linkedin.com/company OR site:linkedin.com/in {n}',
         "founder": f'{n} (founder OR owner OR "managing director" OR CEO)',
         "social": f'(site:instagram.com OR site:facebook.com OR site:youtube.com) {n}',
-        "directories": f'(site:justdial.com OR site:yelp.com OR site:clutch.co OR site:trustpilot.com OR site:indiamart.com) {n}',
+        "directories": f'(site:yelp.com OR site:trustpilot.com OR site:bbb.org OR site:clutch.co OR site:g2.com OR site:yell.com) {n}',
         "hiring": f'{n} (hiring OR careers OR "job opening") (marketing OR developer OR designer OR SEO)',
         "ads": f'{n} ("sponsored" OR "facebook ads library" OR "google ads")',
         "competitors": f'{n} (alternatives OR competitors OR "vs")',
@@ -429,11 +554,30 @@ def research(domain, name=None, city=None, out_dir=None, call=api_json):
 
 # ----------------------------------------------------------------------------------------------- CLI
 
-def finish(posts, errors, save=None, dedupe=True, ran=None):
+def _markers():
+    import seller_profile
+    prof = seller_profile.load()
+    return query_library.excluded_markers(prof) if prof else []
+
+
+def market_hit(text, markers):
+    t = (text or "").lower()
+    return next((m for m in markers if re.search(r"(?<!\w)" + re.escape(m) + r"(?!\w)", t)), None)
+
+
+def finish(posts, errors, save=None, dedupe=True, ran=None, markers=None):
     for p in posts:            # HN "SEEKING FREELANCER" posts are buyers by definition
         if p.get("intent_override") and "seeking freelancer" not in p["text"].lower()[:200]:
             p["text"] = "Seeking freelancer: " + p["text"]
+    markers = _markers() if markers is None else markers
     out = intent_scan.scan(posts, dedupe=dedupe)
+    if markers:                # drop leads from markets you excluded (e.g. India when targeting US/UK/CA/AU)
+        keep, dropped = [], []
+        for c in out["candidates"]:
+            hit = market_hit(f"{c.get('title') or ''} {c.get('text') or ''} {c.get('author_headline') or ''}", markers)
+            (dropped if hit else keep).append({**c, "excluded_market": hit} if hit else c)
+        out["candidates"], out["excluded_market"] = keep, len(dropped)
+        out["excluded_examples"] = [{"url": d["url"], "marker": d["excluded_market"]} for d in dropped[:5]]
     out["scanned"], out["errors"] = len(posts), errors
     out["by_source"] = {s: sum(1 for p in posts if p.get("source") == s) for s in sorted({str(p.get("source")) for p in posts})}
     out["kept_by_source"] = {s: sum(1 for c in out["candidates"] if c.get("source") == s) for s in out["by_source"]}
@@ -446,12 +590,22 @@ def finish(posts, errors, save=None, dedupe=True, ran=None):
     return out
 
 
+def people_result(rows, args, source):
+    rows, dropped = dedupe_people(rows, _markers())
+    out = {"people": rows, "count": len(rows), "excluded_market": dropped,
+           "with_email": sum(1 for r in rows if r.get("email")),
+           "next": "Deep-scan the best fits (prospect_scan.py <website> --first X --last Y) before writing to them."}
+    if getattr(args, "add", False):
+        out["added"] = add_people(rows, source, verify=getattr(args, "verify", False))
+    return out
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Lead sources (LinkedIn, HN, Reddit, X, FB groups, Google, Maps, Product Hunt) and research.")
     sub = ap.add_subparsers(dest="cmd", required=True)
 
     def common(s, posted=True):
-        s.add_argument("--services", default="web"); s.add_argument("--location", "--city", dest="location")
+        s.add_argument("--services"); s.add_argument("--location", "--city", dest="location")
         s.add_argument("--max", type=int, default=30); s.add_argument("--save"); s.add_argument("--no-dedupe", action="store_true")
         if posted:
             s.add_argument("--posted", default="week", choices=POSTED)
@@ -472,33 +626,63 @@ def main(argv=None):
     ac.add_argument("--raw", action="store_true", help="return the items as-is instead of intent-scoring them")
     rs = sub.add_parser("research"); rs.add_argument("domain"); rs.add_argument("--name"); rs.add_argument("--city")
     rs.add_argument("--out-dir")
-    qq = sub.add_parser("queries"); qq.add_argument("--services", default="web"); qq.add_argument("--location", "--city", dest="location")
+    qq = sub.add_parser("queries"); qq.add_argument("--services"); qq.add_argument("--location", "--city", dest="location")
+    apo = sub.add_parser("apollo"); apo.add_argument("--url", action="append", help="Apollo people-search URL (repeatable)")
+    ld = sub.add_parser("leads"); ld.add_argument("--input", help="JSON filters (default: built from the seller profile)")
+    pp = sub.add_parser("people"); pp.add_argument("--query", action="append", help="keyword, e.g. a niche")
+    em = sub.add_parser("employees"); em.add_argument("--company", action="append", required=True, help="LinkedIn company URL")
+    em.add_argument("--title", action="append")
+    for x in (apo, ld, pp, em):
+        x.add_argument("--max", type=int, default=100); x.add_argument("--add", action="store_true")
+        x.add_argument("--verify", action="store_true", help="verify each email before saving (verifier credits)")
+        x.add_argument("--save")
     a = ap.parse_args(argv)
     try:
-        svc = _services(getattr(a, "services", "web"))
+        svc = _services(a.services) if getattr(a, "services", None) else None
         loc = getattr(a, "location", None)
+        lib = query_library.auto(svc, loc)
+        svc = lib["services"]
         if a.cmd == "queries":
-            out = {**query_library.build(svc, loc), "actors": {k: actor_for(k) for k in DEFAULT_ACTORS}}
+            out = {**lib, "actors": {k: actor_for(k) for k in DEFAULT_ACTORS}}
         elif a.cmd == "linkedin":
-            out = finish(linkedin(a.query or query_library.linkedin(svc, True, loc)[:8], a.posted, a.max), [], a.save, not a.no_dedupe)
+            out = finish(linkedin(a.query or lib["linkedin"][:10], a.posted, a.max), [], a.save, not a.no_dedupe)
         elif a.cmd == "google":
-            qs = a.query or [q["query"] for q in query_library.google_xray(svc, loc) if q["platform"] != "signal"]
-            out = finish(google(qs, a.country, a.pages), [], a.save, not a.no_dedupe)
+            qs = a.query or [q["query"] for q in lib["google_xray"] if q["platform"] != "signal"]
+            out = finish(google(qs, a.country or (lib.get("google_countries") or [""])[0], a.pages), [], a.save, not a.no_dedupe)
         elif a.cmd == "x":
-            out = finish(x_posts(a.query or query_library.x_search(svc, loc), a.max), [], a.save, not a.no_dedupe)
+            out = finish(x_posts(a.query or lib["x"], a.max), [], a.save, not a.no_dedupe)
         elif a.cmd == "reddit":
             plan = ([{"subreddit": s.replace("r/", ""), "query": a.query or " OR ".join(query_library.TERMS[svc[0]][:3])}
-                     for s in a.subreddit] if a.subreddit else query_library.reddit(svc))
+                     for s in a.subreddit] if a.subreddit else lib["reddit"])
             out = finish(reddit(plan, a.max), [], a.save, not a.no_dedupe)
         elif a.cmd == "hackernews":
-            out = finish(hackernews(a.query or query_library.hackernews(svc), a.days, a.max, not a.no_thread), [], a.save,
-                         not a.no_dedupe)
+            out = finish(hackernews(a.query or lib["hackernews"], a.days, a.max, not a.no_thread), [], a.save, not a.no_dedupe)
+        elif a.cmd == "apollo":
+            urls = a.url or [u["url"] for u in lib.get("apollo_urls") or []]
+            if not urls:
+                raise UserError("give --url (copy an Apollo people search URL) or fill SELLER-PROFILE.json (buyer_titles, countries, niches)")
+            out = people_result(apollo(urls, a.max), a, "apollo")
+            out["apollo_urls"] = urls
+        elif a.cmd == "leads":
+            filters = json.loads(Path(a.input).read_text(encoding="utf-8")) if a.input else lib.get("leads_finder")
+            if not filters:
+                raise UserError("give --input filters.json or fill SELLER-PROFILE.json")
+            out = people_result(leads_finder(filters, a.max), a, "leads")
+        elif a.cmd == "people":
+            searches = ([{**(lib.get("linkedin_people") or [{}])[0], "searchQuery": q} for q in a.query] if a.query
+                        else lib.get("linkedin_people") or [])
+            if not searches:
+                raise UserError("give --query or fill SELLER-PROFILE.json")
+            out = people_result(people(searches, a.max), a, "linkedin-people")
+        elif a.cmd == "employees":
+            titles = a.title or (seller_titles() or None)
+            out = people_result(employees(a.company, titles, None, a.max), a, "linkedin-employees")
         elif a.cmd == "facebook":
             out = finish(facebook(a.group_url, a.max), [], a.save, not a.no_dedupe)
         elif a.cmd == "maps":
-            searches = a.search or query_library.maps(svc, loc)[:6]
-            if not a.search and not loc:
-                raise UserError("give --location (e.g. 'Pune') or --search 'dentist in Pune'")
+            searches = a.search or (query_library.maps(svc, loc)[:6] if loc else lib.get("maps", [])[:8])
+            if not searches:
+                raise UserError("give --location (e.g. 'Austin') or --search 'dentist in Austin, TX'")
             companies = maps(searches, a.max)
             out = {"companies": companies, "count": len(companies), "with_need": sum(1 for c in companies if c["signals"])}
             if a.add:
@@ -509,7 +693,7 @@ def main(argv=None):
             if a.add:
                 out["added"] = add_companies(companies, "producthunt")
         elif a.cmd == "hunt":
-            posts, errors, ran = hunt(svc, loc, a.posted, a.max, a.country)
+            posts, errors, ran = hunt(None, loc, a.posted, a.max, a.country, lib=lib)
             out = finish(posts, errors, a.save, not a.no_dedupe, ran)
             if not posts and errors:
                 emit({"ok": False, "error": "every source failed", "data": out}, 4)
@@ -519,7 +703,7 @@ def main(argv=None):
                 [normalize(i, "apify:" + a.actor) for i in items], [], a.save, not a.no_dedupe)
         else:
             out = research(a.domain, a.name, a.city, a.out_dir)
-        if getattr(a, "save", None) and "companies" in out:
+        if getattr(a, "save", None) and ("companies" in out or "people" in out):
             Path(a.save).write_text(json.dumps(out, indent=2, ensure_ascii=False), encoding="utf-8")
         emit({"ok": True, "data": out})
     except (UserError, ApiError) as exc:

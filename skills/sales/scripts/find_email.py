@@ -284,6 +284,21 @@ def providers(kind):
     return out
 
 
+def verify_only(email, call=api_json):
+    """Run the verifier chain on one known address (e.g. from Apollo or a post). No finder credits."""
+    steps = []
+    for name, key, fn in providers("verifiers"):
+        try:
+            v = fn(key, email, call)
+        except RuntimeError as exc:
+            steps.append({"verifier": name, "error": str(exc)})
+            continue
+        return {"email": email.lower(), "status": v["status"], "verified_by": name, "provider_status": v.get("provider_status"),
+                "steps": steps}
+    return {"email": email.lower(), "status": "unverified", "verified_by": None, "steps": steps,
+            "note": "no verifier key (or all failed) — set MILLIONVERIFIER_API_KEY / ZEROBOUNCE_API_KEY / NEVERBOUNCE_API_KEY"}
+
+
 def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_many, call=api_json, max_verifications=4):
     """use_hunter=False disables every paid API (kept as the parameter name for compatibility)."""
     steps, cands = [], []
@@ -394,7 +409,10 @@ def main(argv=None):
     ap.add_argument("--text", default="", help="text to mine first (e.g. the prospect's post)")
     ap.add_argument("--no-api", "--no-hunter", dest="no_api", action="store_true", help="don't call any paid API")
     ap.add_argument("--providers", action="store_true", help="show configured finders/verifiers and exit")
+    ap.add_argument("--email", help="you already have the address: only verify it (no finder credits)")
     a = ap.parse_args(argv)
+    if a.email:
+        emit({"ok": True, "data": verify_only(a.email)})
     if a.providers:
         emit({"ok": True, "data": {"finders": [n for n, _, _ in providers("finders")],
                                    "verifiers": [n for n, _, _ in providers("verifiers")],

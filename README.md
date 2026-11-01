@@ -3,7 +3,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/19_skills-Agent_Skills_spec-8b5cf6?style=for-the-badge" alt="19 skills">
+  <img src="https://img.shields.io/badge/20_skills-Agent_Skills_spec-8b5cf6?style=for-the-badge" alt="20 skills">
   <img src="https://img.shields.io/badge/works_in-Claude_Code·Codex·Cursor·Gemini·OpenCode-0ea5e9?style=for-the-badge" alt="Agents">
   <img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License">
 </p>
@@ -31,6 +31,23 @@ sales-hunt ─► sales-audit ─► sales-contacts ─► sales-outreach ─►
 Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today's agenda from the pipeline —
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
+
+## What's new in v3.4 — it learns you first, then hunts overseas clients
+
+| | v3.3 | v3.4 |
+|---|---|---|
+| First run | Agent asked "what do you sell?" | **`sales-setup`** interviews you in 3 short rounds → `SELLER-PROFILE.json` (services, niches, platforms, outcomes, deal size, countries, excluded markets, buyer titles, pains, triggers, tools clients leave, real proof). Every skill checks it first |
+| Queries | Per service | **Built from your profile**: niche × service, pain, trigger, switching ("moving from Wix"), platform and recommendation queries; Apollo URLs; LinkedIn people filters; niche subreddits; Maps in your cities |
+| Market | India + abroad, Hinglish | **International by default** (US, UK, CA, AU…), English only; `NOT India` / `-India` in queries and leads mentioning an excluded market dropped |
+| People databases | — | **Apollo via Apify** (`code_crafter/apollo-scraper`), **Leads Finder** (Apollo-style filters), **LinkedIn people search** and **company employees** (HarvestAPI); `--add --verify` |
+| Send time | Your hours | **The prospect's morning** — each email waits for 09:00-17:00 in their time zone (country from domain, `pipeline.py where`, or your first target country) |
+| Compliance | US/UK/EU/CA/IN | + **Australia Spam Act** and **NZ UEMA** consent rules |
+
+```
+python skills/sales/scripts/seller_profile.py check      # what the agent still needs to ask you
+python skills/sales/scripts/query_library.py             # the queries your profile produces
+python skills/sales/scripts/lead_sources.py apollo --max 200 --add --verify
+```
 
 ## What's new in v3.3 — every lead source, sharper queries, deep scans
 
@@ -141,7 +158,8 @@ emails are labelled `unverified` / `pattern-guessed` instead of `verified`.
 | Skill | Ask your agent... | Output |
 |---|---|---|
 | `sales` | "use the sales skill" — routes to the rest | — |
-| `sales-icp` | "build my ideal customer profile: we build websites for clinics" | `IDEAL-CUSTOMER-PROFILE.md` |
+| `sales-setup` | "set me up" / "mere business ke baare mein pucho" — **run first** | `SELLER-PROFILE.json` |
+| `sales-icp` | "build my ideal customer profile" | `IDEAL-CUSTOMER-PROFILE.md` |
 | `sales-hunt` | "find people looking for a web developer this week" / "clients dhundo" | candidates → pipeline |
 | `sales-audit` | "audit sweetcrumbs.in" | `SITE-AUDIT.json` + `.md` |
 | `sales-prospect` | "full prospect analysis of acme.com" | `PROSPECT-ANALYSIS.md` (0-100 score) |
@@ -165,7 +183,8 @@ In Claude Code you can also type `/sales <command> <input>`.
 ## A typical week
 
 ```
-sales-icp       "We build websites + local SEO for clinics and restaurants in India, US and UK"
+sales-setup     3-round interview → SELLER-PROFILE.json (Shopify stores for DTC brands; US, UK, CA, AU; not India)
+sales-icp       ICP + the queries that profile produces
 sales-hunt      → 14 candidates, 5 real buyers judged with exact quotes, added to the pipeline
 sales-audit     sweetcrumbs.in → "no mobile viewport", "© 2019 footer", "no Book/Call button"
 sales-contacts  sweetcrumbs.in → Anita Desai, Founder, anita@sweetcrumbs.in (verified via Hunter)
@@ -185,8 +204,9 @@ Every script prints one JSON object and is safe to run from any agent or by hand
 | Script | What it does |
 |---|---|
 | `pipeline.py` | `add`, `list`, `show`, `stage`, `score`, `note`, `contact`, `attach`, `next`, `report [--pdf-input]`, `today`, `suppress`, `remove` |
-| `lead_sources.py` | `hunt` (all), `linkedin`, `hackernews`, `reddit`, `x`, `facebook`, `google`, `maps`, `producthunt`, `actor`, `research`, `queries` |
-| `query_library.py` | Search queries per service / platform / location (LinkedIn boolean, X-ray, X, subreddits, HN, Maps) |
+| `lead_sources.py` | `hunt` (all), `linkedin`, `hackernews`, `reddit`, `x`, `facebook`, `google`, `apollo`, `leads`, `people`, `employees`, `maps`, `producthunt`, `actor`, `research`, `queries` |
+| `query_library.py` | Queries from your profile (LinkedIn boolean, X-ray, X, subreddits, HN, Maps, Apollo URLs, people filters) |
+| `seller_profile.py` | `init`, `check` (what to ask), `questions`, `show`, `set` — your business, read by every skill |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md` + pipeline (audit, company, people, email, web research, hooks) |
 | `outreach.py` | `log`, `cadence`, `approve` / `queue` / `run` / `cancel` sequences, `send` (dry run → `--send`), `whatsapp` |
 | `inbox.py` | `check [--apply] [--auto-reply]` — IMAP replies and bounces → pipeline |

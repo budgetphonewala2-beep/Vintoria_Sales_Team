@@ -202,11 +202,40 @@ def test_run_respects_send_window_and_markdown_sequences(conn, monkeypatch, tmp_
     assert [s["step"] for s in steps] == [1, 2] and steps[0]["subject"] == "Acme website" and "Subject" not in steps[0]["body"]
     outreach.approve(conn, "acme.com", "priya@acme.com", steps, evidence_text=EVIDENCE, today=date(2026, 11, 2))
     night = outreach.run(conn, True, now=datetime(2026, 11, 2, 23, 0, tzinfo=timezone.utc), smtp=FakeSMTP)
-    assert not night["in_window"] and not night["sent"] and "Outside SEND_HOURS" in night["note"]
+    assert not night["sent"] and night["waiting_for_window"][0]["tz"] == "UTC"
     with pytest.raises(outreach.UserError):
         bad = tmp_path / "bad.json"
         bad.write_text('[{"step": 2, "body": "x"}]', encoding="utf-8")
         outreach.parse_sequence(str(bad))
+
+
+def test_sends_in_the_prospects_time_zone(conn, monkeypatch):
+    _smtp_env(monkeypatch)
+    monkeypatch.setenv("SEND_HOURS", "09:00-17:00")
+    monkeypatch.setenv("TIMEZONE", "Asia/Kolkata")
+    FakeSMTP.sent = []
+    pipeline.set_where(conn, "acme.com", "US", "America/New_York")
+    outreach.approve(conn, "acme.com", "priya@acme.com", [{"step": 1, "subject": "Acme website", "body": BODY}],
+                     evidence_text=EVIDENCE, today=date(2026, 11, 2))
+    ist_morning = datetime(2026, 11, 2, 4, 30, tzinfo=timezone.utc)     # 10:00 IST = 23:30 New York (Sunday night)
+    r = outreach.run(conn, True, now=ist_morning, smtp=FakeSMTP)
+    assert not r["sent"] and not r["due"]                              # still Nov 1 in New York: not due yet
+    ny_night = datetime(2026, 11, 3, 4, 0, tzinfo=timezone.utc)        # Mon 23:00 New York
+    r = outreach.run(conn, True, now=ny_night, smtp=FakeSMTP)
+    assert not r["sent"] and r["waiting_for_window"][0]["tz"] == "America/New_York"
+    ny_morning = datetime(2026, 11, 3, 14, 30, tzinfo=timezone.utc)    # Tue 09:30 New York
+    assert len(outreach.run(conn, True, now=ny_morning, smtp=FakeSMTP)["sent"]) == 1
+
+
+def test_country_from_domain_and_where():
+    c = pipeline.connect()
+    assert pipeline.add(c, url="https://shop.co.uk")["prospect"]["country"] == "UK"
+    assert pipeline.add(c, url="https://cafe.com.au")["prospect"]["country"] == "AU"
+    assert pipeline.add(c, url="https://x.com")["prospect"]["country"] is None
+    assert outreach.prospect_tz(pipeline.get(c, "shop.co.uk")) == "Europe/London"
+    with pytest.raises(Exception):
+        pipeline.set_where(c, "x.com", tz="Mars/Base")
+    c.close()
 
 
 def test_whatsapp_link():

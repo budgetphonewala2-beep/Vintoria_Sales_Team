@@ -36,6 +36,9 @@ Sending gates (all must pass, otherwise nothing is sent):
     and (cold email to the US) the SENDER_ADDRESS postal address;
   - today's sends are under DAILY_SEND_LIMIT (default 30) and this prospect wasn't emailed in the last 2 days;
   - no booking link before the prospect has shown interest (see above).
+Queued emails go out only inside SEND_HOURS (default 09:00-17:00) on weekdays in the PROSPECT's time zone
+(their tz → their country → PROSPECT_DEFAULT_TZ → your first target country), so a US prospect gets it in
+their morning, not yours.
 Plain text only, no tracking pixels, List-Unsubscribe header set.
 """
 
@@ -398,29 +401,63 @@ def _blocked(conn, p, row):
     return None
 
 
+def prospect_tz(p):
+    """The prospect's time zone: their own (pipeline.py where), else their country's, else your first target country's."""
+    import meeting
+    import query_library
+    for cand in (p.get("tz"), (query_library.COUNTRIES.get((p.get("country") or "").upper()) or {}).get("tz"),
+                 setting("PROSPECT_DEFAULT_TZ"), _profile_tz()):
+        if cand:
+            try:
+                meeting.tz(cand)
+                return cand
+            except Exception:  # noqa: BLE001
+                continue
+    return setting("TIMEZONE", "UTC")
+
+
+def _profile_tz():
+    try:
+        import query_library
+        import seller_profile
+        prof = seller_profile.load()
+        return query_library.COUNTRIES[query_library.country_codes(prof)[0]]["tz"] if prof else None
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def send_window(p, now, hours):
+    import meeting
+    zone = prospect_tz(p)
+    local = now.astimezone(meeting.tz(zone))
+    try:
+        h0, h1 = meeting._hours(hours)
+    except Exception:  # noqa: BLE001
+        h0, h1 = 9 * 60, 17 * 60
+    return zone, local, (h0 <= local.hour * 60 + local.minute < h1 and local.weekday() < 5)
+
+
 def run(conn, really=False, limit=None, now=None, smtp=smtplib):
     """Send every due approved step that is still valid. Dry run unless really=True."""
     now = now or datetime.now(timezone.utc)
     today = now.date()
-    hours = setting("SEND_HOURS", "09:00-18:00")
-    try:
-        import meeting
-        local = now.astimezone(meeting.tz(setting("TIMEZONE", "Asia/Kolkata")))
-        h0, h1 = meeting._hours(hours)
-        in_window = h0 <= local.hour * 60 + local.minute < h1 and local.weekday() < 5
-    except Exception:  # noqa: BLE001 - never block sending on a settings typo; report it
-        in_window, local = True, now
+    hours = setting("SEND_HOURS", "09:00-17:00")
     rows = [dict(r) for r in conn.execute("SELECT * FROM sequence_steps WHERE status = 'approved' AND due IS NOT NULL AND due <= ? "
-                                          "ORDER BY due, step", (today.isoformat(),))]
-    out = {"due": len(rows), "sent": [], "would_send": [], "skipped": [], "errors": [],
-           "window": f"{hours} {setting('TIMEZONE', 'Asia/Kolkata')} on weekdays", "in_window": in_window}
-    if really and not in_window:
-        out["note"] = f"Outside SEND_HOURS ({local.strftime('%a %H:%M')}) — nothing sent; the next run inside the window will send."
-        return out
+                                          "ORDER BY due, step", ((today + timedelta(days=1)).isoformat(),))]
+    out = {"due": 0, "sent": [], "would_send": [], "skipped": [], "errors": [], "waiting_for_window": [],
+           "window": f"{hours} in each prospect's own time zone, Mon-Fri"}
     for row in rows:
         if limit and len(out["sent"]) >= limit:
             break
         p = dict(conn.execute("SELECT * FROM prospects WHERE id = ?", (row["prospect_id"],)).fetchone())
+        zone, local, ok = send_window(p, now, hours)
+        if row["due"] > local.date().isoformat():       # not due yet in THEIR calendar
+            continue
+        out["due"] += 1
+        if not ok:
+            out["waiting_for_window"].append({"prospect": p["slug"], "step": row["step"], "their_time": local.strftime("%a %H:%M"),
+                                              "tz": zone})
+            continue
         why = _blocked(conn, p, row)
         if why:
             with conn:
@@ -452,8 +489,9 @@ def run(conn, really=False, limit=None, now=None, smtp=smtplib):
             if any("daily send limit" in x for x in res["problems"]):
                 break
             continue
-        first_date = today if row["step"] == 1 else (_first_email_date(conn, p["id"]) or today)
-        nxt = followup_due(first_date, row["step"], today)
+        their_today = local.date()
+        first_date = their_today if row["step"] == 1 else (_first_email_date(conn, p["id"]) or their_today)
+        nxt = followup_due(first_date, row["step"], their_today)
         with conn:
             conn.execute("UPDATE sequence_steps SET status = 'sent', sent_at = ?, message_id = ?, subject = ? WHERE id = ?",
                          (pipeline.now(), res["message_id"], subject, row["id"]))

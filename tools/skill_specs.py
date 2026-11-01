@@ -9,6 +9,7 @@ AUTO = "python <SCRIPTS>/autopilot.py"
 INBOX = "python <SCRIPTS>/inbox.py"
 SCAN = "python <SCRIPTS>/prospect_scan.py"
 QL = "python <SCRIPTS>/query_library.py"
+PROF = "python <SCRIPTS>/seller_profile.py"
 
 SKILLS = [
 # --------------------------------------------------------------------------- router
@@ -22,6 +23,7 @@ Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`)
 
 | The user wants... | Skill | Main output |
 |---|---|---|
+| **First run / new user** — who you are, what you sell, who to target (**always first**) | `sales-setup` | `SELLER-PROFILE.json` |
 | The whole job, every day: find → contact → follow up → book (**daily driver**) | `sales-autopilot` | today's agenda, done step by step |
 | To define who to sell to (**start here**) | `sales-icp` | `IDEAL-CUSTOMER-PROFILE.md` |
 | People publicly asking for what they sell (intent leads) | `sales-hunt` | scored candidates → pipeline |
@@ -50,7 +52,7 @@ this one) and follow it; its instructions take precedence over this router.
 ## The end-to-end flow
 
 ```
-sales-icp → sales-hunt (lead_sources) → prospect_scan (dossier) → sales-outreach (approve 5 emails)
+sales-setup → sales-icp → sales-hunt (lead_sources) → prospect_scan (dossier) → sales-outreach (approve 5 emails)
    → autopilot sends day 0/3/7/14/28 → inbox.py reply → sales-reply → sales-book → sales-prep → sales-proposal
 ```
 Default for any new prospect: run the deep scan first (`python <SCRIPTS>/prospect_scan.py <url> [--post-text "..."]`),
@@ -79,15 +81,16 @@ then write from `DOSSIER.md`. Its `facts` are claim-check evidence.
 | Script | Purpose |
 |---|---|
 | `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report, `today`, suppress |
-| `lead_sources.py` | LinkedIn posts (HarvestAPI), Hacker News, Reddit, X, Facebook groups, Google X-ray, Google Maps, Product Hunt, any Apify actor; `research` |
+| `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
 | `outreach.py` | Log touches, approve whole sequences, `run` due follow-ups (day 3/7/14/28), safe SMTP send, WhatsApp links |
 | `inbox.py` | Read replies/bounces over IMAP (read-only) → pipeline; optional instant booking-link reply |
 | `autopilot.py` | `tick`: inbox → due sequence emails → today's agenda (schedule it every 30 min) |
-| `reply_triage.py` | Classify a reply (EN/HI/Hinglish) → stage, next step, stop follow-ups, opt-outs |
+| `seller_profile.py` | Your profile (`init`, `check`, `questions`, `show`, `set`) — every query and email is built from it |
+| `reply_triage.py` | Classify a reply → stage, next step, stop follow-ups, opt-outs |
 | `meeting.py` | Free slots in both time zones, `.ics` invites, meeting list and outcomes |
-| `intent_scan.py` | Find + score posts asking for a service (EN/HI/Hinglish; Bright Data optional) |
+| `intent_scan.py` | Score posts asking for a service; rejects sellers, job ads, job seekers |
 | `site_audit.py` | Fact-only website audit (each fact with evidence) |
 | `find_email.py` | Email waterfall: site → Prospeo / Findymail / Hunter / Apollo → MillionVerifier / ZeroBounce / NeverBounce / Hunter |
 | `claim_check.py` | Flags sentences in a draft that no evidence supports |
@@ -107,7 +110,8 @@ The template is `examples/env.example` in the repository.
 ## Typical week
 
 ```
-sales-icp          "We build websites and SEO for clinics and restaurants in India, US and UK"
+sales-setup        interview → SELLER-PROFILE.json (services, niches, countries, deal size, proof, buyer titles)
+sales-icp          ICP + the sharpest queries for that profile
 sales-hunt         find people asking for that this week → judge → pipeline
 sales-prospect     https://bestlead.com          (deep audit of the best ones)
 sales-audit        https://bestlead.com          (proof-of-work facts)
@@ -126,20 +130,26 @@ sales-report       weekly pipeline review
 {
 "name": "sales-hunt",
 "title": "Intent Hunt — find people asking for what you sell",
-"description": "Finds people publicly asking to hire a service the user sells (website, app, SEO, marketing, design, software, e-commerce, video) on LinkedIn posts (Apify HarvestAPI), Hacker News (incl. the Seeking-freelancer thread), Reddit (r/forhire and more), X, Facebook groups, Quora, Indie Hackers and Upwork via Google X-ray, plus companies with a visible need from Google Maps and Product Hunt — using a query library with strong boolean queries — scores them in English, Hindi and Hinglish, filters sellers, job seekers and job ads, judges real buyers, deep-scans the best and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
+"description": "Finds people publicly asking to hire a service the user sells (website, app, SEO, marketing, design, software, e-commerce, video) on LinkedIn posts (Apify HarvestAPI), Hacker News (incl. the Seeking-freelancer thread), Reddit (r/forhire and more), X, Facebook groups, Quora, Indie Hackers and Upwork via Google X-ray, plus companies with a visible need from Google Maps and Product Hunt — using a query library with strong boolean queries — plus decision-maker lists from Apollo, Leads Finder and LinkedIn people search — all built from the seller profile (niches, countries, buyer titles) — filters sellers, job seekers, job ads and excluded markets, judges real buyers, deep-scans the best and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
 "intro": """Intent beats cold lists: a person who wrote "need a website for my clinic" this week is worth fifty
 cold contacts. This skill finds those posts, separates real buyers from noise, and puts them in the pipeline.""",
 "body": f"""## Steps
 
-1. **Know the offer.** Read `IDEAL-CUSTOMER-PROFILE.md` (its "Hunt settings": services, location, languages) or ask.
-   Preview the searches: `{QL} --services web,seo [--location Pune]` — read `references/queries.md` for the formula.
+1. **Know the seller.** `{PROF} check` — if the profile is missing or incomplete, run `sales-setup` first. The
+   queries are generated from it (niches, platforms, pains, triggers, tools clients leave, buyer titles,
+   countries, excluded markets): preview them with `{QL}`. Read `references/queries.md` for the formula.
 2. **Collect posts** — any of these (best first):
-   - Everything at once: `{SRC} hunt --services web,seo [--location Pune] --posted week --max 30 --save hunt.json`
+   - Everything at once: `{SRC} hunt --posted week --max 30 --save hunt.json` (profile-driven; leads from excluded
+     markets are dropped and counted in `excluded_market`)
      (Hacker News free; LinkedIn, Reddit, X, Google X-ray with `APIFY_TOKEN`). Or one source:
      `{SRC} linkedin` · `{SRC} hackernews` (incl. the monthly "Seeking freelancer" thread) · `{SRC} reddit`
      (r/forhire [Hiring] and more; free JSON without Apify) · `{SRC} x` · `{SRC} facebook --group-url <public group>`
-     · `{SRC} google` — each takes `--services/--location` or your own `--query` (repeatable).
-   - Companies with a visible need (outbound): `{SRC} maps --services web --location "Pune" --add` (no website,
+     · `{SRC} google` — each uses the profile, or `--services/--location`, or your own `--query` (repeatable).
+   - **People databases** (decision makers matching the profile — lists, no intent): `{SRC} apollo` (Apollo search
+     URLs built from the profile, or `--url` from your Apollo account), `{SRC} leads` (Apollo-style filters, no
+     account), `{SRC} people` (LinkedIn profile search), `{SRC} employees --company <LinkedIn company URL>`.
+     Add `--add --verify` to save them with verified emails. These need a stronger first line — deep-scan first.
+   - Companies with a visible need (outbound): `{SRC} maps --add` (cities from the profile; no website,
      social-only page, low rating, few reviews + phone) and `{SRC} producthunt --days 7 --add` (new launches).
    - Any other Apify actor: `{SRC} actor <user/actor> --input in.json`.
      Spend is capped by `APIFY_MAX_USD` (default $1/run) and `APIFY_MAX_RUNS`; tell the user what ran and the counts
@@ -404,7 +414,9 @@ Never disparage a competitor with claims you can't source.
    | 4 | 14 | Different angle: competitor/market fact (Maps comparison, reviews) or a simple question | ≤ 60 |
    | 5 | 28 | Polite breakup: "close the file?" + leave the door open | ≤ 50 |
    Subject lines: 2-5 words, lower-case, specific ("acme homepage on mobile"), no clickbait; follow-ups reply
-   in the same thread. Write in the prospect's language (Hinglish post → simple Hinglish email).
+   in the same thread. Write in plain international English — US spelling for US/CA prospects, UK spelling for
+   UK/IE/AU/NZ — no Indian-English idioms ("do the needful", "revert", "kindly"), prices in their currency.
+   Pull the signature, offer line and proof only from `SELLER-PROFILE.json` (`{PROF} show`).
    Use the warm or referral template only for a real, confirmed connection.
 4. **Claim check** every email (see "Before anything is sent"); fix until it passes.
 5. Write `prospects/<slug>/OUTREACH-SEQUENCE.md` (`references/output-format.md`).
@@ -500,7 +512,8 @@ Never disparage a competitor with claims you can't source.
 2. **Write** the 11 sections (Step 2) using `references/template-proposal-template.md`. Three options
    (e.g. Essential / Growth / Complete) anchored to the stated need — the middle one is the one you recommend;
    ROI only with explicit, conservative assumptions. Make it easy to say yes:
-   - Price in their currency (₹ with GST noted for India; $ / £ / A$ abroad), what's included and **not** included.
+   - Price in their currency ($, £, C$, A$, €) from the profile's deal size, what's included and **not** included.
+     If you invoice from India, the tax treatment of exported services is for your accountant — don't state it.
    - Payment terms (e.g. 50% to start, 50% on launch, or milestones), timeline per phase, revision rounds.
    - Validity date (e.g. 14 days) and a start slot if real; acceptance = reply "approved Option B".
    - Their words from the post/meeting in the "Situation" section, and 2-3 audit facts as the "why".
@@ -518,7 +531,7 @@ Never disparage a competitor with claims you can't source.
 {
 "name": "sales-objections",
 "title": "Objection Handling Playbook",
-"description": "Generates word-for-word objection responses for calls, emails and chat — 15 universal objections, industry-specific and competitor objections, pricing tactics and prevention — tailored to what the user sells and, optionally, one prospect or industry, written to OBJECTION-PLAYBOOK.md. Includes Indian-market objections such as 'bahut mehenga hai' or 'mera bhatija website bana dega'. Use when the user says 'handle objections', 'they said it's too expensive', 'what do I say if', '/sales objections', or in Hinglish 'client bol raha hai mehenga hai', 'objection ka jawab do'.",
+"description": "Generates word-for-word objection responses for calls, emails and chat — 15 universal objections, industry-specific and competitor objections, pricing tactics and prevention — tailored to what the user sells and, optionally, one prospect or industry, written to OBJECTION-PLAYBOOK.md. Covers the objections overseas clients raise about offshore agencies (time zones, communication, quality, trust, IP, payment). Use when the user says 'handle objections', 'they said it's too expensive', 'what do I say if', '/sales objections', or in Hinglish 'client bol raha hai mehenga hai', 'objection ka jawab do'.",
 "intro": """You give the user exact words for the hard moments, true to their offer.""",
 "body": f"""## Steps
 
@@ -527,11 +540,14 @@ Never disparage a competitor with claims you can't source.
 2. Frameworks (Feel-Felt-Found, Acknowledge-Bridge-Close) and the 15 universal objections (Steps 2-3), each
    with a call version, an email version and a follow-up question.
 3. Industry, competitive and pricing objections (Steps 4-6); prevention tactics (Step 7). For agencies include
-   "my nephew/freelancer will do it cheaper", "we tried an agency before", "can you guarantee page 1?"
+   "a freelancer will do it cheaper", "we tried an agency before", "can you guarantee page 1?"
    (never promise rankings).
 4. Map each objection to the reply categories `reply_triage.py` detects (`objection_price`, `objection_timing`,
    `objection_has_vendor`, `not_interested`) so `sales-reply` can use the right answer, and include a short
-   email/WhatsApp version (≤ 60 words) and a Hinglish version for the top 5.
+   email version (≤ 60 words). Include the offshore-agency objections overseas buyers raise: "you're in another
+   time zone" (overlap hours, response time), "quality/communication worries" (process, named PM, weekly calls),
+   "I've been burned by an offshore team" (milestone payments, code ownership, references), "IP and contracts"
+   (contract under their law if needed, NDA), "how do I pay you" (Wise/Payoneer/Stripe invoice).
 5. Write `OBJECTION-PLAYBOOK.md` in the working-directory root (or `prospects/<slug>/` for one prospect), using
    `references/template-objection-playbook.md`. Proof points must be real — otherwise `[ADD REAL CUSTOMER RESULT]`.
 """,
@@ -539,24 +555,65 @@ Never disparage a competitor with claims you can't source.
          ("output-format.md", "OBJECTION-PLAYBOOK.md format"), ("template-objection-playbook.md", "structural template"),
          ("rules.md", "rules")],
 },
+# --------------------------------------------------------------------------- setup
+{
+"name": "sales-setup",
+"title": "Seller Setup — learn everything about the seller first",
+"description": "First-run onboarding that interviews the seller before any prospecting: agency name, sender identity, postal address, services, niches, platforms, outcomes, deal size and currency, target countries and cities, excluded markets, buyer job titles, company size, real case studies and proof, differentiators, buyer pains, buying triggers, tools clients leave, booking link — saved to SELLER-PROFILE.json, which every other skill and script (queries, Apollo/LinkedIn filters, emails, proposals, send times) is built from. Also checks which API keys are set. Use at the start of any new session or when the user says 'set up', 'onboard me', 'start', 'here is my business', 'update my profile', 'change my niche', or in Hinglish 'setup karo', 'mere business ke baare mein pucho', 'profile banao'.",
+"intro": """Nothing good comes from generic queries and generic emails. Before hunting, writing or pricing anything,
+you learn the seller's business properly and save it, so every agent after you builds on the same facts.""",
+"body": f"""## Steps
+
+1. **Check what exists:** `{PROF} check`. If it says `Ready.`, show a 5-line summary and ask only whether
+   anything changed. If the profile is missing: `{PROF} init`.
+2. **Interview** (`references/intake.md`; `{PROF} questions` lists every field with why it matters). Ask in at
+   most **3 short rounds**, grouped, with an example answer for each question — never 25 questions at once:
+   - Round 1 — the business: name, website, sender name + email, postal address, time zone; services
+     (codes: web, app, seo, marketing, design, software, ecommerce, video); the offer in one line; niches.
+   - Round 2 — the buyer: target countries/cities, excluded markets, buyer titles, company size, deal size +
+     currency, their pains right before they hire, buying triggers, tools/platforms they leave.
+   - Round 3 — proof and positioning: 2-3 real results (client, result, link), portfolio, years/projects/team,
+     why you over others, any real guarantee, booking link.
+   Accept "skip" for optional fields. Never fill an answer the user didn't give — case studies especially.
+3. **Read their website** (if given) to pre-fill and confirm, not invent: services, niches, case studies, address.
+4. **Save** each answer: `{PROF} set <field> '<json or text>'` (e.g. `{PROF} set offer.niches '["DTC skincare", "coffee brands"]'`),
+   then `{PROF} check` until it says `Ready.`
+5. **Keys check:** `python <SCRIPTS>/find_email.py --providers` and look for `APIFY_TOKEN`, `SMTP_*`, `IMAP_*`,
+   `BOOKING_URL` in `~/.ai-sales-team/.env` (template `examples/env.example`). Tell the user which sources and
+   automations are on, and the one key that would add the most (usually `APIFY_TOKEN`, then a verifier).
+6. **Show the queries this profile produces:** `{QL}` — 3 LinkedIn queries, 2 X-ray queries, the Apollo URL and the
+   subreddits — and ask if they look like their buyers. Adjust niches/pains/triggers and re-run until they do.
+7. Next: `sales-icp` (full ICP), then `sales-hunt`.
+
+## Rules
+- The profile is the single source of truth for who the seller is. Emails may cite only proof that is in it.
+- Default market is international (US, UK, Canada, Australia); excluded markets are respected by every source.
+- Store no API keys in the profile — keys live only in `~/.ai-sales-team/.env`.
+- Re-run this skill whenever the offer, niche or target market changes.
+""",
+"before": False,
+"refs": [("intake.md", "the interview: every question, why it matters, good vs weak answers, how answers become queries")],
+},
 # --------------------------------------------------------------------------- icp
 {
 "name": "sales-icp",
 "title": "Ideal Customer Profile",
-"description": "Builds the Ideal Customer Profile every other sales skill scores against — firmographics, buying signals, pain points, budget qualifiers, negative ICP, scoring rubric, 2-3 buyer personas, channels and the intent phrases buyers use (English, Hindi, Hinglish) — from a description of what the user sells, written to IDEAL-CUSTOMER-PROFILE.md. Use when the user says 'build my ICP', 'who should I target', 'ideal customer', 'I sell X to Y', '/sales icp', or in Hinglish 'mera ideal client kaun hai', 'kisko target karun'.",
+"description": "Builds the Ideal Customer Profile every other sales skill scores against — firmographics, buying signals, pain points, budget qualifiers, negative ICP, scoring rubric, 2-3 buyer personas, channels, the phrases buyers use and the best search queries — from the seller profile (sales-setup), written to IDEAL-CUSTOMER-PROFILE.md. Use when the user says 'build my ICP', 'who should I target', 'ideal customer', 'I sell X to Y', '/sales icp', or in Hinglish 'mera ideal client kaun hai', 'kisko target karun'.",
 "intro": """Start here. Every fit score in the other skills is only as good as this profile.""",
 "body": f"""## Steps
 
-1. Parse what the user sells: services/products, price ranges, delivery capacity, markets (e.g. India + US/UK/AU),
-   languages, best past clients. Ask for anything missing in one short message.
+1. Load the seller profile: `{PROF} show` (run `sales-setup` if `{PROF} check` says it's incomplete). It holds the
+   services, niches, deal size, target countries (e.g. US/UK/CA/AU), excluded markets, buyer titles, pains,
+   triggers and proof.
 2. Research the market briefly (`references/playbook.md` Research Phase) — who buys this, where they talk.
 3. Build the framework (Steps 2-7): firmographics, technographics, behavioural and **intent signals** (the exact
-   phrases buyers post, e.g. "need a website for my clinic", "website banwana hai", "koi SEO wala batao"),
+   phrases buyers post, e.g. "need a website for my clinic", "can anyone recommend a Shopify developer", "our site looks dated"),
    pain map, budget qualifiers, channels, negative ICP, a 0-100 scoring rubric, 2-3 personas, prospecting playbook.
+   Feed new findings back into the profile (`{PROF} set signals.pains '[...]'`) — the queries update automatically.
 4. Write `IDEAL-CUSTOMER-PROFILE.md` in the working-directory root (`references/output-format.md`). Include:
    - **Hunt settings**: services as codes (`web, app, seo, marketing, design, software, ecommerce, video`),
-     location (city/country, or "remote"), languages (EN/Hinglish), price floor.
-   - **Search queries**: run `{QL} --services <codes> --location <city>` and keep the 5-10 best LinkedIn
+     countries/cities (or "remote"), excluded markets, price floor — mirror `SELLER-PROFILE.json`.
+   - **Search queries**: run `{QL}` (profile-driven) and keep the 5-10 best LinkedIn
      boolean queries, X-ray queries, subreddits and Google Maps categories for this ICP (add niche words).
    - **Proof**: 2-3 real results the user can cite (or `[ADD REAL CUSTOMER RESULT]`), so outreach has evidence.
 """,
@@ -595,7 +652,7 @@ Never disparage a competitor with claims you can't source.
 - Reply within the hour for `meeting_request` and `interested` — speed decides most deals.
 - Answer what they asked first. Don't paste the whole pitch again.
 - Never claim a price, timeline or result the user hasn't confirmed; use `[TO CONFIRM: ...]` and ask.
-- Match their language: Hinglish reply → Hinglish answer (simple, respectful, "ji" where natural).
+- Reply in plain English that matches their tone and spelling (US vs UK); short beats formal.
 """,
 "writes_email": True,
 "refs": [("compliance.md", "legal and deliverability rules")],
@@ -604,7 +661,7 @@ Never disparage a competitor with claims you can't source.
 {
 "name": "sales-book",
 "title": "Meeting Booking",
-"description": "Books the meeting: proposes free slots that fit both the user's and the prospect's time zone (India, US, UK, Australia and others), offers the user's booking link, writes a calendar invite (.ics for Google Calendar, Outlook, Apple), records the meeting in the pipeline, stops follow-ups, schedules prep and a reminder, and records the outcome afterwards (held, no-show, rescheduled, cancelled). Use when the user says 'book a meeting', 'schedule a call', 'they want to talk', 'send calendar invite', 'meeting fix karo', 'call schedule karo', 'meeting book karo', '/sales book'.",
+"description": "Books the meeting: proposes free slots that fit both the user's and the prospect's time zone (US, UK, Canada, Australia, Europe and others), offers the user's booking link, writes a calendar invite (.ics for Google Calendar, Outlook, Apple), records the meeting in the pipeline, stops follow-ups, schedules prep and a reminder, and records the outcome afterwards (held, no-show, rescheduled, cancelled). Use when the user says 'book a meeting', 'schedule a call', 'they want to talk', 'send calendar invite', 'meeting fix karo', 'call schedule karo', 'meeting book karo', '/sales book'.",
 "intro": """Getting to "yes, let's talk" is hard; losing it to back-and-forth about times is avoidable. You make booking take one email.""",
 "body": f"""## Steps
 
@@ -614,7 +671,8 @@ Never disparage a competitor with claims you can't source.
    `{MEET} slots --prospect-tz <IANA zone> [--count 3] [--minutes 30]`
    It returns 2-3 slots on different days in both zones, avoiding meetings already booked, plus a ready
    message that includes `BOOKING_URL` if the user has one (Cal.com, Calendly, Google booking page). Slots
-   marked `outside_your_work_hours` need the user's OK (common for India ↔ US).
+   marked `outside_your_work_hours` need the user's OK (common for Asia ↔ US). Record where they are once:
+   `{PIPE} where <slug> --country US --tz America/Chicago` — follow-ups then land in their morning too.
 3. Write the booking email: one line of context + the slots + the link. Claim-check it, the user sends it,
    then `{OUT} log <slug> --channel email --to <email> --subject "..." --no-schedule`.
 4. **When they confirm**, book it:

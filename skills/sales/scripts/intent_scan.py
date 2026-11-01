@@ -86,8 +86,8 @@ DEFAULT_QUERIES = [
     {"id": "li-web", "query": 'site:linkedin.com/posts ("looking for" OR "need" OR "recommend") ("web developer" OR website OR "app developer" OR "SEO agency")'},
     {"id": "li-marketing", "query": 'site:linkedin.com/posts ("looking for" OR "need") ("digital marketing agency" OR "marketing agency" OR "social media agency")'},
     {"id": "reddit-agency", "query": 'site:reddit.com ("looking for" OR recommend OR "need help") (agency OR developer) (website OR app OR SEO)'},
-    {"id": "hinglish-web", "query": '"website banwana hai" OR "website banwani hai" OR "developer chahiye" OR "koi developer batao"'},
-    {"id": "hinglish-seo", "query": '"seo karwana hai" OR "seo wala chahiye" OR "marketing agency chahiye"'},
+    {"id": "forhire-hiring", "query": 'site:reddit.com/r/forhire "[Hiring]" (website OR developer OR designer OR SEO)'},
+    {"id": "smb-recommend", "query": '(site:reddit.com/r/smallbusiness OR site:reddit.com/r/Entrepreneur) ("recommend" OR "looking for") (agency OR developer OR "web designer")'},
 ]
 MIN_SCORE = 20
 

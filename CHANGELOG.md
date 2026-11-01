@@ -1,5 +1,28 @@
 # Changelog
 
+## 3.4.0 — 2026-11-01 (seller profile first, international clients, Apollo + people databases)
+
+### Added
+- `sales-setup` skill + `seller_profile.py` (`init`, `check`, `questions`, `show`, `set`): a 3-round intake saved
+  to `SELLER-PROFILE.json`; the shared "Before you start" block now makes every skill check it first.
+- Profile-driven queries (`query_library.from_profile` / `auto`): niche × service, pain, trigger, switching,
+  platform and outcome queries (LinkedIn ≤ 5 operators, `NOT India` when excluded), niche X-ray, niche subreddits,
+  Maps searches in target cities, Apollo people-search URLs, LinkedIn people filters, Leads Finder filters.
+- People databases in `lead_sources.py`: `apollo` (code_crafter/apollo-scraper), `leads` (code_crafter/leads-finder),
+  `people` (harvestapi/linkedin-profile-search), `employees` (harvestapi/linkedin-company-employees); `--add --verify`.
+- `find_email.py --email` / `verify_only()` — verify a known address without finder credits.
+- Excluded markets: leads (posts and people) mentioning an excluded country, its cities or currency are dropped.
+- `pipeline.py where <slug> --country --tz`; prospects get a country from their domain (.co.uk, .com.au, .ca ...).
+- Compliance notes for Australia (Spam Act 2003) and New Zealand (UEMA 2007).
+- Tests: `tests/test_profile_people.py`.
+
+### Changed
+- International, English-only defaults: Hinglish queries off (opt in with `languages: ["hinglish"]`), default
+  X-ray queries replaced with r/forhire / small-business ones, directories without India-only sites, US/UK
+  spelling and currency guidance in outreach, proposals in $/£/C$/A$/€, offshore-agency objections.
+- Queued emails send at 09:00-17:00 on weekdays in the **prospect's** time zone (`SEND_HOURS`, `PROSPECT_DEFAULT_TZ`),
+  and due dates use the prospect's calendar.
+
 ## 3.3.0 — 2026-11-01 (all lead sources, query library, deep scans, skill review)
 
 ### Added

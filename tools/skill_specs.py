@@ -4,6 +4,9 @@ PIPE = "python <SCRIPTS>/pipeline.py"
 OUT = "python <SCRIPTS>/outreach.py"
 MEET = "python <SCRIPTS>/meeting.py"
 TRIAGE = "python <SCRIPTS>/reply_triage.py"
+SRC = "python <SCRIPTS>/lead_sources.py"
+AUTO = "python <SCRIPTS>/autopilot.py"
+INBOX = "python <SCRIPTS>/inbox.py"
 
 SKILLS = [
 # --------------------------------------------------------------------------- router
@@ -64,12 +67,15 @@ this one) and follow it; its instructions take precedence over this router.
 | Script | Purpose |
 |---|---|
 | `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report, `today`, suppress |
-| `outreach.py` | Log touches, follow-up cadence, safe SMTP send (dry-run by default), WhatsApp links |
+| `lead_sources.py` | Apify: LinkedIn posts (HarvestAPI), Google, Reddit, any actor → intent-scored leads; `research` a prospect across the web |
+| `outreach.py` | Log touches, approve whole sequences, `run` due follow-ups (day 3/7/14/28), safe SMTP send, WhatsApp links |
+| `inbox.py` | Read replies/bounces over IMAP (read-only) → pipeline; optional instant booking-link reply |
+| `autopilot.py` | `tick`: inbox → due sequence emails → today's agenda (schedule it every 30 min) |
 | `reply_triage.py` | Classify a reply (EN/HI/Hinglish) → stage, next step, stop follow-ups, opt-outs |
 | `meeting.py` | Free slots in both time zones, `.ics` invites, meeting list and outcomes |
 | `intent_scan.py` | Find + score posts asking for a service (EN/HI/Hinglish; Bright Data optional) |
 | `site_audit.py` | Fact-only website audit (each fact with evidence) |
-| `find_email.py` | Find + verify contact emails (Hunter optional; guesses always labelled) |
+| `find_email.py` | Email waterfall: site → Prospeo / Findymail / Hunter / Apollo → MillionVerifier / ZeroBounce / NeverBounce / Hunter |
 | `claim_check.py` | Flags sentences in a draft that no evidence supports |
 | `fetch_page.py` / `web_search.py` | Web access for agents without web tools |
 | `analyze_prospect.py` | Site scrape → industry, tech, hiring, team, pricing, size signals |
@@ -78,9 +84,11 @@ this one) and follow it; its instructions take precedence over this router.
 | `generate_pdf_report.py` | PDF pipeline report (needs `pip install reportlab`) |
 
 API keys (all optional) go in environment variables or `~/.ai-sales-team/.env`, never in files you write:
-`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE`, `HUNTER_API_KEY`, `SMTP_PASSWORD`. Settings in the same file:
-`SENDER_NAME`, `SENDER_EMAIL`, `SENDER_ADDRESS`, `SMTP_HOST`, `SMTP_PORT`, `TIMEZONE`, `WORK_HOURS`,
-`BOOKING_URL`, `MEETING_LINK`, `DAILY_SEND_LIMIT`, `CADENCE_DAYS`.
+`APIFY_TOKEN`, `BRIGHTDATA_API_KEY`, `HUNTER_API_KEY`, `PROSPEO_API_KEY`, `FINDYMAIL_API_KEY`, `APOLLO_API_KEY`,
+`MILLIONVERIFIER_API_KEY`, `ZEROBOUNCE_API_KEY`, `NEVERBOUNCE_API_KEY`, `SMTP_PASSWORD`, `IMAP_PASSWORD`.
+Settings in the same file: `SENDER_NAME`, `SENDER_EMAIL`, `SENDER_ADDRESS`, `SMTP_HOST`, `SMTP_PORT`, `TIMEZONE`,
+`WORK_HOURS`, `SEND_HOURS`, `BOOKING_URL`, `MEETING_LINK`, `DAILY_SEND_LIMIT`, `CADENCE_DAYS`, `AUTO_SEND`, `AUTO_REPLY`.
+The template is `examples/env.example` in the repository.
 
 ## Typical week
 
@@ -110,7 +118,12 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 "body": f"""## Steps
 
 1. **Know the offer.** Read `IDEAL-CUSTOMER-PROFILE.md` or ask what services, which countries, which languages.
-2. **Collect posts** — any of these:
+2. **Collect posts** — any of these (best first):
+   - With an Apify token (LinkedIn posts via HarvestAPI + Google X-ray + Reddit in one run):
+     `{SRC} hunt --services web,seo --posted week --max 30 --save hunt.json`, or one source:
+     `{SRC} linkedin --query "looking for a web developer" --query "website banwana hai" --posted week --max 50`
+     (`{SRC} queries` lists the defaults; `{SRC} actor <user/actor> --input in.json` runs any other Apify actor).
+     Spend is capped per run by `APIFY_MAX_USD` (default $1) and `APIFY_MAX_RUNS`; tell the user what ran.
    - With a Bright Data key: `python <SCRIPTS>/intent_scan.py --serp --lookback 7 --max-calls 10 [--country in] --save hunt.json`
      (`--list-queries` shows the default X-ray queries; add your own with `--query '...'`, repeatable).
    - Without a key: search yourself (your web tool, or ask the user to paste posts) for queries like those in
@@ -118,6 +131,7 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
      `python <SCRIPTS>/intent_scan.py --file posts.jsonl --save hunt.json`.
    - One post: `python <SCRIPTS>/intent_scan.py --text "..."`.
    The scanner skips posts seen in earlier runs and rejects sellers, job seekers and job ads for free.
+   LinkedIn results include the author's name, headline and profile URL — keep them for step 6.
 3. **Judge every candidate** with `references/intent-rubric.md`. For each, decide: buyer / seller /
    job_seeker / other, services wanted, urgency, budget (only if stated), location/timezone (only if stated
    or obvious), and an **exact quote** from the post that proves intent. Discard anything below confidence 0.6.
@@ -221,7 +235,10 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 
 1. Fetch the homepage, about, team, careers, pricing/services, blog/news pages (several at once:
    `python <SCRIPTS>/fetch_page.py <url1> <url2> ...`). Run `python <SCRIPTS>/analyze_prospect.py --url <url>`.
-2. Search for recent news, funding/expansion, leadership and reviews (your search tool or `web_search.py`).
+2. Search the wider web: `{SRC} research <domain> --name "<company>" [--city <city>]` runs mentions,
+   reviews, news, LinkedIn, social, directories and hiring searches and saves `prospects/<slug>/WEB-RESEARCH.json`
+   (needs `APIFY_TOKEN` or `BRIGHTDATA_API_KEY`; otherwise use your own search tool). Snippets are leads — open
+   the page before stating a fact from it.
 3. Cover the 8 dimensions in `references/playbook.md`. Adapt to the business type: for a local business or
    SMB focus on owner, locations, reviews, website quality and marketing activity; for SaaS on product,
    pricing, team growth; for e-commerce on catalogue, platform, channels.
@@ -274,6 +291,10 @@ deliverability, so verification status is always shown.""",
    (`references/playbook.md` Phase 2). For an owner-run SMB the owner is usually buyer and champion.
 3. **Emails**: for the top 1-3 people run
    `python <SCRIPTS>/find_email.py --domain <domain> --first <first> --last <last>`.
+   It runs a waterfall and stops at the first verified address: their post → website → finders
+   (Prospeo, Findymail, Hunter, Apollo — whichever keys are set, order in `EMAIL_FINDERS`) → verifiers
+   (MillionVerifier, ZeroBounce, NeverBounce, Hunter) on the candidates, or on likely name patterns if nothing
+   was found. `find_email.py --providers` shows what is configured.
    Use the status exactly as returned: `verified`, `catch_all`, `unverified`, `pattern-guessed`, `invalid`.
    Only `verified` addresses are safe for cold email; say so.
 4. **Personalization anchors** and **multi-threading plan** (Phases 3-5).
@@ -318,19 +339,27 @@ Never disparage a competitor with claims you can't source.
    `SITE-AUDIT.json` (run `sales-audit` if missing), `DECISION-MAKERS.md` and the pipeline record
    (`{PIPE} show <slug>`). Recipient must have a `verified` email, or say clearly that it isn't.
 2. **First email** — follow `references/first-email-guide.md`: plain text, under 120 words, mentions their post
-   or business naturally, ONE specific observation backed by evidence, one soft CTA (a 15-minute call), the
-   user's signature with postal address and an opt-out line.
-3. **Sequence** — 4 follow-ups and LinkedIn touches using `references/playbook.md` (frameworks, timing,
-   breakup email) and the templates `references/template-outreach-cold.md`, `-warm.md`, `-referral.md`.
+   or business naturally, ONE specific observation backed by evidence, one soft question as the CTA ("worth a
+   quick call?"), the user's signature with postal address and an opt-out line. **No booking link** — the goal of
+   the cold emails is a reply; the calendar link is sent only once they say yes (`sales-reply` / `sales-book`).
+3. **Sequence** — 4 follow-ups on **day 3, 7, 14 and 28** after email 1 (`{OUT} cadence`), each adding something
+   new (a second audit fact, a relevant example, a question), the last a polite breakup; plus LinkedIn touches,
+   using `references/playbook.md` and the templates `references/template-outreach-cold.md`, `-warm.md`, `-referral.md`.
    Use the warm or referral template only for a real, confirmed connection.
 4. **Claim check** every email (see "Before anything is sent"); fix until it passes.
 5. Write `prospects/<slug>/OUTREACH-SEQUENCE.md` (`references/output-format.md`).
 6. Record: `{PIPE} attach <slug> prospects/<slug>/OUTREACH-SEQUENCE.md --kind outreach`.
-7. **Send** (see "Before anything is sent"): either the user sends it and you log it —
+7. **Put it on autopilot** (with SMTP + IMAP set up): save the 5 emails as `prospects/<slug>/SEQUENCE.json`
+   (`[{{"step": 1, "subject": "...", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]` — follow-ups reply in the same
+   thread), show them to the user, and on approval run
+   `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --evidence "prospects/<slug>/*.md" --evidence prospects/<slug>/SITE-AUDIT.json`.
+   It checks every email now and queues them; `{AUTO} tick --send` (scheduled) sends each on its day and stops
+   the moment they reply, opt out, bounce or book.
+8. **Or send one at a time** (see "Before anything is sent"): either the user sends it and you log it —
    `{OUT} log <slug> --channel email --step 1 --to <email> --subject "<subject>"` — or, if SMTP is set up and the
    user approves this exact email, `{OUT} send ...` (dry run first, then `--send`). Logging moves the stage to
    `contacted` and schedules follow-up #1 automatically (`{OUT} cadence` shows the schedule).
-8. Other channels: LinkedIn/WhatsApp messages are sent by the user; for WhatsApp give a click-to-chat link
+9. Other channels: LinkedIn/WhatsApp messages are sent by the user; for WhatsApp give a click-to-chat link
    (`{OUT} whatsapp <number with country code> --text-file msg.txt`), then log it with `--channel whatsapp`.
 """,
 "writes_email": True,
@@ -356,7 +385,8 @@ Never disparage a competitor with claims you can't source.
    shared their number). Reference real details from the conversation.
 4. Claim-check every email.
 5. Write `prospects/<slug>/FOLLOWUP-SEQUENCE.md` (`references/output-format.md`).
-6. Record: `{PIPE} note <slug> "<what happened>"`, and log each follow-up when it goes out —
+6. Cold sequences already queued with `{OUT} approve` need nothing here — they send on day 3, 7, 14, 28.
+   Record: `{PIPE} note <slug> "<what happened>"`, and log each manual follow-up when it goes out —
    `{OUT} log <slug> --channel email --to <email> --subject "..."` (this schedules the next one from the
    cadence) — or `{PIPE} next <slug> "<next touch>" --due <date>` for a custom date. Update the stage
    (`replied`, `meeting`, `proposal`, `nurture`, `lost`) when the user tells you. If they replied, use `sales-reply`.
@@ -464,14 +494,15 @@ Never disparage a competitor with claims you can't source.
 "body": f"""## Steps
 
 1. Get the reply text (the user pastes it or saves it to a file) and the prospect slug.
-2. Classify and update the pipeline in one go:
-   `{TRIAGE} --file reply.txt --apply <slug> [--from <their email>]`
+2. Classify and update the pipeline in one go. With IMAP set up, `{INBOX} check --apply` does this for every new
+   reply and bounce (read-only); otherwise the user pastes the reply and you run
+   `{TRIAGE} --file reply.txt --apply <slug> [--from <their email>]`. Either way the queued sequence stops.
    Read the reply yourself too — if the script's category is wrong, say so and fix the stage with `{PIPE} stage`.
 3. Act on the category:
    | Category | What you write |
    |---|---|
    | `meeting_request` | Go straight to `sales-book`: confirm the time they named, or offer 2-3 slots |
-   | `interested` / `question` | Answer in 1-3 sentences (facts only from the ICP / their files), then offer 2-3 slots (`{MEET} slots --prospect-tz <tz>`) |
+   | `interested` / `question` | Answer in 1-3 sentences (facts only from the ICP / their files), then offer 2-3 slots (`{MEET} slots --prospect-tz <tz>`) and the booking link — now it is welcome |
    | `objection_price` / `_has_vendor` | Use `OBJECTION-PLAYBOOK.md` or `sales-objections`; offer a smaller first step, then a call |
    | `objection_timing` | Agree a date; `{PIPE} next <slug> "Check back as agreed" --due <date>`; stage stays `nurture` |
    | `referral` | Thank them; write a 3-line email to the named person mentioning who referred you (`sales-outreach`) |
@@ -524,6 +555,8 @@ when time zones barely overlap), `WORK_DAYS` (Mon-Fri), `MEETING_MINUTES` (30), 
 `SENDER_NAME`, `SENDER_EMAIL`. Ask the user once and suggest they add them.
 
 ## Rules
+- The booking link goes out only after they've shown interest; `outreach.py` refuses it in cold emails.
+  With `AUTO_REPLY=1` and IMAP, a "let's talk" reply gets the link automatically within one autopilot tick.
 - Always show times in **their** zone first, with yours in brackets.
 - Never invent a video link: use `--link`, `MEETING_LINK`, or say the link will follow.
 - Don't book a time the prospect didn't confirm. A proposed slot is not a meeting.
@@ -547,8 +580,10 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
 ## Steps
 
 1. **Set-up check (first run only).** `IDEAL-CUSTOMER-PROFILE.md` exists (else run `sales-icp`); ask for
-   missing settings once — sender name, email, postal address, time zone, booking link — and suggest adding
-   them to `~/.ai-sales-team/.env`. Ask whether the user sends emails themselves or wants SMTP sending.
+   missing settings once — sender name, email, postal address, time zone, booking link, and which keys they have
+   (Apify, an email finder, a verifier, SMTP + IMAP) — and point them to `examples/env.example`.
+   For hands-free running: SMTP + IMAP configured, then `{AUTO} schedule` prints the cron / Task Scheduler line
+   for `{AUTO} tick --send` every 30 minutes (inbox first, then due follow-ups; it never sends without an inbox check).
 2. **Today's agenda:** `{PIPE} today`. Show it as a short numbered list grouped by priority and say how long
    it will take. Then work through it top-down, one item at a time:
    | Priority | Item | Skill |
@@ -559,10 +594,12 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
    | 4 | `stale` — idle deal | `sales-followup` (ghost recovery), or move to `nurture` / `lost` |
    | 5 | `new-lead` — best untouched prospects | `sales-audit` + `sales-contacts` → `sales-outreach` |
 3. **Refill the funnel.** If the agenda tip says open leads are low (under 20), run `sales-hunt` for the ICP
-   (cap paid calls with `--max-calls`) and add the real buyers to the pipeline.
+   (`{SRC} hunt ...` with Apify), judge the buyers, then for each: `sales-audit` + `{SRC} research` →
+   `sales-contacts` (verified email) → `sales-outreach` → approve the 5-email sequence.
 4. **Batch approvals.** Draft every message for the session, claim-check each one, then show them together:
-   recipient, subject, body, claim-check result. Send or log only the ones the user approves
-   (`{OUT} send ... --send` with SMTP, or the user sends and you run `{OUT} log ...`).
+   recipient, subject, body, claim-check result. Queue approved sequences with `{OUT} approve ...`; send one-off
+   replies with `{OUT} send ... --send`, or the user sends and you run `{OUT} log ...`. `{OUT} queue` shows what is
+   scheduled and `{OUT} run` (dry run) what would go out right now.
 5. **Close the session** with: emails sent/logged, replies handled, meetings booked (`{MEET} list`), what is due
    tomorrow, and one suggestion (e.g. "3 leads from hunt:li-posts booked meetings — run more of that query").
    On Mondays, offer `sales-report`.

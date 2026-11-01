@@ -69,6 +69,12 @@ CREATE TABLE IF NOT EXISTS meetings (
     id INTEGER PRIMARY KEY, prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
     starts_at TEXT NOT NULL, minutes INTEGER NOT NULL, tz TEXT, title TEXT, attendee TEXT, link TEXT,
     status TEXT NOT NULL DEFAULT 'scheduled', ics_path TEXT, uid TEXT, notes TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS sequence_steps (
+    id INTEGER PRIMARY KEY, prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+    step INTEGER NOT NULL, recipient TEXT NOT NULL, subject TEXT, body TEXT NOT NULL, status TEXT NOT NULL,
+    due TEXT, evidence_json TEXT, message_id TEXT, sent_at TEXT, note TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS inbox_seen (
+    message_id TEXT PRIMARY KEY, prospect_id INTEGER, category TEXT, at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS suppression (
     value TEXT PRIMARY KEY, reason TEXT, at TEXT NOT NULL);
 """

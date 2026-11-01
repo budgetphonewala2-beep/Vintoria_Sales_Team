@@ -18,6 +18,10 @@ Every sequence must be legal to send:
   verified addresses only (never send to `pattern-guessed` or `invalid`), and warm up new sending domains.
 - Volume: start at 10-20 cold emails a day per inbox and stay under `DAILY_SEND_LIMIT` (default 30);
   `outreach.py send` refuses suppressed addresses, unverified addresses, missing opt-out lines and over-limit sends.
+- Booking links only after interest: a calendar link in a cold email reads as presumptuous and hurts replies;
+  `outreach.py` refuses it until the prospect has replied positively.
+- Automation: queued sequences only send while an inbox check runs first (`autopilot.py`), so a prospect who
+  replied never gets another follow-up. Use a sending domain/inbox you control, warmed up, with SPF/DKIM/DMARC.
 - Opt-outs: run `python <SCRIPTS>/reply_triage.py --file reply.txt --apply <slug>` on every reply — it adds
   opt-outs to the do-not-contact list (`pipeline.py suppressed`) so they are never emailed again.
 - End the output with a short `Compliance notes` line naming which rules apply to this prospect's country.

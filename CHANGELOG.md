@@ -1,5 +1,30 @@
 # Changelog
 
+## 3.2.0 — 2026-11-01 (hands-free: Apify sources, email waterfall, self-sending sequences, inbox)
+
+### Added
+- `lead_sources.py` — Apify actors: LinkedIn post search (`harvestapi/linkedin-post-search`), Google
+  (`apify/google-search-scraper`, Bright Data fallback), Reddit (`trudax/reddit-scraper-lite`), any actor;
+  results normalized and intent-scored; `research <domain>` saves `WEB-RESEARCH.json` evidence. Actor IDs and
+  spend caps are settings (`APIFY_*`).
+- `find_email.py` provider waterfall: Prospeo, Findymail, Hunter, Apollo finders; MillionVerifier, ZeroBounce,
+  NeverBounce, Hunter verifiers; failing providers are skipped; name patterns are verified when nothing is found;
+  `--providers`, `--no-api`.
+- `outreach.py approve / queue / run / cancel` — approve a whole sequence once; due emails send themselves,
+  threaded as replies, inside `SEND_HOURS`, and stop on reply, opt-out, bounce, stage change or suppression.
+- `inbox.py` — read-only IMAP reply/bounce detection (thread → contact → domain matching), optional instant
+  booking-link reply (`AUTO_REPLY`, `AUTO_REPLY_CATEGORIES`).
+- `autopilot.py tick / schedule` — inbox → due emails → agenda, with a lock; refuses to send without an inbox check.
+- Tests: `tests/test_sources_inbox.py`.
+
+### Changed
+- Default cadence is now **day 3, 7, 14, 28 after email 1** (calendar days, weekend → Monday). `CADENCE_DAYS`
+  now lists offsets from email 1 (it was gaps between emails in business days).
+- Booking links (BOOKING_URL, Calendly, Cal.com, ...) are refused until the prospect has replied with interest.
+- Replying to a prospect is no longer blocked by the "emailed in the last 2 days" rule.
+- Skills `sales-hunt`, `sales-contacts`, `sales-research`, `sales-outreach`, `sales-followup`, `sales-reply`,
+  `sales-book`, `sales-autopilot` and the router use the new scripts.
+
 ## 3.1.0 — 2026-11-01 (end to end: find → contact → follow up → reply → book)
 
 ### Added

@@ -2,20 +2,28 @@
 """
 Find and verify a contact email. A guessed address is NEVER reported as verified.
 
-Waterfall (stops at the first verified address):
+Waterfall (stops at the first verified address; every paid step only runs if its key is set):
   1. text you pass with --text (e.g. the prospect's post): emails, phones, wa.me numbers, websites
   2. the company website: /, /contact, /contact-us, /about, /about-us (robots.txt respected):
      mailto: links, visible emails, tel:, wa.me, JSON-LD Organization/Person
-  3. Hunter email-finder (first + last + domain)            — only if HUNTER_API_KEY is set
-  4. Hunter email-verifier on the best unverified candidate — only if HUNTER_API_KEY is set
-  5. no key and a name: pattern guesses, clearly labelled "pattern-guessed — verify before sending"
+  3. finders, in EMAIL_FINDERS order (default prospeo,findymail,hunter,apollo), with first + last + domain:
+       prospeo    PROSPEO_API_KEY    POST api.prospeo.io/enrich-person   (X-KEY; only_verified_email)
+       findymail  FINDYMAIL_API_KEY  POST app.findymail.com/api/search/name (Bearer; returns verified emails)
+       hunter     HUNTER_API_KEY     GET  api.hunter.io/v2/email-finder   (X-API-KEY)
+       apollo     APOLLO_API_KEY     POST api.apollo.io/api/v1/people/match (X-Api-Key)
+  4. verifiers, in EMAIL_VERIFIERS order (default millionverifier,zerobounce,neverbounce,hunter), on the
+     best unverified candidates — and, when nothing was found, on the likely name patterns:
+       millionverifier MILLIONVERIFIER_API_KEY · zerobounce ZEROBOUNCE_API_KEY · neverbounce NEVERBOUNCE_API_KEY · hunter
+  5. no verifier and a name: pattern guesses, clearly labelled "pattern-guessed — verify before sending"
+A provider that errors (no credits, HTTP 4xx/5xx) is skipped and the next one is tried.
 
 Statuses: verified | catch_all | unverified | invalid | pattern-guessed.
 Hunter API v2 (hunter.io/api-documentation/v2): GET /v2/email-finder?domain&first_name&last_name,
 GET /v2/email-verifier?email (202 = still verifying, poll again); auth header X-API-KEY.
 
 Usage:
-    python find_email.py --domain acme.com [--first Priya --last Mehta] [--text "post text"] [--no-hunter]
+    python find_email.py --domain acme.com [--first Priya --last Mehta] [--text "post text"] [--no-api]
+    python find_email.py --providers        # which finders/verifiers have keys, in which order
 """
 
 import argparse
@@ -26,7 +34,7 @@ from pathlib import Path
 from urllib.parse import urljoin
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sales_common import api_json, emit, fetch_many, parse_html, ld_types, secret  # noqa: E402
+from sales_common import api_json, emit, fetch_many, parse_html, ld_types, secret, setting  # noqa: E402
 
 EMAIL_RE = re.compile(r"(?<![\w.+-])[A-Za-z0-9._%+-]+@[A-Za-z0-9-]+(?:\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,24}(?![\w-])")
 WA_RE = re.compile(r"(?:https?://)?(?:wa\.me|api\.whatsapp\.com/send\?phone=)/?\+?(\d{8,15})", re.I)
@@ -167,16 +175,125 @@ def hunter_verify(key, email, call=api_json, sleep=time.sleep, polls=3):
     return {"status": "unverified", "hunter_status": "in_progress", "score": None}
 
 
-def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_many, call=api_json):
+def _check(name, status, d):
+    if status in (400, 404, 422):
+        return False
+    if status >= 400:
+        raise RuntimeError(f"{name} HTTP {status}")
+    return True
+
+
+def prospeo_finder(key, first, last, domain, call=api_json):
+    status, d = call("POST", "https://api.prospeo.io/enrich-person", headers={"X-KEY": key}, timeout=40,
+                     body={"only_verified_email": True, "data": {"first_name": first, "last_name": last, "company_website": domain}})
+    if not _check("Prospeo", status, d) or (d or {}).get("error"):
+        code = (d or {}).get("error_code")
+        if code and code not in ("NO_MATCH", "INVALID_DATAPOINTS"):
+            raise RuntimeError(f"Prospeo {code}")
+        return None
+    em = ((d or {}).get("person") or {}).get("email") or {}
+    addr = em.get("email") if isinstance(em, dict) else em
+    if not addr:
+        return None
+    st = (em.get("status") if isinstance(em, dict) else "") or ""
+    return {"email": addr.lower(), "status": "verified" if st.upper() == "VERIFIED" else "unverified", "provider_status": st}
+
+
+def findymail_finder(key, first, last, domain, call=api_json):
+    status, d = call("POST", "https://app.findymail.com/api/search/name", headers={"Authorization": f"Bearer {key}"},
+                     body={"name": f"{first} {last}".strip(), "domain": domain}, timeout=60)
+    if not _check("Findymail", status, d):
+        return None
+    c = (d or {}).get("contact") or {}
+    if not c.get("email"):
+        return None
+    return {"email": c["email"].lower(), "status": "verified", "provider_status": "verified by Findymail"}
+
+
+def apollo_finder(key, first, last, domain, call=api_json):
+    status, d = call("POST", "https://api.apollo.io/api/v1/people/match", headers={"X-Api-Key": key}, timeout=40,
+                     body={"first_name": first, "last_name": last, "domain": domain, "reveal_personal_emails": False})
+    if not _check("Apollo", status, d):
+        return None
+    person = (d or {}).get("person") or {}
+    if not person.get("email") or "email_not_unlocked" in person["email"]:
+        return None
+    st = (person.get("email_status") or "").lower()
+    return {"email": person["email"].lower(), "status": "verified" if st == "verified" else "unverified", "provider_status": st,
+            "title": person.get("title"), "linkedin": person.get("linkedin_url")}
+
+
+def hunter_finder_step(key, first, last, domain, call=api_json):
+    return hunter_finder(key, first, last, domain, call)
+
+
+MV_MAP = {"ok": "verified", "catch_all": "catch_all", "invalid": "invalid", "disposable": "invalid", "unknown": "unverified"}
+ZB_MAP = {"valid": "verified", "catch-all": "catch_all", "invalid": "invalid", "spamtrap": "invalid", "abuse": "invalid",
+          "do_not_mail": "invalid", "unknown": "unverified"}
+NB_MAP = {"valid": "verified", "catchall": "catch_all", "invalid": "invalid", "disposable": "invalid", "unknown": "unverified"}
+
+
+def millionverifier(key, email, call=api_json):
+    status, d = call("GET", "https://api.millionverifier.com/api/v3/", params={"api": key, "email": email, "timeout": 20}, timeout=40)
+    if status >= 400 or (d or {}).get("error"):
+        raise RuntimeError(f"MillionVerifier {(d or {}).get('error') or 'HTTP ' + str(status)}")
+    r = (d or {}).get("result") or "unknown"
+    return {"status": MV_MAP.get(r, "unverified"), "provider_status": r}
+
+
+def zerobounce(key, email, call=api_json):
+    status, d = call("GET", "https://api.zerobounce.net/v2/validate", params={"api_key": key, "email": email, "ip_address": ""},
+                     timeout=40)
+    if status >= 400 or (d or {}).get("error"):
+        raise RuntimeError(f"ZeroBounce {(d or {}).get('error') or 'HTTP ' + str(status)}")
+    r = ((d or {}).get("status") or "unknown").lower()
+    return {"status": ZB_MAP.get(r, "unverified"), "provider_status": r}
+
+
+def neverbounce(key, email, call=api_json):
+    status, d = call("GET", "https://api.neverbounce.com/v4/single/check", params={"key": key, "email": email}, timeout=40)
+    if status >= 400 or (d or {}).get("status") not in (None, "success"):
+        raise RuntimeError(f"NeverBounce {(d or {}).get('message') or 'HTTP ' + str(status)}")
+    r = (d or {}).get("result") or "unknown"
+    return {"status": NB_MAP.get(r, "unverified"), "provider_status": r}
+
+
+def hunter_verifier_step(key, email, call=api_json):
+    v = hunter_verify(key, email, call)
+    return {"status": v["status"], "provider_status": v["hunter_status"], "score": v.get("score")}
+
+
+FINDERS = {"prospeo": ("PROSPEO_API_KEY", prospeo_finder), "findymail": ("FINDYMAIL_API_KEY", findymail_finder),
+           "hunter": ("HUNTER_API_KEY", hunter_finder_step), "apollo": ("APOLLO_API_KEY", apollo_finder)}
+VERIFIERS = {"millionverifier": ("MILLIONVERIFIER_API_KEY", millionverifier), "zerobounce": ("ZEROBOUNCE_API_KEY", zerobounce),
+             "neverbounce": ("NEVERBOUNCE_API_KEY", neverbounce), "hunter": ("HUNTER_API_KEY", hunter_verifier_step)}
+
+
+def providers(kind):
+    table, default = (FINDERS, "prospeo,findymail,hunter,apollo") if kind == "finders" else \
+                     (VERIFIERS, "millionverifier,zerobounce,neverbounce,hunter")
+    order = [x.strip().lower() for x in setting(f"EMAIL_{kind.upper()}", default).split(",") if x.strip()]
+    out = []
+    for name in order:
+        if name in table:
+            key = secret(table[name][0])
+            if key:
+                out.append((name, key, table[name][1]))
+    return out
+
+
+def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_many, call=api_json, max_verifications=4):
+    """use_hunter=False disables every paid API (kept as the parameter name for compatibility)."""
     steps, cands = [], []
 
-    def add(email, status, source):
+    def add(email, status, source, **extra):
         for c in cands:
             if c["email"] == email:
                 if RANK[status] > RANK[c["status"]]:
                     c["status"] = status
+                c.update({k: v for k, v in extra.items() if v})
                 return
-        cands.append({"email": email, "status": status, "source": source})
+        cands.append({"email": email, "status": status, "source": source, **{k: v for k, v in extra.items() if v}})
 
     found = from_text(text)
     steps.append({"step": "text", **found})
@@ -204,35 +321,54 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
         for e in site["emails"][:4]:
             add(e, "unverified", "website")
         phone = phone or (site["whatsapp"] + site["phones"] or [None])[0]
-    key = secret("HUNTER_API_KEY") if use_hunter else None
+    finders = providers("finders") if use_hunter else []
+    verifiers = providers("verifiers") if use_hunter else []
     have = lambda: any(c["status"] == "verified" for c in cands)  # noqa: E731
-    if key and domain and first and last and domain not in WEBMAIL and not have():
-        try:
-            hf = hunter_finder(key, first, last, domain, call)
-            steps.append({"step": "hunter_finder", "result": hf})
-            if hf:
-                add(hf["email"], hf["status"], "hunter_finder")
-        except RuntimeError as exc:
-            steps.append({"step": "hunter_finder", "error": str(exc)})
-    if key and not have():
-        for c in [c for c in cands if c["status"] == "unverified"][:3]:
+    personal = lambda: any(first and first.lower() in c["email"].split("@")[0] and c["status"] == "verified" for c in cands)  # noqa: E731
+    if domain and first and last and domain not in WEBMAIL:
+        for name, key, fn in finders:
+            if personal():
+                break
             try:
-                v = hunter_verify(key, c["email"], call)
+                res = fn(key, first, last, domain, call)
+                steps.append({"step": f"{name}_finder", "result": res})
+                if res:
+                    add(res["email"], res["status"], f"{name}_finder", provider_status=res.get("provider_status"),
+                        title=res.get("title"), linkedin=res.get("linkedin"))
             except RuntimeError as exc:
-                steps.append({"step": "hunter_verifier", "email": c["email"], "error": str(exc)})
+                steps.append({"step": f"{name}_finder", "error": str(exc)})
+    used = 0
+    if verifiers and not have():
+        todo = [c for c in cands if c["status"] == "unverified"]
+        if not todo and first and domain and domain not in WEBMAIL:      # nothing found: test the likely patterns
+            for e in patterns(first, last, domain)[:3]:
+                add(e, "unverified", "pattern")
+            todo = [c for c in cands if c["source"] == "pattern"]
+        for c in todo:
+            if used >= max_verifications or have():
                 break
-            steps.append({"step": "hunter_verifier", "email": c["email"], **v})
-            c["status"] = v["status"]
-            if c["status"] == "verified":
+            for name, key, fn in verifiers:
+                try:
+                    v = fn(key, c["email"], call)
+                except RuntimeError as exc:
+                    steps.append({"step": f"{name}_verifier", "email": c["email"], "error": str(exc)})
+                    continue
+                used += 1
+                steps.append({"step": f"{name}_verifier", "email": c["email"], **v})
+                c["status"], c["verified_by"] = v["status"], name
                 break
-    if not key and not cands and first and domain:
+        for c in cands:      # an unverified pattern is still just a guess
+            if c["source"] == "pattern" and c["status"] == "unverified":
+                c["status"] = "pattern-guessed"
+    if not verifiers and not cands and first and domain:
         for e in patterns(first, last, domain):
             add(e, "pattern-guessed", "pattern")
-        steps.append({"step": "patterns", "note": "No HUNTER_API_KEY — these are guesses, NOT verified. Verify before sending."})
-    order = {"text": 0, "website": 1, "hunter_finder": 2, "pattern": 3}
-    best = sorted(cands, key=lambda c: (-RANK[c["status"]], order.get(c["source"], 9)))[0] if cands else None
+        steps.append({"step": "patterns", "note": "No verifier key — these are guesses, NOT verified. Verify before sending."})
+    order = {"text": 0, "website": 1, "pattern": 9}
+    best = sorted(cands, key=lambda c: (-RANK[c["status"]], order.get(c["source"], 2)))[0] if cands else None
     return {"domain": domain or None, "best": best, "candidates": cands, "phone": phone, "steps": steps,
-            "verifier_available": bool(key),
+            "finders_used": [n for n, _, _ in finders], "verifiers_used": [n for n, _, _ in verifiers],
+            "verifier_available": bool(verifiers), "verifications": used,
             "label": None if not best else {"verified": "verified", "catch_all": "catch-all domain — deliverability uncertain",
                                             "unverified": "unverified — verify before sending",
                                             "pattern-guessed": "pattern-guessed — verify before sending",
@@ -245,11 +381,17 @@ def main(argv=None):
     ap.add_argument("--first", default="")
     ap.add_argument("--last", default="")
     ap.add_argument("--text", default="", help="text to mine first (e.g. the prospect's post)")
-    ap.add_argument("--no-hunter", action="store_true", help="don't use Hunter even if a key is set")
+    ap.add_argument("--no-api", "--no-hunter", dest="no_api", action="store_true", help="don't call any paid API")
+    ap.add_argument("--providers", action="store_true", help="show configured finders/verifiers and exit")
     a = ap.parse_args(argv)
+    if a.providers:
+        emit({"ok": True, "data": {"finders": [n for n, _, _ in providers("finders")],
+                                   "verifiers": [n for n, _, _ in providers("verifiers")],
+                                   "all_finders": list(FINDERS), "all_verifiers": list(VERIFIERS),
+                                   "order": "set EMAIL_FINDERS / EMAIL_VERIFIERS in ~/.ai-sales-team/.env"}})
     if not (a.domain or a.text):
         emit({"ok": False, "error": "give --domain and/or --text"}, 2)
-    emit({"ok": True, "data": find(a.domain, a.first, a.last, a.text, not a.no_hunter)})
+    emit({"ok": True, "data": find(a.domain, a.first, a.last, a.text, not a.no_api)})
 
 
 if __name__ == "__main__":

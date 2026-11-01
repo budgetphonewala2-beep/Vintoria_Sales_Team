@@ -44,23 +44,32 @@ def conn():
 def test_log_touch_moves_stage_and_schedules_cadence(conn):
     out = outreach.log_touch(conn, "acme.com", "email", to="priya@acme.com", subject="Hi", today=date(2026, 11, 6))  # Friday
     assert out["stage"] == "contacted" and out["step"] == 1
-    assert out["next_due"] == "2026-11-11"                       # +3 business days skips the weekend
-    out = outreach.log_touch(conn, "acme.com", "email", today=date(2026, 11, 11))
-    assert out["step"] == 2 and out["next_due"] == "2026-11-17"
-    for d in (17, 26):
-        out = outreach.log_touch(conn, "acme.com", "email", today=date(2026, 11, d))
-    assert "breakup" in out["next_action"]
-    out = outreach.log_touch(conn, "acme.com", "email", today=date(2026, 12, 7))
-    assert "nurture" in out["next_action"]
+    assert out["next_due"] == "2026-11-09"                       # day 3 = Sunday -> Monday
+    def log(day):                                 # the sandbox clock may be earlier than these dates: pin them
+        conn.execute("UPDATE touches SET at = '2026-11-06T05:00:00+00:00'")
+        return outreach.log_touch(conn, "acme.com", "email", today=date(2026, 11, day) if day < 32 else date(2026, 12, day - 30))
+    assert log(9)["next_due"] == "2026-11-13"     # day 7
+    assert log(13)["next_due"] == "2026-11-20"    # day 14
+    out = log(20)
+    assert out["next_due"] == "2026-12-04" and "breakup" in out["next_action"]                                # day 28
+    assert "nurture" in log(34)["next_action"]
     outreach.stop(conn, "acme.com", "replied")
     assert pipeline.get(conn, "acme.com")["next_due"] is None
+
+
+def test_followup_due_is_never_in_the_past():
+    assert outreach.followup_due(date(2026, 11, 2), 1) == date(2026, 11, 5)
+    assert outreach.followup_due(date(2026, 11, 2), 2, today=date(2026, 11, 20)) == date(2026, 11, 23)   # late run
+    assert outreach.followup_due(date(2026, 11, 2), 5) is None
 
 
 def test_cadence_override(monkeypatch):
     monkeypatch.setenv("CADENCE_DAYS", "2,5")
     assert outreach.cadence() == [2, 5]
     monkeypatch.setenv("CADENCE_DAYS", "x,0")
-    assert outreach.cadence() == outreach.DEFAULT_CADENCE
+    assert outreach.cadence() == outreach.DEFAULT_CADENCE == [3, 7, 14, 28]
+    monkeypatch.setenv("CADENCE_DAYS", "7,3")                    # must increase
+    assert outreach.cadence() == [3, 7, 14, 28]
 
 
 def test_send_dry_run_passes_and_gates_block(conn):
@@ -125,6 +134,79 @@ def test_send_really_sends_logs_and_enforces_limits(conn, monkeypatch):
                           smtp=FakeSMTP)
     text = " | ".join(again["problems"])
     assert not again["sent"] and "daily send limit" in text and "already emailed" in text and len(FakeSMTP.sent) == 1
+
+
+def test_booking_link_only_after_interest(conn, monkeypatch):
+    monkeypatch.setenv("BOOKING_URL", "https://cal.com/ravi/15min")
+    pitch = BODY.replace("Worth a 15-minute call this week?", "Book a call: https://cal.com/ravi/15min")
+    r = outreach.send(conn, "acme.com", "priya@acme.com", "Acme website", pitch, evidence_text=EVIDENCE + ["https://cal.com/ravi/15min"])
+    assert any("booking link" in p for p in r["problems"])
+    calendly = BODY + "\nhttps://calendly.com/ravi\n"
+    assert any("booking link" in p for p in outreach.send(conn, "acme.com", "priya@acme.com", "x", calendly,
+                                                          evidence_text=EVIDENCE)["problems"])
+    reply_triage.apply(conn, "acme.com", reply_triage.classify("Sounds interesting, tell me more"))
+    r = outreach.send(conn, "acme.com", "priya@acme.com", "Re: Acme website", pitch, evidence_text=EVIDENCE + ["https://cal.com/ravi/15min"])
+    assert not any("booking link" in p for p in r["problems"])
+    pipeline.add(conn, url="https://cold.in")
+    pipeline.add_contact(conn, "cold.in", "Raj", email="raj@cold.in", email_status="verified")
+    reply_triage.apply(conn, "cold.in", reply_triage.classify("Not interested right now, maybe after Diwali"))
+    assert not outreach.ready_for_link(conn, pipeline.get(conn, "cold.in"))       # nurture != ready
+
+
+SEQ = [{"step": 1, "subject": "Acme website", "body": BODY},
+       {"step": 2, "body": "Hi Priya,\n\nOne more thing: your homepage has no mobile viewport tag.\n\nNot relevant? Reply 'no' and I won't follow up.\n\nRavi"},
+       {"step": 3, "body": "Hi Priya,\n\nShould I close the loop on this?\n\nNot relevant? Reply 'no' and I won't follow up.\n\nRavi"}]
+
+
+def _smtp_env(monkeypatch, limit="30"):
+    for k, v in {"SMTP_HOST": "smtp.example.com", "SMTP_PASSWORD": "app-password-123", "SENDER_EMAIL": "ravi@agency.in",
+                 "DAILY_SEND_LIMIT": limit, "SEND_HOURS": "00:00-24:00", "TIMEZONE": "UTC"}.items():
+        monkeypatch.setenv(k, v)
+
+
+def test_approved_sequence_sends_on_schedule_in_thread_and_stops_on_reply(conn, monkeypatch, tmp_path):
+    _smtp_env(monkeypatch)
+    FakeSMTP.sent = []
+    seq = tmp_path / "seq.json"
+    seq.write_text(__import__("json").dumps(SEQ), encoding="utf-8")
+    steps = outreach.parse_sequence(str(seq))
+    bad = outreach.approve(conn, "acme.com", "priya@acme.com", [{**steps[0], "body": "We grew 40 clients 300%."}] + steps[1:],
+                           evidence_text=EVIDENCE)
+    assert not bad["approved"] and not outreach.queue(conn)                       # nothing queued when a step fails
+    ok = outreach.approve(conn, "acme.com", "priya@acme.com", steps, evidence_text=EVIDENCE, today=date(2026, 11, 2))
+    assert ok["approved"] and len(outreach.queue(conn, "acme.com")) == 3
+    mon = datetime(2026, 11, 2, 6, 0, tzinfo=timezone.utc)
+    dry = outreach.run(conn, False, now=mon)
+    assert len(dry["would_send"]) == 1 and not FakeSMTP.sent
+    r = outreach.run(conn, True, now=mon, smtp=FakeSMTP)
+    assert len(r["sent"]) == 1 and r["sent"][0]["next_due"] == "2026-11-05"      # day 3
+    assert outreach.run(conn, True, now=datetime(2026, 11, 4, 6, tzinfo=timezone.utc), smtp=FakeSMTP)["due"] == 0
+    conn.execute("UPDATE touches SET at = '2026-10-01T00:00:00+00:00'")          # pretend email 1 was days ago
+    conn.execute("UPDATE touches SET at = '2026-11-02T06:00:00+00:00'")
+    r = outreach.run(conn, True, now=datetime(2026, 11, 5, 6, tzinfo=timezone.utc), smtp=FakeSMTP)
+    assert len(r["sent"]) == 1 and r["sent"][0]["subject"] == "Re: Acme website" and r["sent"][0]["next_due"] == "2026-11-09"
+    second = FakeSMTP.sent[1]
+    assert second["In-Reply-To"] == FakeSMTP.sent[0]["Message-ID"]               # same thread
+    reply_triage.apply(conn, "acme.com", reply_triage.classify("Thanks, can we talk next week?"))
+    r = outreach.run(conn, True, now=datetime(2026, 11, 9, 6, tzinfo=timezone.utc), smtp=FakeSMTP)
+    assert not r["sent"] and len(FakeSMTP.sent) == 2
+    assert [q["status"] for q in outreach.queue(conn, "acme.com")] == ["sent", "sent", "cancelled"]
+
+
+def test_run_respects_send_window_and_markdown_sequences(conn, monkeypatch, tmp_path):
+    _smtp_env(monkeypatch)
+    monkeypatch.setenv("SEND_HOURS", "09:00-18:00")
+    md = tmp_path / "seq.md"
+    md.write_text("## Email 1\nSubject: Acme website\n\n" + BODY + "\n## Email 2\n\n" + SEQ[1]["body"], encoding="utf-8")
+    steps = outreach.parse_sequence(str(md))
+    assert [s["step"] for s in steps] == [1, 2] and steps[0]["subject"] == "Acme website" and "Subject" not in steps[0]["body"]
+    outreach.approve(conn, "acme.com", "priya@acme.com", steps, evidence_text=EVIDENCE, today=date(2026, 11, 2))
+    night = outreach.run(conn, True, now=datetime(2026, 11, 2, 23, 0, tzinfo=timezone.utc), smtp=FakeSMTP)
+    assert not night["in_window"] and not night["sent"] and "Outside SEND_HOURS" in night["note"]
+    with pytest.raises(outreach.UserError):
+        bad = tmp_path / "bad.json"
+        bad.write_text('[{"step": 2, "body": "x"}]', encoding="utf-8")
+        outreach.parse_sequence(str(bad))
 
 
 def test_whatsapp_link():

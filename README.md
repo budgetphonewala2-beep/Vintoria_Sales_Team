@@ -32,6 +32,26 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.2 — hands-free from lead to booked call
+
+| | v3.1 | v3.2 |
+|---|---|---|
+| Lead sources | Bright Data Google X-ray, pasted posts | **Apify**: LinkedIn posts via HarvestAPI (no cookies), Google, Reddit, or any actor — one `lead_sources.py hunt` |
+| Research | Website only | `lead_sources.py research`: reviews, news, LinkedIn, social, directories, hiring → evidence file |
+| Email finding | Hunter | **Waterfall**: Prospeo → Findymail → Hunter → Apollo, then MillionVerifier / ZeroBounce / NeverBounce / Hunter verification (patterns verified too) |
+| Follow-ups | Scheduled, sent by hand | **Approve once, sends itself** on day **3, 7, 14, 28** in the same thread, inside send hours, under the daily cap |
+| Replies | Pasted by hand | **`inbox.py`** reads IMAP (read-only); any reply/bounce/opt-out stops the sequence |
+| Booking link | Anywhere | **Only after interest** — refused in cold emails; optional instant link reply to "let's talk" |
+| Running it | Every session | **`autopilot.py tick --send`** every 30 min via cron / Task Scheduler (never sends without an inbox check) |
+
+```
+                ┌──────────── autopilot.py tick (every 30 min) ────────────┐
+lead_sources ─► find_email ─► outreach approve ─► run: day 0 · 3 · 7 · 14 · 28
+ (Apify)        (waterfall)    (you OK 5 emails)        ▲ stops on reply
+                                                        │
+                               inbox.py ── reply? ──────┘──► "let's talk" → booking link → meeting.py book
+```
+
 ## What's new in v3.1
 
 | | v3.0 | v3.1 |
@@ -84,7 +104,15 @@ BRIGHTDATA_API_KEY=...   # Google search for sales-hunt / web_search.py (Bright 
 BRIGHTDATA_ZONE=serp_api1
 HUNTER_API_KEY=...       # email finder + verifier
 SMTP_PASSWORD=...        # only if you want the agent to send approved emails (see examples/env.example)
+APIFY_TOKEN=...          # LinkedIn posts (HarvestAPI actor), Google, Reddit via Apify
+PROSPEO_API_KEY=...      # or FINDYMAIL_API_KEY / APOLLO_API_KEY — email finders, tried in order
+MILLIONVERIFIER_API_KEY=...  # or ZEROBOUNCE_API_KEY / NEVERBOUNCE_API_KEY — email verification
 ```
+
+**Hands-free mode** (optional): set SMTP + IMAP in the `.env`, approve a sequence per prospect
+(`outreach.py approve`), then run `python skills/sales/scripts/autopilot.py schedule` and add the line it prints
+to cron (macOS/Linux) or Task Scheduler (Windows). Every 30 minutes it reads replies first, then sends the
+follow-ups that are due. The computer (or a small VPS) has to be on.
 
 Your sender details, time zone, work hours and booking link go in the same file — copy
 [`examples/env.example`](examples/env.example) and fill in what you use.
@@ -141,12 +169,15 @@ Every script prints one JSON object and is safe to run from any agent or by hand
 | Script | What it does |
 |---|---|
 | `pipeline.py` | `add`, `list`, `show`, `stage`, `score`, `note`, `contact`, `attach`, `next`, `report [--pdf-input]`, `today`, `suppress`, `remove` |
-| `outreach.py` | `log` touches, `cadence`, `stop`, `send` (dry run → `--send`, all safety gates), `whatsapp` click-to-chat links |
+| `lead_sources.py` | `linkedin`, `google`, `reddit`, `hunt` (all), `actor` (any Apify actor), `research <domain>`, `queries` |
+| `outreach.py` | `log`, `cadence`, `approve` / `queue` / `run` / `cancel` sequences, `send` (dry run → `--send`), `whatsapp` |
+| `inbox.py` | `check [--apply] [--auto-reply]` — IMAP replies and bounces → pipeline |
+| `autopilot.py` | `tick [--send]`, `schedule` |
 | `reply_triage.py` | Classify a reply, extract times/phones/emails, `--apply` to update the pipeline |
 | `meeting.py` | `slots` (both time zones), `book` (`.ics` invite), `list`, `outcome` |
 | `intent_scan.py` | `--serp` (Bright Data X-ray queries, recency filter, `--max-calls` cap), `--file`, `--text`; dedupes across runs |
 | `site_audit.py` | Fact-only homepage audit; robots.txt respected; `--save` |
-| `find_email.py` | Post text → website contact pages → Hunter finder → Hunter verifier → labelled guesses |
+| `find_email.py` | Post text → website → Prospeo / Findymail / Hunter / Apollo → MillionVerifier / ZeroBounce / NeverBounce / Hunter → labelled guesses; `--providers` |
 | `claim_check.py` | Exit 1 if any factual sentence or `[PLACEHOLDER]` is unsupported by the evidence files |
 | `fetch_page.py` / `web_search.py` | Web access for agents without web tools |
 | `analyze_prospect.py` / `contact_finder.py` | Site scrape for company signals and team members |
@@ -166,6 +197,9 @@ Per-prospect files go in `prospects/<domain>/` in your working folder.
   every gate (verified address, claim check, opt-out, postal address, daily limit, do-not-contact list).
 - Skills never post, comment or DM on social platforms; WhatsApp is a click-to-chat link you open yourself.
 - Opt-outs and bounces from replies are applied automatically and never contacted again.
+- Hands-free sending only sends emails you approved, only after an inbox check, only inside `SEND_HOURS`,
+  under `DAILY_SEND_LIMIT`; booking links wait until the prospect says yes.
+- Apify/Bright Data collect public data only; every paid run is capped (`APIFY_MAX_USD`, `APIFY_MAX_RUNS`, `--max-calls`).
 - robots.txt respected; paid API calls capped per run; keys never written to files or output.
 
 ## Development

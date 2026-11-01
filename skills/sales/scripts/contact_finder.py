@@ -341,8 +341,6 @@ def find_contacts(url, timeout=10):
     if not home["html"]:
         result["errors"].append(f"Homepage unreachable: {home['error'] or home['status']}")
         return result
-    if home["insecure"]:
-        result["warnings"].append("TLS certificate could not be verified for this site.")
     home_parsed = parse_html(home["html"])
     home_fp = text_fingerprint(home_parsed)
     base = base_of(home["final_url"]) or base

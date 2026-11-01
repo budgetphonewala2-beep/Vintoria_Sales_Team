@@ -36,3 +36,8 @@ _bant_signals.json
 hunt.json
 _pdf_input.json
 SITE-AUDIT*.json
+
+# secrets and local data
+.env
+*.db
+prospects/

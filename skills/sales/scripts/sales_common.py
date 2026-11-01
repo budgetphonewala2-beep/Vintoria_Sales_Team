@@ -63,13 +63,14 @@ def domain_slug(url):
 def fetch_url(url, timeout=10):
     """
     Fetch a URL. Returns a dict:
-      {"url", "final_url", "status", "html", "error", "insecure"}
-    TLS certificates are verified; if verification fails we retry once without
-    verification and flag the result as insecure (the page is still useful for
-    public research, but the caller should know).
+      {"url", "final_url", "status", "html", "error", "tls_error"}
+    TLS certificates are always verified. There is no unverified fallback: a page we
+    can't verify is reported as unreachable (tls_error=True), never fetched insecurely.
+    A verification failure is usually the auditing machine's CA store (fix: pip install
+    certifi), so callers must not report it as a fact about the prospect.
     """
     result = {"url": url, "final_url": url, "status": None, "html": None,
-              "error": None, "insecure": False}
+              "error": None, "tls_error": False}
     headers = {
         "User-Agent": USER_AGENT,
         "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.5",
@@ -97,18 +98,9 @@ def fetch_url(url, timeout=10):
     except URLError as exc:
         reason = getattr(exc, "reason", exc)
         if isinstance(reason, ssl.SSLError) or "CERTIFICATE" in str(reason).upper():
-            insecure = ssl.create_default_context()
-            insecure.check_hostname = False
-            insecure.verify_mode = ssl.CERT_NONE
-            try:
-                _do(insecure)
-                result["insecure"] = True
-                result["error"] = None
-            except HTTPError as exc2:
-                result["status"] = exc2.code
-                result["error"] = f"HTTP {exc2.code}"
-            except Exception as exc2:  # noqa: BLE001 - report, never crash
-                result["error"] = f"{type(exc2).__name__}: {exc2}"
+            result["tls_error"] = True
+            result["error"] = ("TLS certificate could not be verified (not fetched). If many sites fail, "
+                               "this machine's CA store is the problem: pip install certifi")
         else:
             result["error"] = f"URLError: {reason}"
     except Exception as exc:  # noqa: BLE001 - timeouts, resets, decode errors
@@ -333,6 +325,12 @@ def _dotenv():
             if v:
                 out[k.strip()] = v
     return out
+
+
+def setting(name, default=None):
+    """Non-secret setting (sender name, time zone, work hours...) from the environment or <data home>/.env."""
+    value = os.environ.get(name) or _dotenv().get(name)
+    return value if value else default
 
 
 def secret(name):

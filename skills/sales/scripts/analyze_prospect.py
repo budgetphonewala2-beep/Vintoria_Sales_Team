@@ -396,8 +396,6 @@ def analyze(url, timeout=10):
     if not home["html"]:
         result["errors"].append(f"Failed to fetch homepage: {home['error'] or ('HTTP ' + str(home['status']))}")
         return result
-    if home["insecure"]:
-        result["warnings"].append("TLS certificate could not be verified; content fetched without verification.")
 
     base = base_of(home["final_url"])
     result["final_url"] = home["final_url"]

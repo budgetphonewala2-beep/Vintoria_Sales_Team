@@ -19,6 +19,12 @@ Usage (every command prints one JSON object):
     python pipeline.py next acme.com "Send follow-up #1 on Thursday" [--due 2026-11-06]
     python pipeline.py report [--pdf-input out.json]     # funnel + stale deals + next actions
     python pipeline.py remove acme.com                   # delete a prospect and its records
+    python pipeline.py today                             # the day's agenda: replies, meetings, follow-ups, new leads
+    python pipeline.py suppress priya@acme.com --reason "asked not to be contacted"   # or a whole domain: acme.com
+    python pipeline.py suppressed                        # list the do-not-contact list
+
+Touches (emails/DMs/calls) are logged with outreach.py, meetings with meeting.py, replies with reply_triage.py —
+all in this same database.
 
 Stages: new, researched, qualified, contacted, replied, meeting, proposal, won, lost, nurture,
 disqualified. Any move is allowed (sales is messy) but every move is recorded with a reason.
@@ -28,7 +34,7 @@ import argparse
 import json
 import sqlite3
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -55,6 +61,16 @@ CREATE TABLE IF NOT EXISTS events (
 CREATE TABLE IF NOT EXISTS artifacts (
     id INTEGER PRIMARY KEY, prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
     kind TEXT, path TEXT, created_at TEXT NOT NULL, UNIQUE(prospect_id, path));
+CREATE TABLE IF NOT EXISTS touches (
+    id INTEGER PRIMARY KEY, prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+    channel TEXT NOT NULL, step INTEGER, recipient TEXT, subject TEXT, body_path TEXT, status TEXT NOT NULL,
+    message_id TEXT, at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS meetings (
+    id INTEGER PRIMARY KEY, prospect_id INTEGER NOT NULL REFERENCES prospects(id) ON DELETE CASCADE,
+    starts_at TEXT NOT NULL, minutes INTEGER NOT NULL, tz TEXT, title TEXT, attendee TEXT, link TEXT,
+    status TEXT NOT NULL DEFAULT 'scheduled', ics_path TEXT, uid TEXT, notes TEXT, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS suppression (
+    value TEXT PRIMARY KEY, reason TEXT, at TEXT NOT NULL);
 """
 
 
@@ -215,12 +231,107 @@ def report(conn, today=None):
         b["prospects"] += 1
         b["meetings"] += int(r["id"] in reached.get("meeting", set()))
         b["won"] += int(r["stage"] == "won")
+    week_ago = (today - timedelta(days=7)).replace(microsecond=0).isoformat()
+    activity = {"touches_7d": conn.execute("SELECT COUNT(*) FROM touches WHERE at >= ?", (week_ago,)).fetchone()[0],
+                "meetings_booked_7d": conn.execute("SELECT COUNT(*) FROM meetings WHERE created_at >= ?", (week_ago,)).fetchone()[0],
+                "meetings_upcoming": conn.execute("SELECT COUNT(*) FROM meetings WHERE status = 'scheduled' AND starts_at >= ?",
+                                                  (today.replace(microsecond=0).isoformat(),)).fetchone()[0]}
     return {"total": len(rows), "open": sum(funnel[s] for s in OPEN), "funnel": funnel, "conversion": conv,
+            "activity": activity,
             "avg_score": round(sum(r["score"] for r in scored) / len(scored), 1) if scored else None,
             "grades": {g: sum(1 for r in scored if r["grade"] == g) for g in ("A+", "A", "B", "C", "D")},
             "stale": sorted(stale, key=lambda x: -x["days_idle"]), "due_today": due, "by_source": by_source,
             "top": [{"prospect": r["slug"], "score": r["score"], "grade": r["grade"], "stage": r["stage"],
                      "next_action": r["next_action"]} for r in sorted(scored, key=lambda r: -r["score"])[:10]]}
+
+
+def suppress(conn, value, reason=""):
+    v = (value or "").strip().lower()
+    if not v:
+        raise UserError("give an email address or a domain")
+    with conn:
+        conn.execute("INSERT OR REPLACE INTO suppression(value, reason, at) VALUES (?,?,?)", (v, reason, now()))
+    return {"suppressed": v, "reason": reason}
+
+
+def is_suppressed(conn, email_or_domain):
+    """True if the address or its domain is on the do-not-contact list."""
+    v = (email_or_domain or "").strip().lower()
+    dom = v.split("@", 1)[1] if "@" in v else v
+    r = conn.execute("SELECT value, reason FROM suppression WHERE value IN (?, ?)", (v, dom)).fetchone()
+    return dict(r) if r else None
+
+
+def today_agenda(conn, today=None):
+    """Everything to do today, most valuable first: replies, meetings, follow-ups, stale deals, new leads."""
+    now_dt = today or datetime.now(timezone.utc)
+    d = now_dt.date().isoformat()
+    tomorrow = (now_dt + timedelta(days=1)).date().isoformat()
+    rows = {r["id"]: dict(r) for r in conn.execute("SELECT * FROM prospects")}
+    items = []
+
+    def add_item(priority, kind, p, action, skill, **extra):
+        items.append({"priority": priority, "kind": kind, "prospect": p["slug"], "stage": p["stage"],
+                      "action": action, "skill": skill, **extra})
+
+    # 1. replies not answered yet (last reply event newer than the last touch)
+    for pid, p in rows.items():
+        last_reply = conn.execute("SELECT text, at FROM events WHERE prospect_id = ? AND kind = 'reply' ORDER BY id DESC LIMIT 1",
+                                  (pid,)).fetchone()
+        if not last_reply or p["stage"] in ("won", "lost", "disqualified"):
+            continue
+        last_touch = conn.execute("SELECT MAX(at) FROM touches WHERE prospect_id = ?", (pid,)).fetchone()[0]
+        booked = conn.execute("SELECT 1 FROM meetings WHERE prospect_id = ? AND created_at >= ?", (pid, last_reply["at"])).fetchone()
+        if not booked and (not last_touch or last_touch < last_reply["at"]):
+            add_item(1, "reply", p, "Answer their reply — aim to book a call", "sales-reply",
+                     reply=(last_reply["text"] or "")[:160])
+    # 2. meetings today / tomorrow (prep), meetings that happened with no outcome
+    for m in conn.execute("SELECT * FROM meetings WHERE status = 'scheduled' ORDER BY starts_at"):
+        p = rows.get(m["prospect_id"])
+        if not p:
+            continue
+        day = m["starts_at"][:10]
+        has_prep = conn.execute("SELECT 1 FROM artifacts WHERE prospect_id = ? AND kind = 'meeting-prep'", (p["id"],)).fetchone()
+        if m["starts_at"] < now_dt.replace(microsecond=0).isoformat() and day <= d:
+            add_item(2, "meeting-outcome", p, f"Meeting #{m['id']} ({m['starts_at']}) — record the outcome",
+                     "sales-book", meeting_id=m["id"])
+        elif day in (d, tomorrow):
+            add_item(2, "meeting", p, f"Meeting #{m['id']} at {m['starts_at']} UTC" + ("" if has_prep else " — prep brief missing"),
+                     "sales-prep" if not has_prep else "sales-book", meeting_id=m["id"])
+    # 3. due / overdue next actions (follow-ups from the cadence, proposals, ...)
+    for p in rows.values():
+        if p["next_due"] and p["next_due"] <= d and p["stage"] in OPEN:
+            skill = "sales-followup" if p["stage"] in ("contacted", "proposal") else \
+                    "sales-outreach" if p["stage"] in ("new", "researched", "qualified") else "sales-autopilot"
+            add_item(3, "due", p, p["next_action"] or "Next step", skill, due=p["next_due"],
+                     overdue_days=(now_dt.date() - datetime.fromisoformat(p["next_due"]).date()).days)
+    # 4. stale deals with nothing scheduled
+    for s in report(conn, now_dt)["stale"]:
+        p = next(r for r in rows.values() if r["slug"] == s["prospect"])
+        if not (p["next_due"] and p["next_due"] >= d):
+            add_item(4, "stale", p, f"Idle {s['days_idle']} days in {s['stage']} — re-engage or move to nurture/lost",
+                     "sales-followup")
+    # 5. best untouched leads (research → contact → first email)
+    fresh = [p for p in rows.values() if p["stage"] in ("new", "researched", "qualified") and not p["next_due"]]
+    for p in sorted(fresh, key=lambda r: -(r["score"] or 0))[:5]:
+        step = {"new": ("Research + audit, then score", "sales-prospect"),
+                "researched": ("Find a verified contact, then write email 1", "sales-contacts"),
+                "qualified": ("Write and send email 1", "sales-outreach")}[p["stage"]]
+        add_item(5, "new-lead", p, step[0], step[1], score=p["score"])
+    seen, out = set(), []
+    for it in sorted(items, key=lambda x: (x["priority"], -(x.get("overdue_days") or 0))):
+        key = (it["kind"], it["prospect"], it.get("meeting_id"))
+        if key not in seen:
+            seen.add(key)
+            out.append(it)
+    sent_today = conn.execute("SELECT COUNT(*) FROM touches WHERE status = 'sent' AND at >= ?", (d,)).fetchone()[0]
+    leads_open = sum(1 for p in rows.values() if p["stage"] in OPEN)
+    tip = None
+    if leads_open < 20:
+        tip = f"Only {leads_open} open leads — run sales-hunt to refill the top of the funnel."
+    return {"date": d, "items": out, "counts": {k: sum(1 for i in out if i["kind"] == k) for k in
+            ("reply", "meeting", "meeting-outcome", "due", "stale", "new-lead")},
+            "emails_sent_today": sent_today, "open_leads": leads_open, "tip": tip}
 
 
 def pdf_input(conn):
@@ -255,6 +366,9 @@ def main(argv=None):
     nx = sub.add_parser("next"); nx.add_argument("prospect"); nx.add_argument("action"); nx.add_argument("--due")
     r = sub.add_parser("report"); r.add_argument("--pdf-input", help="also write generate_pdf_report.py input JSON here")
     rm = sub.add_parser("remove"); rm.add_argument("prospect")
+    sub.add_parser("today")
+    su = sub.add_parser("suppress"); su.add_argument("value", help="email address or domain"); su.add_argument("--reason", default="")
+    sub.add_parser("suppressed")
     args = ap.parse_args(argv)
     conn = connect()
     try:
@@ -306,6 +420,12 @@ def main(argv=None):
             with conn:
                 conn.execute("DELETE FROM prospects WHERE id = ?", (p["id"],))
             out = {"removed": p["slug"]}
+        elif args.cmd == "today":
+            out = today_agenda(conn)
+        elif args.cmd == "suppress":
+            out = suppress(conn, args.value, args.reason)
+        elif args.cmd == "suppressed":
+            out = {"suppressed": [dict(r) for r in conn.execute("SELECT * FROM suppression ORDER BY at DESC")]}
         emit({"ok": True, "data": out})
     except UserError as exc:
         emit({"ok": False, "error": str(exc)}, 2)

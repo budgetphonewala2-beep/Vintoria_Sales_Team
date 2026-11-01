@@ -13,7 +13,7 @@ from both the demo data and the schema the skills document. Status column = stat
 | 4 | SKILL.md bodies 321-851 lines, no progressive disclosure | `wc -l` | **Fixed** — 50-110 lines; details in `references/` |
 | 5 | No discovery, email finding/verification, persistence; outputs were fixed-name files in the CWD (a second prospect overwrote the first; "if COMPANY-RESEARCH.md exists" reused another company's research) | — | **Fixed** — `sales-hunt`, `find_email.py`, SQLite `pipeline.py`, per-prospect folders |
 | 6 | `lead_scorer.py` used US-SaaS signals (funding, headcount, C-suite count) — wrong for agencies selling services | — | **Fixed** — `--mode agency` buyer model; ICP-driven fit; SaaS defaults removed from roles |
-| 7 | urllib with no retries, cache or concurrency; TLS verification **disabled** (`CERT_NONE`); `--timeout` ignored | — | **Fixed** — verified TLS (certifi when available), parallel fetches, retries on 429/5xx for APIs, robots.txt respected |
+| 7 | urllib with no retries, cache or concurrency; TLS verification **disabled** (`CERT_NONE`); `--timeout` ignored | — | **Fixed in 3.1** — v3.0 still retried page fetches with `CERT_NONE` after a certificate failure; 3.1 always verifies (certifi when available) and reports the page as unreachable instead. Parallel fetches, retries on 429/5xx for APIs, robots.txt respected |
 | 8 | Claude-Code-only: `/sales` routing, Task tool, WebFetch/WebSearch, `~/.claude` paths | — | **Fixed** — no agent-specific tools in any skill (checked by `tools/validate_skills.py`); `fetch_page.py`/`web_search.py` for agents without web tools |
 
 ## B. Script bugs (each reproduced on upstream)
@@ -55,9 +55,22 @@ from both the demo data and the schema the skills document. Status column = stat
 | 29 | bash-only installer that swallowed `git clone` errors and needed `python3` | Fixed — `install.py` (Windows/macOS/Linux), backups, uninstall, dry run |
 | 30 | No tests, versioning or changelog | Fixed — pytest suite, validator, CHANGELOG |
 
+## E. Found in the v3.0 review (fixed in 3.1)
+
+| # | Problem | v3.1 status |
+|---|---|---|
+| 31 | Unverified-TLS fallback in `fetch_url` contradicted #7 | Fixed — no fallback; `tls_error` flag |
+| 32 | `site_audit.py` counted unreachable links (timeouts, local TLS issues) as broken | Fixed — only HTTP ≥ 400 counts |
+| 33 | Generated SKILL.md files looked hand-editable | Fixed — "generated" notice, `build_skills.py --check` in CI |
+| 34 | One-time `tools/split_skills.py` left in the repo | Removed |
+| 35 | No CI; Python 3.9 support untested | Fixed — GitHub Actions on 3 OSes × Python 3.9/3.13; `vermin` clean for 3.9 |
+| 36 | The flow stopped at the first email: no cadence, reply handling or booking | Fixed — `outreach.py`, `reply_triage.py`, `meeting.py`, `sales-reply`, `sales-book`, `sales-autopilot` |
+
 ## Known limits (honest)
 
 - JavaScript-only sites return little HTML; the audit then reports only what the server sent.
 - Social platforms are searched only through public Google results (Bright Data) or posts you paste —
   no logged-in scraping, by design.
-- The skills don't send email, read inboxes or book meetings; they produce drafts and track the pipeline.
+- The skills don't read your inbox or calendar: paste replies (or save them to a file) for `sales-reply`, and the
+  free-slot finder only knows meetings booked through `meeting.py`, so check your own calendar before confirming.
+- Email is sent only through SMTP you configure, one approved message at a time; there is no bulk sender.

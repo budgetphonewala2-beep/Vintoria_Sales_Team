@@ -1,2 +1,6 @@
-reportlab>=4.0      # PDF reports (sales-report-pdf)
-certifi>=2024.2.2   # trusted CA bundle for TLS on some Windows/macOS Pythons
+# PDF reports (sales-report-pdf)
+reportlab>=4.0
+# trusted CA bundle for TLS on some Windows/macOS Pythons
+certifi>=2024.2.2
+# time zones for meeting.py (Windows ships without them)
+tzdata>=2024.1; sys_platform == "win32"

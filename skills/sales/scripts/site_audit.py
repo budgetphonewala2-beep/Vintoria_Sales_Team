@@ -186,18 +186,21 @@ def audit(url, check_links=True, fetch=fetch_url):
                 skipped += 1
                 continue
             lr = fetch(u, timeout=10)
+            if not lr.get("status"):
+                # No HTTP answer (timeout, TLS failure on this machine, reset): not proof the link is broken.
+                skipped += 1
+                continue
             checked += 1
-            if not lr.get("status") or lr["status"] >= 400:
-                broken.append(f"{u} -> {lr.get('status') or 'unreachable'}")
+            if lr["status"] >= 400:
+                broken.append(f"{u} -> {lr['status']}")
         facts.append(fact("broken_internal_links", len(broken),
                           f"{len(broken)} of the first {checked} internal links on the homepage return an error." if broken
                           else f"All {checked} internal links we checked on the homepage load.",
                           ("; ".join(broken[:5]) or f"{checked} links checked, none 4xx/5xx")
-                          + (f"; {skipped} skipped (robots)" if skipped else "")))
+                          + (f"; {skipped} skipped (robots or no HTTP answer)" if skipped else "")))
     # Certificate problems are NOT reported as facts: verification also fails when the auditing
     # machine lacks CA certificates, so it can't be stated about the prospect with certainty.
-    return {"url": url, "final_url": final, "audited_at": _now(), "facts": facts,
-            "fetched_without_tls_verification": bool(r.get("insecure"))}
+    return {"url": url, "final_url": final, "audited_at": _now(), "facts": facts}
 
 
 def _now():

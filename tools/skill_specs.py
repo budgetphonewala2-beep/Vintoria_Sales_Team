@@ -1,19 +1,23 @@
 """Specs for every skill. Edit here, then run tools/build_skills.py."""
 
 PIPE = "python <SCRIPTS>/pipeline.py"
+OUT = "python <SCRIPTS>/outreach.py"
+MEET = "python <SCRIPTS>/meeting.py"
+TRIAGE = "python <SCRIPTS>/reply_triage.py"
 
 SKILLS = [
 # --------------------------------------------------------------------------- router
 {
 "name": "sales",
 "title": "AI Sales Team — Router",
-"description": "AI sales team for B2B prospecting and agency client hunting: find people publicly asking for a service, research and score prospects, find and verify decision makers, write compliant cold emails and follow-ups, prep meetings, write proposals, handle objections, track a persistent pipeline and produce reports/PDFs. Use when the user says 'sales', '/sales <command>', 'find me leads', 'prospect this company', 'write a cold email', 'pipeline report', or in Hinglish 'clients dhundo', 'leads chahiye', 'is company ko email likho', 'meeting ki taiyari karo'.",
+"description": "AI sales team for B2B prospecting and agency client hunting: find people publicly asking for a service, research and score prospects, find and verify decision makers, write compliant cold emails and follow-ups, prep meetings, write proposals, handle objections, handle replies, book meetings with calendar invites, run the whole loop end-to-end every day, track a persistent pipeline and produce reports/PDFs. Use when the user says 'sales', '/sales <command>', 'find me leads', 'prospect this company', 'write a cold email', 'book a meeting', 'what should I do today', 'pipeline report', or in Hinglish 'clients dhundo', 'leads chahiye', 'is company ko email likho', 'meeting book karo', 'aaj ka kaam batao'.",
 "intro": """You coordinate a team of sales skills. Work out what the user needs, then follow the matching skill.
 Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`), files and your reasoning.""",
 "body": """## Which skill to use
 
 | The user wants... | Skill | Main output |
 |---|---|---|
+| The whole job, every day: find → contact → follow up → book (**daily driver**) | `sales-autopilot` | today's agenda, done step by step |
 | To define who to sell to (**start here**) | `sales-icp` | `IDEAL-CUSTOMER-PROFILE.md` |
 | People publicly asking for what they sell (intent leads) | `sales-hunt` | scored candidates → pipeline |
 | A full scored audit of one company | `sales-prospect` | `prospects/<slug>/PROSPECT-ANALYSIS.md` |
@@ -25,6 +29,8 @@ Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`)
 | What they use today + battle cards | `sales-competitors` | `COMPETITIVE-INTEL.md` |
 | Cold email + LinkedIn sequence | `sales-outreach` | `OUTREACH-SEQUENCE.md` |
 | Follow-ups after a meeting/demo/proposal/silence | `sales-followup` | `FOLLOWUP-SEQUENCE.md` |
+| A prospect replied — what now? | `sales-reply` | classified reply + drafted answer |
+| Book a meeting (slots in both time zones, calendar invite) | `sales-book` | `prospects/<slug>/MEETING-<date>.ics` |
 | Meeting preparation brief | `sales-prep` | `MEETING-PREP.md` |
 | Client proposal with pricing options | `sales-proposal` | `CLIENT-PROPOSAL.md` |
 | Objection handling scripts | `sales-objections` | `OBJECTION-PLAYBOOK.md` |
@@ -57,7 +63,10 @@ this one) and follow it; its instructions take precedence over this router.
 
 | Script | Purpose |
 |---|---|
-| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report |
+| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report, `today`, suppress |
+| `outreach.py` | Log touches, follow-up cadence, safe SMTP send (dry-run by default), WhatsApp links |
+| `reply_triage.py` | Classify a reply (EN/HI/Hinglish) → stage, next step, stop follow-ups, opt-outs |
+| `meeting.py` | Free slots in both time zones, `.ics` invites, meeting list and outcomes |
 | `intent_scan.py` | Find + score posts asking for a service (EN/HI/Hinglish; Bright Data optional) |
 | `site_audit.py` | Fact-only website audit (each fact with evidence) |
 | `find_email.py` | Find + verify contact emails (Hunter optional; guesses always labelled) |
@@ -69,7 +78,9 @@ this one) and follow it; its instructions take precedence over this router.
 | `generate_pdf_report.py` | PDF pipeline report (needs `pip install reportlab`) |
 
 API keys (all optional) go in environment variables or `~/.ai-sales-team/.env`, never in files you write:
-`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE`, `HUNTER_API_KEY`.
+`BRIGHTDATA_API_KEY`, `BRIGHTDATA_ZONE`, `HUNTER_API_KEY`, `SMTP_PASSWORD`. Settings in the same file:
+`SENDER_NAME`, `SENDER_EMAIL`, `SENDER_ADDRESS`, `SMTP_HOST`, `SMTP_PORT`, `TIMEZONE`, `WORK_HOURS`,
+`BOOKING_URL`, `MEETING_LINK`, `DAILY_SEND_LIMIT`, `CADENCE_DAYS`.
 
 ## Typical week
 
@@ -79,7 +90,10 @@ sales-hunt         find people asking for that this week → judge → pipeline
 sales-prospect     https://bestlead.com          (deep audit of the best ones)
 sales-audit        https://bestlead.com          (proof-of-work facts)
 sales-outreach     bestlead.com                  (claim-checked first email + sequence)
-sales-followup / sales-prep / sales-proposal      as deals move
+sales-reply        they answered → classify, reply, stop follow-ups
+sales-book         slots in both time zones → .ics invite → meeting in the pipeline
+sales-prep / sales-proposal / sales-followup      as deals move
+sales-autopilot    every morning: "aaj ka kaam" — runs the whole loop from today's agenda
 sales-report       weekly pipeline review
 ```
 """,
@@ -311,9 +325,13 @@ Never disparage a competitor with claims you can't source.
    Use the warm or referral template only for a real, confirmed connection.
 4. **Claim check** every email (see "Before anything is sent"); fix until it passes.
 5. Write `prospects/<slug>/OUTREACH-SEQUENCE.md` (`references/output-format.md`).
-6. Record: `{PIPE} attach <slug> prospects/<slug>/OUTREACH-SEQUENCE.md --kind outreach` and
-   `{PIPE} next <slug> "Send email 1 (user)" --due <date>`. When the user confirms they sent it:
-   `{PIPE} stage <slug> contacted --reason "email 1 sent"`.
+6. Record: `{PIPE} attach <slug> prospects/<slug>/OUTREACH-SEQUENCE.md --kind outreach`.
+7. **Send** (see "Before anything is sent"): either the user sends it and you log it —
+   `{OUT} log <slug> --channel email --step 1 --to <email> --subject "<subject>"` — or, if SMTP is set up and the
+   user approves this exact email, `{OUT} send ...` (dry run first, then `--send`). Logging moves the stage to
+   `contacted` and schedules follow-up #1 automatically (`{OUT} cadence` shows the schedule).
+8. Other channels: LinkedIn/WhatsApp messages are sent by the user; for WhatsApp give a click-to-chat link
+   (`{OUT} whatsapp <number with country code> --text-file msg.txt`), then log it with `--channel whatsapp`.
 """,
 "writes_email": True,
 "refs": [("first-email-guide.md", "style rules + 10 good/bad first-email examples"),
@@ -338,8 +356,10 @@ Never disparage a competitor with claims you can't source.
    shared their number). Reference real details from the conversation.
 4. Claim-check every email.
 5. Write `prospects/<slug>/FOLLOWUP-SEQUENCE.md` (`references/output-format.md`).
-6. Record: `{PIPE} note <slug> "<what happened>"`, `{PIPE} next <slug> "<next touch>" --due <date>`, and update
-   the stage (`replied`, `meeting`, `proposal`, `nurture`, `lost`) when the user tells you.
+6. Record: `{PIPE} note <slug> "<what happened>"`, and log each follow-up when it goes out —
+   `{OUT} log <slug> --channel email --to <email> --subject "..."` (this schedules the next one from the
+   cadence) — or `{PIPE} next <slug> "<next touch>" --due <date>` for a custom date. Update the stage
+   (`replied`, `meeting`, `proposal`, `nurture`, `lost`) when the user tells you. If they replied, use `sales-reply`.
 """,
 "writes_email": True,
 "refs": [("playbook.md", "the 5 scenarios, multi-channel touches, cadence, breakup emails"),
@@ -361,7 +381,10 @@ Never disparage a competitor with claims you can't source.
    mark unknowns), talking points, 10 discovery questions aimed at the unknowns, objections, landmines,
    success metrics, next steps to propose, and an agenda (Step 3) for 15/30/60 minutes.
 4. Write `prospects/<slug>/MEETING-PREP.md` (`references/output-format.md`, `references/template-meeting-prep.md`).
-5. Record: `{PIPE} stage <slug> meeting --reason "meeting <date>"` and `{PIPE} attach <slug> prospects/<slug>/MEETING-PREP.md --kind meeting-prep`.
+5. Record: `{PIPE} attach <slug> prospects/<slug>/MEETING-PREP.md --kind meeting-prep`. If the meeting isn't in
+   the pipeline yet, book it with `sales-book` (`{MEET} book ...`) so reminders and outcomes are tracked.
+6. Give the user the reminder message to send the day before (from `{MEET} list`) and, after the call,
+   record the outcome: `{MEET} outcome <id> held --notes "<budget, scope, decision date>"`.
 """,
 "refs": [("playbook.md", "research steps, the 11 brief sections, agendas"), ("output-format.md", "MEETING-PREP.md format"),
          ("template-meeting-prep.md", "structural template"), ("rules.md", "rules")],
@@ -432,6 +455,131 @@ Never disparage a competitor with claims you can't source.
 """,
 "refs": [("playbook.md", "the 7 ICP steps and rubric"), ("output-format.md", "IDEAL-CUSTOMER-PROFILE.md template"), ("rules.md", "quality rules")],
 },
+# --------------------------------------------------------------------------- reply
+{
+"name": "sales-reply",
+"title": "Reply Handling",
+"description": "Handles a prospect's reply to outreach: classifies it (interested, meeting request, question, price/timing/vendor objection, referral, not interested, opt-out, out-of-office, bounce) in English, Hindi or Hinglish, updates the pipeline (stage, follow-ups stopped, opt-outs suppressed, bounced emails marked invalid) and drafts a short, truthful answer whose goal is a booked call. Use when the user pastes a reply or says 'they replied', 'what should I answer', 'client ne reply kiya', 'iska jawab likho', 'unhone price poocha', '/sales reply'.",
+"intro": """A reply is the most valuable moment in the pipeline. Answer fast, answer exactly what they asked, and move to a call.""",
+"body": f"""## Steps
+
+1. Get the reply text (the user pastes it or saves it to a file) and the prospect slug.
+2. Classify and update the pipeline in one go:
+   `{TRIAGE} --file reply.txt --apply <slug> [--from <their email>]`
+   Read the reply yourself too — if the script's category is wrong, say so and fix the stage with `{PIPE} stage`.
+3. Act on the category:
+   | Category | What you write |
+   |---|---|
+   | `meeting_request` | Go straight to `sales-book`: confirm the time they named, or offer 2-3 slots |
+   | `interested` / `question` | Answer in 1-3 sentences (facts only from the ICP / their files), then offer 2-3 slots (`{MEET} slots --prospect-tz <tz>`) |
+   | `objection_price` / `_has_vendor` | Use `OBJECTION-PLAYBOOK.md` or `sales-objections`; offer a smaller first step, then a call |
+   | `objection_timing` | Agree a date; `{PIPE} next <slug> "Check back as agreed" --due <date>`; stage stays `nurture` |
+   | `referral` | Thank them; write a 3-line email to the named person mentioning who referred you (`sales-outreach`) |
+   | `out_of_office` | No reply; `{PIPE} next <slug> "Follow up after they return" --due <return date + 1>` |
+   | `not_interested` | One gracious line, no pitch; never follow up again |
+   | `unsubscribe` | Nothing to write. It's already suppressed — confirm to the user |
+   | `bounce` | Find another verified contact with `sales-contacts` |
+4. Claim-check the answer (see "Before anything is sent"), show it to the user, and log it when it's sent:
+   `{OUT} log <slug> --channel email --to <email> --subject "Re: <their subject>" --no-schedule`.
+5. Tell the user the new stage and the next step with its due date (`{PIPE} show <slug>`).
+
+## Rules
+- Reply within the hour for `meeting_request` and `interested` — speed decides most deals.
+- Answer what they asked first. Don't paste the whole pitch again.
+- Never claim a price, timeline or result the user hasn't confirmed; use `[TO CONFIRM: ...]` and ask.
+- Match their language: Hinglish reply → Hinglish answer (simple, respectful, "ji" where natural).
+""",
+"writes_email": True,
+"refs": [("compliance.md", "legal and deliverability rules")],
+},
+# --------------------------------------------------------------------------- book
+{
+"name": "sales-book",
+"title": "Meeting Booking",
+"description": "Books the meeting: proposes free slots that fit both the user's and the prospect's time zone (India, US, UK, Australia and others), offers the user's booking link, writes a calendar invite (.ics for Google Calendar, Outlook, Apple), records the meeting in the pipeline, stops follow-ups, schedules prep and a reminder, and records the outcome afterwards (held, no-show, rescheduled, cancelled). Use when the user says 'book a meeting', 'schedule a call', 'they want to talk', 'send calendar invite', 'meeting fix karo', 'call schedule karo', 'meeting book karo', '/sales book'.",
+"intro": """Getting to "yes, let's talk" is hard; losing it to back-and-forth about times is avoidable. You make booking take one email.""",
+"body": f"""## Steps
+
+1. **Who and where.** Read `{PIPE} show <slug>`. Work out the prospect's time zone from their post, site
+   address, phone code (+91 India, +1 US/Canada, +44 UK, +61 Australia) or email signature; if unsure, ask.
+2. **If they named a time**, use it (check it with `{MEET} slots` only if it may clash). Otherwise propose:
+   `{MEET} slots --prospect-tz <IANA zone> [--count 3] [--minutes 30]`
+   It returns 2-3 slots on different days in both zones, avoiding meetings already booked, plus a ready
+   message that includes `BOOKING_URL` if the user has one (Cal.com, Calendly, Google booking page). Slots
+   marked `outside_your_work_hours` need the user's OK (common for India ↔ US).
+3. Write the booking email: one line of context + the slots + the link. Claim-check it, the user sends it,
+   then `{OUT} log <slug> --channel email --to <email> --subject "..." --no-schedule`.
+4. **When they confirm**, book it:
+   `{MEET} book <slug> --start "YYYY-MM-DD HH:MM" [--tz <zone the time is in>] --prospect-tz <their zone> --attendee <email> --attendee-name "<name>" [--link <video link>] [--agenda "<one line>"]`
+   This writes `prospects/<slug>/MEETING-<date>.ics`, sets the stage to `meeting`, stops follow-ups and
+   schedules prep for the day before. Give the user the confirmation message and tell them to attach the `.ics`.
+5. **Before the meeting:** run `sales-prep`; the day before, give the user the reminder message.
+6. **After the meeting:** `{MEET} outcome <id> held|no_show|rescheduled|cancelled --notes "<what was agreed>"`.
+   Held → `{PIPE} stage <slug> proposal` when a proposal is due and run `sales-followup` (post-meeting recap)
+   and `sales-proposal`. No-show → send a kind note with 2 new slots (step 2). Rescheduled → book the new time.
+
+## Settings (in `~/.ai-sales-team/.env`)
+`TIMEZONE` (default Asia/Kolkata), `WORK_HOURS` (10:00-18:00), `EXTENDED_HOURS` (07:00-23:00, used only
+when time zones barely overlap), `WORK_DAYS` (Mon-Fri), `MEETING_MINUTES` (30), `BOOKING_URL`, `MEETING_LINK`,
+`SENDER_NAME`, `SENDER_EMAIL`. Ask the user once and suggest they add them.
+
+## Rules
+- Always show times in **their** zone first, with yours in brackets.
+- Never invent a video link: use `--link`, `MEETING_LINK`, or say the link will follow.
+- Don't book a time the prospect didn't confirm. A proposed slot is not a meeting.
+""",
+"writes_email": True,
+"refs": [("compliance.md", "legal and deliverability rules")],
+},
+# --------------------------------------------------------------------------- autopilot
+{
+"name": "sales-autopilot",
+"title": "Sales Autopilot — find clients to booked meetings, every day",
+"description": "Runs the whole sales loop end-to-end from the persistent pipeline: builds today's agenda (replies to answer, meetings to prep or close out, follow-ups due, stale deals, best new leads), works through it in priority order using the other sales skills, refills the funnel with sales-hunt when it runs low, and asks the user to approve every message before it goes out. Use when the user says 'run my sales', 'what should I do today', 'daily sales routine', 'autopilot', 'end to end', 'find clients and book meetings', or in Hinglish 'aaj ka kaam batao', 'pura sales process chalao', 'client dhundne se meeting book karne tak sab karo'.",
+"intro": """You are the user's sales operator. Every session you turn the pipeline into finished work — in the order that
+books the most meetings — and you never send anything the user hasn't approved.""",
+"body": f"""## The loop
+
+```
+ICP → hunt → audit/research → contact (verified) → email 1 → follow-ups (cadence) → reply → book → prep → meeting → proposal → won
+```
+
+## Steps
+
+1. **Set-up check (first run only).** `IDEAL-CUSTOMER-PROFILE.md` exists (else run `sales-icp`); ask for
+   missing settings once — sender name, email, postal address, time zone, booking link — and suggest adding
+   them to `~/.ai-sales-team/.env`. Ask whether the user sends emails themselves or wants SMTP sending.
+2. **Today's agenda:** `{PIPE} today`. Show it as a short numbered list grouped by priority and say how long
+   it will take. Then work through it top-down, one item at a time:
+   | Priority | Item | Skill |
+   |---|---|---|
+   | 1 | `reply` — someone answered | `sales-reply` (then `sales-book` if they want to talk) |
+   | 2 | `meeting` / `meeting-outcome` | `sales-prep` for tomorrow's calls; `sales-book` step 6 for past ones |
+   | 3 | `due` — follow-up or next action due | `sales-followup` / `sales-outreach` / `sales-proposal` |
+   | 4 | `stale` — idle deal | `sales-followup` (ghost recovery), or move to `nurture` / `lost` |
+   | 5 | `new-lead` — best untouched prospects | `sales-audit` + `sales-contacts` → `sales-outreach` |
+3. **Refill the funnel.** If the agenda tip says open leads are low (under 20), run `sales-hunt` for the ICP
+   (cap paid calls with `--max-calls`) and add the real buyers to the pipeline.
+4. **Batch approvals.** Draft every message for the session, claim-check each one, then show them together:
+   recipient, subject, body, claim-check result. Send or log only the ones the user approves
+   (`{OUT} send ... --send` with SMTP, or the user sends and you run `{OUT} log ...`).
+5. **Close the session** with: emails sent/logged, replies handled, meetings booked (`{MEET} list`), what is due
+   tomorrow, and one suggestion (e.g. "3 leads from hunt:li-posts booked meetings — run more of that query").
+   On Mondays, offer `sales-report`.
+
+## Daily targets (adjust to the user)
+Answer every reply the same day · 10-20 new first emails · every due follow-up · prep for every meeting
+in the next 24 hours · funnel ≥ 20 open leads.
+
+## Rules
+- The user approves every outgoing message. Never send in bulk without showing each one.
+- Respect `DAILY_SEND_LIMIT` and the do-not-contact list; `outreach.py` enforces both.
+- One prospect at a time: never mix one prospect's facts into another's email.
+- If a step fails (no verified email, site down, no key), say so, skip it, and move on.
+""",
+"writes_email": True,
+"refs": [("compliance.md", "legal and deliverability rules")],
+},
 # --------------------------------------------------------------------------- report
 {
 "name": "sales-report",
@@ -440,8 +588,8 @@ Never disparage a competitor with claims you can't source.
 "intro": """You turn the pipeline into decisions: what to do today, this week, and what to stop doing.""",
 "body": f"""## Steps
 
-1. Get the numbers: `{PIPE} report` (funnel, conversion, grades, stale, due today, by source, top 10) and
-   `{PIPE} list`.
+1. Get the numbers: `{PIPE} report` (funnel, conversion, activity, grades, stale, due today, by source, top 10),
+   `{PIPE} list` and `{PIPE} today`; upcoming meetings with `{MEET} list`.
 2. Fill in from files: for prospects in `prospects/*/` not yet in the pipeline, read their files and add them
    (`{PIPE} add ...`, `{PIPE} score ...`) so the report is complete.
 3. Analyse (`references/playbook.md`): pipeline health, stuck deals and why, which sources/queries produce

@@ -157,7 +157,7 @@ def fake_fetch(pages):
         final = url
         if isinstance(html, tuple):              # redirect
             final, html = html
-        return {"url": url, "final_url": final, "status": status, "html": html or None, "error": None, "insecure": False}
+        return {"url": url, "final_url": final, "status": status, "html": html or None, "error": None, "tls_error": False}
     return fetch
 
 
@@ -170,7 +170,7 @@ def test_site_audit_facts_robots_and_links():
     assert f["viewport"]["value"] is False and f["h1_count"]["value"] == 2 and f["click_to_call"]["value"] is True
     assert f["cta"]["value"] is False and f["images_missing_alt"]["value"] == 1 and "WordPress" in f["tech"]["value"]
     assert f["copyright_year"]["value"] == 2019 and f["http_redirects_to_https"]["value"] is True
-    assert f["broken_internal_links"]["value"] == 1 and "skipped (robots)" in f["broken_internal_links"]["evidence"]
+    assert f["broken_internal_links"]["value"] == 1 and "skipped (robots" in f["broken_internal_links"]["evidence"]
     assert all(x["statement"] and x["evidence"] for x in r["facts"])
     assert "tls_certificate" not in f                                   # never claimed about the prospect
 

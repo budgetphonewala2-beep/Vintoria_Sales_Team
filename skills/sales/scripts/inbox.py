@@ -68,6 +68,40 @@ def config():
             "folder": setting("IMAP_FOLDER", "INBOX")}
 
 
+def configs():
+    """IMAP configs for every mailbox that has one (mailboxes.json), else the single .env inbox. [] if none."""
+    import mailboxes
+    out = []
+    if mailboxes._file().exists():
+        for m in mailboxes.load():
+            if m.get("imap_host") and m.get("imap_password"):
+                out.append({"host": m["imap_host"], "port": m["imap_port"], "user": m["imap_user"], "password": m["imap_password"],
+                            "folder": setting("IMAP_FOLDER", "INBOX"), "email": m["email"]})
+        return out
+    try:
+        c = config()
+        c["email"] = (setting("SENDER_EMAIL") or c["user"]).lower()
+        return [c]
+    except UserError:
+        return []
+
+
+def fetch_all(days=7, limit=300, imap=imaplib):
+    """Messages from every configured inbox (one failing inbox doesn't stop the others; errors are raised only if all fail)."""
+    cfgs = configs()
+    if not cfgs:
+        raise UserError("inbox not configured — IMAP_* in ~/.ai-sales-team/.env, or imap_host in mailboxes.json")
+    msgs, errors = [], []
+    for c in cfgs:
+        try:
+            msgs += fetch_messages(c, days, limit, imap)
+        except Exception as exc:  # noqa: BLE001
+            errors.append(f"{c.get('email')}: {type(exc).__name__}: {exc}")
+    if errors and not msgs and len(errors) == len(cfgs):
+        raise OSError("; ".join(errors))
+    return msgs
+
+
 def fetch_messages(cfg, days=7, limit=300, imap=imaplib):
     """Raw RFC 822 bytes of recent messages, newest first. Read-only."""
     conn = imap.IMAP4_SSL(cfg["host"], cfg["port"], ssl_context=tls_context())
@@ -210,10 +244,11 @@ def booking_of(conn, m):
         tool = "calendar invite"
     if not tool:
         return None
-    me = (setting("SENDER_EMAIL") or "").lower()
+    import mailboxes
+    mine = {(setting("SENDER_EMAIL") or "").lower()} | {m["email"] for m in mailboxes.load()}
     pool = (ics["attendees"] + [ics["organizer"] or ""] if ics else []) + [a.lower() for a in EMAIL_RE.findall(m["text"])]
     pool += [m["from"]] if tool == "calendar invite" else []
-    for addr in dict.fromkeys(a for a in pool if a and a != me):
+    for addr in dict.fromkeys(a for a in pool if a and a not in mine):
         r = conn.execute("SELECT p.* FROM contacts c JOIN prospects p ON p.id = c.prospect_id WHERE lower(c.email) = ?",
                          (addr,)).fetchone()
         if r:
@@ -266,12 +301,13 @@ def booking_reply(m, result, prospect):
 
 
 def check(conn, messages, apply=False, auto_reply=False, smtp=None, now=None):
-    me = (setting("SENDER_EMAIL") or "").lower()
+    import mailboxes
+    mine = {(setting("SENDER_EMAIL") or "").lower()} | {m["email"] for m in mailboxes.load()}
     cats = [c.strip() for c in setting("AUTO_REPLY_CATEGORIES", "meeting_request").split(",") if c.strip()]
     out = {"scanned": len(messages), "matched": [], "ignored": 0, "already_seen": 0, "auto_replies": [], "errors": []}
     for raw in messages:
         m = parse(raw) if isinstance(raw, (bytes, bytearray)) else raw
-        if not m["message_id"] or m["from"] == me:
+        if not m["message_id"] or m["from"] in mine:
             out["ignored"] += 1
             continue
         if conn.execute("SELECT 1 FROM inbox_seen WHERE message_id = ?", (m["message_id"],)).fetchone():
@@ -334,7 +370,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     conn = pipeline.connect()
     try:
-        msgs = fetch_messages(config(), a.days, a.limit)
+        msgs = fetch_all(a.days, a.limit)
         auto = a.auto_reply or setting("AUTO_REPLY", "0") in ("1", "true", "yes", "on")
         emit({"ok": True, "data": check(conn, msgs, a.apply, auto and a.apply)})
     except UserError as exc:

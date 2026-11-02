@@ -180,7 +180,7 @@ def test_prospect_scan_dossier_hooks_and_pipeline(monkeypatch, tmp_path):
         return {"url": u, "final_url": u, "status": 200 if ok else 404, "html": HOME if ok else None, "error": None, "tls_error": False}
     monkeypatch.setattr(site_audit, "fetch_url", fake_fetch)
     real_audit = site_audit.audit
-    monkeypatch.setattr(site_audit, "audit", lambda url, check_links=True: real_audit(url, check_links, fetch=fake_fetch))
+    monkeypatch.setattr(site_audit, "audit", lambda url, check_links=True, **kw: real_audit(url, check_links, fetch=fake_fetch))
     monkeypatch.setattr(analyze_prospect, "analyze", lambda url, timeout=10: {"company_name": "Rao Clinic",
                                                                           "description": "Family dental care in Pune"})
     monkeypatch.setattr(contact_finder, "find_contacts", lambda url, timeout=10: {"contacts": [

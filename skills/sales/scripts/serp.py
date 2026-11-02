@@ -202,6 +202,12 @@ def hunt(days=7, pages=2, max_queries=20, platforms=None, signals=False, call=ap
     lib = lib or query_library.auto()
     queries = [q for q in lib["google_xray"] if (signals or q["platform"] != "signal")
                and (not platforms or q["platform"] in platforms)]
+    # learning loop (learn.py report --apply): skip queries that never produced a positive reply, run winners first
+    import learn
+    L = learn.learned()
+    drop, w = set(L.get("drop_queries") or []), L.get("query_weights") or {}
+    dropped = [q["id"] for q in queries if f"serp:{q['id']}" in drop]
+    queries = sorted((q for q in queries if f"serp:{q['id']}" not in drop), key=lambda q: -float(w.get(f"serp:{q['id']}", 1.0)))
     countries = lib.get("google_countries") or ["us"]
     providers = configured()
     if not providers:
@@ -221,7 +227,8 @@ def hunt(days=7, pages=2, max_queries=20, platforms=None, signals=False, call=ap
             errors.append("stopped: every provider refused the key")
             break
     return stamp(posts), errors, {"queries_run": min(len(queries), max_queries), "providers_used": used,
-                                  "approx_calls": calls, "countries": countries, "window": f"{hours} h" if hours else f"{days} d"}
+                                  "approx_calls": calls, "countries": countries, "window": f"{hours} h" if hours else f"{days} d",
+                                  "dropped_by_learning": dropped}
 
 
 # ------------------------------------------------------------------------------------------- watch (newest only)

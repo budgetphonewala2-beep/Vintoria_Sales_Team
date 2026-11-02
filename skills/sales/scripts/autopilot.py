@@ -12,7 +12,8 @@ Each tick, in this order (a reply always wins over a follow-up):
   2. serp.py watch — every HUNT_EVERY_HOURS (default 2, needs BRIGHTDATA_API_KEY; 0 = off): the newest posts from
                   buyers since the last watch, queued as fresh leads at the top of the agenda (HUNT_MAX_QUERIES per run)
   3. outreach.py run — every approved sequence email that is due, inside SEND_HOURS, under DAILY_SEND_LIMIT
-  4. pipeline.py today — what still needs you (replies, fresh leads to judge, meetings to prep, new leads)
+  4. notify.py — a Telegram / Slack / Discord ping for fresh leads, replies and bookings (if configured)
+  5. pipeline.py today — what still needs you (replies, fresh leads to judge, meetings to prep, new leads)
 Only emails you approved with `outreach.py approve` are ever sent. A lock file stops overlapping runs.
 """
 
@@ -55,15 +56,34 @@ def hunt_if_due(now=None, call=None):
     try:
         kw = {"call": call} if call else {}
         r = serp.watch(int(setting("HUNT_MAX_QUERIES", "12")), 1, now=now, **kw)
-        return {k: r[k] for k in ("window_hours", "new_buyers", "rejected", "excluded_market", "queries_run", "errors")}
+        return {k: r[k] for k in ("window_hours", "new_buyers", "rejected", "excluded_market", "queries_run", "errors", "leads")}
     except Exception as exc:  # noqa: BLE001 - a hunting problem must never stop replies or sends
         return {"error": f"{type(exc).__name__}: {exc}"}
 
 
-def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None, hunt_call=None):
+def alert(out, call=None):
+    """Telegram / Slack / Discord ping for fresh leads, replies and bookings found in this tick."""
+    import notify
+    if not notify.channels():
+        return None
+    kw = {"call": call} if call else {}
+    sent = {}
+    h = out.get("hunt") or {}
+    if h.get("new_buyers") and notify.enabled("fresh_leads"):
+        sent["fresh_leads"] = notify.send(notify.fresh_leads_text(h.get("leads") or []), **kw)
+    ib = out.get("inbox") or {}
+    reps = [m for m in ib.get("matched") or [] if m.get("category") not in ("meeting_booked", "out_of_office", "bounce")]
+    if reps and notify.enabled("replies"):
+        sent["replies"] = notify.send(notify.replies_text(reps), **kw)
+    if ib.get("bookings") and notify.enabled("bookings"):
+        sent["bookings"] = notify.send(notify.bookings_text(ib["bookings"]), **kw)
+    return sent or None
+
+
+def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None, hunt_call=None, alert_call=None):
     out = {"inbox": None, "hunt": None, "sequences": None, "today": None, "notes": []}
     try:
-        msgs = fetch() if fetch else inbox.fetch_messages(inbox.config(), days=int(setting("INBOX_DAYS", "7")))
+        msgs = fetch() if fetch else inbox.fetch_all(days=int(setting("INBOX_DAYS", "7")))
         out["inbox"] = inbox.check(conn, msgs, apply=True, auto_reply=auto_reply, smtp=smtp, now=now)
     except inbox.UserError as exc:
         out["notes"].append(f"inbox skipped: {exc} — paste replies into sales-reply instead, or sequences can't stop on reply")
@@ -75,6 +95,7 @@ def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None, hu
         out["notes"].append(f"inbox error: {type(exc).__name__}: {exc} — not sending this run")
         send = False
     out["hunt"] = hunt_if_due(now=now, call=hunt_call)
+    out["alerts"] = alert(out, alert_call)
     out["sequences"] = outreach.run(conn, really=send, now=now, smtp=smtp or outreach.smtplib)
     agenda = pipeline.today_agenda(conn)
     out["today"] = {"counts": agenda["counts"], "top": agenda["items"][:8], "tip": agenda["tip"]}

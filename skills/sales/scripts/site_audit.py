@@ -26,7 +26,7 @@ from urllib import robotparser
 from urllib.parse import urldefrag, urljoin, urlparse
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from sales_common import USER_AGENT, emit, fetch_url, normalize_url, parse_html  # noqa: E402
+from sales_common import USER_AGENT, ApiError, api_json, emit, fetch_url, normalize_url, parse_html, secret  # noqa: E402
 
 CTA_RE = re.compile(
     r"\b(get (?:a |your )?(?:free )?(?:quote|estimate|started)|contact us|book (?:a |an |now|online)|call (?:us|now)|"
@@ -147,7 +147,50 @@ class Robots:
         return True if not self.ok else self.rp.can_fetch(USER_AGENT, url)
 
 
-def audit(url, check_links=True, fetch=fetch_url):
+PSI = "https://www.googleapis.com/pagespeedonline/v5/runPagespeed"
+
+
+def pagespeed(url, strategy="mobile", call=api_json):
+    """Google PageSpeed Insights (free; PAGESPEED_API_KEY optional, raises the quota): lab score, LCP, CLS, TBT, and the
+    Chrome UX Report verdict from real users when Google has it. Facts are Google's numbers, quoted as Google's."""
+    params = {"url": url, "strategy": strategy, "category": "performance"}
+    key = secret("PAGESPEED_API_KEY")
+    if key:
+        params["key"] = key
+    status, d = call("GET", PSI, params=params, timeout=90, retries=1)
+    if status >= 400 or not isinstance(d, dict) or "lighthouseResult" not in d:
+        msg = ((d or {}).get("error") or {}).get("message") if isinstance(d, dict) else None
+        raise ApiError(status, f"PageSpeed Insights HTTP {status}" + (f": {msg}" if msg else ""))
+    lr = d["lighthouseResult"]
+    audits = lr.get("audits") or {}
+    when = (lr.get("fetchTime") or "")[:10]
+    ev = f"Google PageSpeed Insights, {strategy}, {when}"
+    facts = []
+    score = (((lr.get("categories") or {}).get("performance") or {}).get("score"))
+    if score is not None:
+        sc = round(score * 100)
+        facts.append(fact("pagespeed_score", sc, f"Google PageSpeed Insights gives the homepage a {strategy} performance score of {sc}/100.",
+                          ev))
+    lcp = (audits.get("largest-contentful-paint") or {}).get("numericValue")
+    if lcp is not None:
+        facts.append(fact("pagespeed_lcp_ms", round(lcp), f"In Google's {strategy} test the largest element took {lcp / 1000:.1f} s to "
+                          "appear (Google's 'good' threshold is 2.5 s).", ev))
+    cls = (audits.get("cumulative-layout-shift") or {}).get("numericValue")
+    if cls is not None and cls > 0.1:
+        facts.append(fact("pagespeed_cls", round(cls, 2), f"Google measured a layout shift score of {cls:.2f} on {strategy} (good is "
+                          "under 0.1): the page jumps while loading.", ev))
+    tbt = (audits.get("total-blocking-time") or {}).get("numericValue")
+    if tbt is not None and tbt > 600:
+        facts.append(fact("pagespeed_tbt_ms", round(tbt), f"Google measured {tbt / 1000:.1f} s of total blocking time on {strategy} "
+                          "(good is under 0.2 s).", ev))
+    crux = (d.get("loadingExperience") or {}).get("overall_category")
+    if crux in ("SLOW", "AVERAGE", "FAST"):
+        facts.append(fact("crux_overall", crux, f"Real Chrome users' loading experience for the page is rated {crux} in Google's "
+                          "Chrome UX Report.", ev + " (CrUX field data)"))
+    return facts
+
+
+def audit(url, check_links=True, fetch=fetch_url, with_pagespeed=False, call=api_json):
     url = normalize_url(url)
     pu = urlparse(url)
     if not pu.hostname or "." not in pu.hostname:
@@ -198,9 +241,19 @@ def audit(url, check_links=True, fetch=fetch_url):
                           else f"All {checked} internal links we checked on the homepage load.",
                           ("; ".join(broken[:5]) or f"{checked} links checked, none 4xx/5xx")
                           + (f"; {skipped} skipped (robots or no HTTP answer)" if skipped else "")))
+    if with_pagespeed:
+        try:
+            facts.extend(pagespeed(final, call=call))
+        except ApiError as exc:
+            pagespeed_error = str(exc)
+        else:
+            pagespeed_error = None
     # Certificate problems are NOT reported as facts: verification also fails when the auditing
     # machine lacks CA certificates, so it can't be stated about the prospect with certainty.
-    return {"url": url, "final_url": final, "audited_at": _now(), "facts": facts}
+    out = {"url": url, "final_url": final, "audited_at": _now(), "facts": facts}
+    if with_pagespeed and pagespeed_error:
+        out["pagespeed_error"] = pagespeed_error
+    return out
 
 
 def _now():
@@ -212,9 +265,10 @@ def main(argv=None):
     ap.add_argument("--url", required=True)
     ap.add_argument("--no-links", action="store_true", help="skip checking internal links")
     ap.add_argument("--save", help="also write the JSON to this file")
+    ap.add_argument("--pagespeed", action="store_true", help="add Google PageSpeed Insights facts (mobile score, LCP, CLS, real-user data)")
     a = ap.parse_args(argv)
     try:
-        out = audit(a.url, check_links=not a.no_links)
+        out = audit(a.url, check_links=not a.no_links, with_pagespeed=a.pagespeed)
     except ValueError as exc:
         emit({"ok": False, "error": str(exc)}, 2)
     if a.save:

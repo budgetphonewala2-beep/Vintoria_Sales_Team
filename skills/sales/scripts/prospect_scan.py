@@ -5,7 +5,8 @@ every email is written from (and claim-checked against).
 
 Runs, in order (each step is optional and never fatal):
   1. their post (if they asked publicly): the exact quote, plus any email/phone/site written in it
-  2. site_audit.py      — fact-only homepage audit (mobile, HTTPS, CTA, forms, speed, broken links, copyright...)
+  2. site_audit.py      — fact-only homepage audit (mobile, HTTPS, CTA, forms, speed, broken links, copyright...) plus
+                          Google PageSpeed Insights (mobile score, LCP, CLS, real-user CrUX verdict; skip with --no-pagespeed)
   3. analyze_prospect.py — company name, description, industry, tech, pricing, hiring, socials, size signals
   4. contact_finder.py  — team / leadership with seniority and buying role
   5. find_email.py      — best address for the decision maker; skipped when the post or site already has one
@@ -39,6 +40,10 @@ THIS_YEAR = datetime.now(timezone.utc).year
 
 # fact key → (test on the value, weight, angle). The angle is a suggestion for the user, not a claim.
 HOOKS = [
+    ("pagespeed_score", lambda v: v is not None and v < 50, 5, "Google itself scores their mobile speed low — offer speed work (most of their buyers are on phones)"),
+    ("pagespeed_lcp_ms", lambda v: (v or 0) > 4000, 4, "Main content takes 4 s+ to appear on mobile in Google's test — visitors leave"),
+    ("crux_overall", lambda v: v == "SLOW", 4, "Real Chrome users rate the site SLOW (Google's own field data)"),
+    ("pagespeed_cls", lambda v: (v or 0) > 0.25, 2, "The page jumps around while loading on mobile — fixable"),
     ("http_status", lambda v: v is not None and v >= 400, 5, "Site returns an error — offer a quick fix/rebuild"),
     ("https", lambda v: v is False, 4, "No HTTPS — browsers show 'Not secure'; offer SSL + trust fixes"),
     ("viewport", lambda v: v is False, 4, "Not mobile-friendly — most visitors are on phones; offer a mobile fix"),
@@ -97,7 +102,7 @@ def decision_maker(people, first=None, last=None):
 
 
 def scan(url, name=None, first=None, last=None, post=None, post_url=None, city=None, web=True, use_api=True, links=True,
-         out_dir=None, record=True, source=None):
+         out_dir=None, record=True, source=None, pagespeed=True):
     url = normalize_url(url)
     if pipeline.platform_of_url(url):
         raise ValueError(f"{url} is a post/profile on a platform, not the prospect's website — pass their own site "
@@ -120,7 +125,7 @@ def scan(url, name=None, first=None, last=None, post=None, post_url=None, city=N
 
     if post:
         d["post"] = {"text": post[:3000], "url": post_url, "contacts": {k: v for k, v in find_email.from_text(post).items() if v}}
-    audit = step("site_audit", lambda: site_audit.audit(url, check_links=links)) or {"facts": []}
+    audit = step("site_audit", lambda: site_audit.audit(url, check_links=links, with_pagespeed=pagespeed)) or {"facts": []}
     company = step("analyze", lambda: analyze_prospect.analyze(url)) or {}
     team = step("contacts", lambda: contact_finder.find_contacts(url)) or {}
     people = team.get("contacts") or []
@@ -173,7 +178,8 @@ def _record(d, source=None):
     try:
         nm = d["company"].get("name")
         pipeline.add(conn, url=d["url"], name=None if nm in (None, d["slug"]) else nm, source=source)   # never overwrite a real name with the slug
-        if pipeline.get(conn, d["slug"])["stage"] == "new":
+        found_something = bool(d["hooks"]) or bool(((d.get("email") or {}).get("best") or {}).get("email"))
+        if pipeline.get(conn, d["slug"])["stage"] == "new" and found_something:   # an unreachable site isn't "researched"
             pipeline.set_stage(conn, d["slug"], "researched", "deep scan done")
         best = (d.get("email") or {}).get("best")
         dm = d.get("decision_maker")
@@ -229,12 +235,13 @@ def main(argv=None):
     ap.add_argument("--post-url"); ap.add_argument("--source")
     ap.add_argument("--no-web", action="store_true"); ap.add_argument("--no-api", action="store_true")
     ap.add_argument("--no-links", action="store_true"); ap.add_argument("--out-dir")
+    ap.add_argument("--no-pagespeed", action="store_true", help="skip Google PageSpeed Insights (it adds ~20 s)")
     a = ap.parse_args(argv)
     post = Path(a.post_file).read_text(encoding="utf-8-sig") if a.post_file else a.post_text
     if pipeline.platform_of_url(a.url):
         emit({"ok": False, "error": f"{a.url} is a platform post/profile, not a website — pass the prospect's own site"}, 2)
     d = scan(a.url, a.name, a.first, a.last, post, a.post_url, a.city, not a.no_web, not a.no_api, not a.no_links, a.out_dir,
-             source=a.source)
+             source=a.source, pagespeed=not a.no_pagespeed)
     emit({"ok": True, "data": {k: d[k] for k in ("slug", "company", "decision_maker", "email", "hooks", "readiness", "steps",
                                                  "errors", "saved")}})
 

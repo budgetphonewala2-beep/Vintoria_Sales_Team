@@ -58,6 +58,7 @@ from urllib.parse import quote
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import claim_check  # noqa: E402
 import email_lint  # noqa: E402
+import mailboxes  # noqa: E402
 import pipeline  # noqa: E402
 from sales_common import emit, secret, setting, tls_context  # noqa: E402
 
@@ -144,7 +145,7 @@ def _touch_count(conn, pid, channel="email"):
 
 
 def log_touch(conn, key, channel, step=None, to=None, subject=None, body_path=None, note=None, status="logged",
-              message_id=None, schedule=True, today=None):
+              message_id=None, schedule=True, today=None, sender=None):
     if channel not in CHANNELS:
         raise UserError(f"channel must be one of {CHANNELS}")
     p = pipeline.get(conn, key)
@@ -154,8 +155,9 @@ def log_touch(conn, key, channel, step=None, to=None, subject=None, body_path=No
     first_before = _first_email_date(conn, p["id"])
     out = {"prospect": p["slug"], "channel": channel, "step": step, "status": status}
     with conn:
-        conn.execute("INSERT INTO touches(prospect_id, channel, step, recipient, subject, body_path, status, message_id, at) "
-                     "VALUES (?,?,?,?,?,?,?,?,?)", (p["id"], channel, step, to, subject, body_path, status, message_id, ts))
+        conn.execute("INSERT INTO touches(prospect_id, channel, step, recipient, subject, body_path, status, message_id, at, sender) "
+                     "VALUES (?,?,?,?,?,?,?,?,?,?)", (p["id"], channel, step, to, subject, body_path, status, message_id, ts,
+                                                      (sender or "").lower() or None))
         pipeline.event(conn, p["id"], "touch", f"{channel}" + (f" #{step}" if step else "") + (f" to {to}" if to else "")
                        + (f": {subject}" if subject else "") + (f" — {note}" if note else ""))
         if p["stage"] in ("new", "researched", "qualified"):
@@ -224,6 +226,8 @@ def stop_loss(conn, now_dt=None):
 def daily_limit(now_dt=None):
     """DAILY_SEND_LIMIT, ramped while a new inbox warms up (SENDING_STARTED=YYYY-MM-DD): 5/day in weeks 1-2, then +5 per
     week. Practitioners keep 20-30 cold sends per mailbox per day once warm."""
+    if mailboxes._file().exists():
+        return sum(mailboxes.limit_today(m, now_dt) for m in mailboxes.load()) or 0
     cap = int(setting("DAILY_SEND_LIMIT", "30"))
     start = setting("SENDING_STARTED")
     if start:
@@ -330,12 +334,11 @@ def smtp_send(msg, host, port, user, password, smtp=smtplib):
 def send(conn, key, to, subject, body, evidence=None, evidence_text=None, step=None, really=False,
          allow_catch_all=False, body_path=None, smtp=smtplib, in_reply_to=None, schedule=True, now=None):
     problems, info = preflight(conn, key, to, subject, body, evidence, evidence_text, allow_catch_all, now)
-    sender = setting("SENDER_EMAIL")
-    cfg = {"SMTP_HOST": setting("SMTP_HOST"), "SMTP_USER": setting("SMTP_USER") or sender,
-           "SMTP_PASSWORD": secret("SMTP_PASSWORD"), "SENDER_EMAIL": sender}
-    missing = [k for k, v in cfg.items() if not v]
-    if really and missing:
-        problems.append("SMTP not configured — add to ~/.ai-sales-team/.env: " + ", ".join(missing))
+    box, why = mailboxes.pick(conn, pipeline.get(conn, key)["id"], now)
+    info["mailbox"] = box["email"] if box else None
+    if really and not box:
+        problems.append("no mailbox can send: " + why if "configured" not in why else
+                        "SMTP not configured — add SMTP_HOST, SMTP_PASSWORD, SENDER_EMAIL to ~/.ai-sales-team/.env (or mailboxes.json)")
     out = {**info, "to": to, "subject": subject, "words": len(re.findall(r"\w+", body or "")), "problems": problems}
     if problems:
         out["sent"] = False
@@ -345,11 +348,12 @@ def send(conn, key, to, subject, body, evidence=None, evidence_text=None, step=N
         out.update(sent=False, dry_run=True, preview=body,
                    next="All checks passed. Show the user this exact email; send only after they approve, by adding --send.")
         return out
-    msg = build_message(to, subject, body, sender, setting("SENDER_NAME"), setting("REPLY_TO"), in_reply_to)
-    smtp_send(msg, cfg["SMTP_HOST"], setting("SMTP_PORT", "587"), cfg["SMTP_USER"], cfg["SMTP_PASSWORD"], smtp=smtp)
+    msg = build_message(to, subject, body, box["email"], box.get("name"), box.get("reply_to"), in_reply_to)
+    smtp_send(msg, box["smtp_host"], box["smtp_port"], box["smtp_user"], box["password"], smtp=smtp)
     logged = log_touch(conn, key, "email", step=step, to=to, subject=subject, body_path=body_path, status="sent",
-                       message_id=msg["Message-ID"], schedule=schedule, today=now.date() if now else None)
-    out.update(sent=True, message_id=msg["Message-ID"], **{k: v for k, v in logged.items() if k.startswith("next")})
+                       message_id=msg["Message-ID"], schedule=schedule, today=now.date() if now else None, sender=box["email"])
+    out.update(sent=True, message_id=msg["Message-ID"], mailbox=box["email"],
+               **{k: v for k, v in logged.items() if k.startswith("next")})
     return out
 
 
@@ -363,12 +367,17 @@ def parse_sequence(path):
         data = data.get("emails", data) if isinstance(data, dict) else data
         for i, e in enumerate(data):
             steps.append({"step": int(e.get("step", i + 1)), "subject": (e.get("subject") or "").strip(),
-                          "body": (e.get("body") or "").strip()})
+                          "body": (e.get("body") or "").strip(), "subject_b": (e.get("subject_b") or "").strip() or None,
+                          "hook": (e.get("hook") or "").strip() or None})
     else:
         for i, block in enumerate(re.split(r"(?m)^#{1,3}\s*(?:email|mail|step)\s*#?\s*\d+[^\n]*\n", raw, flags=re.I)[1:]):
             m = re.search(r"(?mi)^\**subject\**\s*:\s*(.+)$", block)
             body = (block[:m.start()] + block[m.end():]) if m else block
-            steps.append({"step": i + 1, "subject": (m.group(1).strip() if m else ""), "body": body.strip().strip("-").strip()})
+            mb = re.search(r"(?mi)^\**subject\s*b\**\s*:\s*(.+)$", body)
+            if mb:
+                body = body[:mb.start()] + body[mb.end():]
+            steps.append({"step": i + 1, "subject": (m.group(1).strip() if m else ""), "body": body.strip().strip("-").strip(),
+                          "subject_b": mb.group(1).strip() if mb else None, "hook": None})
     steps.sort(key=lambda x: x["step"])
     if not steps or [x["step"] for x in steps] != list(range(1, len(steps) + 1)):
         raise UserError("sequence must have emails numbered 1, 2, 3 ... (JSON list or '## Email 1' headings)")
@@ -380,17 +389,17 @@ def parse_sequence(path):
 def doctor(conn=None):
     """Is sending ready, and which delivery mode should the agent use?"""
     import inbox
-    smtp = {k: bool(setting(k) if k != "SMTP_PASSWORD" else secret(k)) for k in ("SMTP_HOST", "SMTP_PASSWORD", "SENDER_EMAIL")}
-    try:
-        inbox.config()
-        imap = True
-    except Exception:  # noqa: BLE001
-        imap = False
-    smtp_ok = all(smtp.values())
+    boxes = mailboxes.load()
+    smtp = {"SMTP_HOST": bool(boxes) or bool(setting("SMTP_HOST")), "SMTP_PASSWORD": bool(boxes) or bool(secret("SMTP_PASSWORD")),
+            "SENDER_EMAIL": bool(boxes) or bool(setting("SENDER_EMAIL"))}
+    imap = bool(inbox.configs())
+    smtp_ok = bool(boxes)
     checks = {"smtp": smtp_ok, "imap_reply_detection": imap, "sender_address": bool(setting("SENDER_ADDRESS")),
               "booking_url": bool(setting("BOOKING_URL")), "daily_limit_today": daily_limit(),
               "warmup_ramp": bool(setting("SENDING_STARTED")), "cadence_days": cadence(),
               "send_hours_prospect_tz": setting("SEND_HOURS", "09:00-17:00")}
+    if conn is not None and boxes:
+        checks["mailboxes"] = mailboxes.capacity(conn)
     if smtp_ok and imap:
         mode = "autopilot"
         how = ("Write SEQUENCE.json → outreach.py approve --check → show the user → outreach.py approve. "
@@ -444,14 +453,24 @@ def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None,
         return {"approved": False, "check_passed": True, "prospect": p["slug"], "steps": report,
                 "next": "All emails pass. Show them to the user; after they approve, run the same command without --check."}
     d0 = (datetime.fromisoformat(start).date() if start else (today or datetime.now(timezone.utc).date()))
+    # A/B: email 1's subject_b goes to every second prospect (stable by slug), so results can be compared fairly
+    import hashlib
+    variant_b = bool(steps[0].get("subject_b")) and int(hashlib.sha1(p["slug"].encode()).hexdigest(), 16) % 2 == 1
+    quality = {r["step"]: (r.get("quality") or {}).get("score") for r in report}
     with conn:
         conn.execute("UPDATE sequence_steps SET status = 'cancelled' WHERE prospect_id = ? AND status = 'approved'", (p["id"],))
         for st in steps:
             due = d0 if st["step"] == 1 else None          # follow-up dates are set when email 1 actually goes out
+            subj = st["subject"] or None
+            variant = None
+            if st["step"] == 1 and st.get("subject_b"):
+                variant = "B" if variant_b else "A"
+                subj = st["subject_b"] if variant_b else st["subject"]
             conn.execute("INSERT INTO sequence_steps(prospect_id, step, recipient, subject, body, status, due, evidence_json, "
-                         "created_at) VALUES (?,?,?,?,?,?,?,?,?)",
-                         (p["id"], st["step"], to, st["subject"] or None, st["body"], "approved", due and due.isoformat(),
-                          json.dumps({"files": evidence or [], "texts": evidence_text or []}), pipeline.now()))
+                         "created_at, variant, hook, quality) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                         (p["id"], st["step"], to, subj, st["body"], "approved", due and due.isoformat(),
+                          json.dumps({"files": evidence or [], "texts": evidence_text or []}), pipeline.now(), variant,
+                          st.get("hook"), quality.get(st["step"])))
         pipeline.event(conn, p["id"], "sequence", f"{len(steps)}-email sequence approved for {to}, email 1 due {d0.isoformat()}")
         conn.execute("UPDATE prospects SET next_action = ?, next_due = ? WHERE id = ?",
                      ("Email 1 queued (outreach.py run --send)", d0.isoformat(), p["id"]))

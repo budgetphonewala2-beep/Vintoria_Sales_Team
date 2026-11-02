@@ -6,6 +6,7 @@ MEET = "python <SCRIPTS>/meeting.py"
 TRIAGE = "python <SCRIPTS>/reply_triage.py"
 SRC = "python <SCRIPTS>/lead_sources.py"
 SERP = "python <SCRIPTS>/serp.py"
+LEARN = "python <SCRIPTS>/learn.py"
 AUTO = "python <SCRIPTS>/autopilot.py"
 INBOX = "python <SCRIPTS>/inbox.py"
 SCAN = "python <SCRIPTS>/prospect_scan.py"
@@ -90,6 +91,9 @@ Read `references/team.md` for the roles, daily rhythm, targets and rules.
 | `pipeline.py` | **`status` (start here)**, `today`, add, score, stage, contact, note, attach, next, report (+ forecast), `value`, `where`, `find`, suppress |
 | `serp.py` | **Main lead engine** (Bright Data SERP): `watch` = newest posts since the last run with exact post times; `hunt`; `fresh` |
 | `email_lint.py` | 0-100 reply-worthiness score per email with the exact fixes (gate in `outreach.py approve --check`) |
+| `learn.py` | What works: reply/meeting rates by source, query, hook, subject A/B, step, quality; `--apply` feeds winners back into `serp.py` |
+| `mailboxes.py` | Several sending inboxes: rotation, sticky sender per prospect, per-mailbox limits and warm-up |
+| `notify.py` | Telegram / Slack / Discord alerts for fresh leads, replies and bookings |
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
@@ -176,7 +180,8 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
    neutral; writing 0 would claim "posted today, no competition" and inflate the score.
 5. **Add to the pipeline** (one per buyer) — their own website if the post or profile names one, else the post URL
    with the person's name (it becomes `name@platform`, e.g. `anita-desai@linkedin`, so leads never merge):
-   `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source <source>:<query-id>`
+   `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source serp:<the candidate's query id>`
+   (the exact `query` id the lead came from — `learn.py` uses it to rank and prune queries; `maps:...`, `apollo`... for other sources)
    When you save the person (`{PIPE} contact`), `--linkedin` takes their **profile** URL (`author_url`), never the post URL.
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
 6. **Deep-scan the top buyers** (best 5-10, freshest first):
@@ -212,7 +217,8 @@ This skill produces only facts the page itself proves, so outreach built on it s
 
 1. Run the audit and save it in the prospect folder:
    `python <SCRIPTS>/site_audit.py --url <url> --save prospects/<slug>/SITE-AUDIT.json`
-   (add `--no-links` for a faster run; robots.txt is respected). For the full picture in one run — audit plus
+   (add `--no-links` for a faster run, `--pagespeed` for Google PageSpeed Insights: Google's own mobile score, LCP,
+   layout shift and the real-user Chrome UX verdict — the most persuasive facts for slow sites; robots.txt is respected). For the full picture in one run — audit plus
    company, people, email and web research with ranked hooks — use `{SCAN} <url>` instead.
 2. Write `prospects/<slug>/SITE-AUDIT.md`: the URL, date, and a table of every fact (`statement` + `evidence`).
 3. Pick the **top 3 observations** that matter to the prospect's business, using
@@ -429,8 +435,9 @@ Never disparage a competitor with claims you can't source.
    Pull the signature, offer line and proof only from `SELLER-PROFILE.json` (`{PROF} show`).
    Use the warm or referral template only for a real, confirmed connection.
 4. **Write the files.** `prospects/<slug>/SEQUENCE.json` is the source of truth for the emails
-   (`[{{"step": 1, "subject": "...", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]`; follow-ups without a subject
-   reply in the same thread). `prospects/<slug>/OUTREACH-SEQUENCE.md` is the human view (`references/output-format.md`)
+   (`[{{"step": 1, "subject": "...", "subject_b": "...", "hook": "<dossier hook key>", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]`;
+   follow-ups without a subject reply in the same thread). `subject_b` runs an A/B test (every second prospect gets it) and
+   `hook` names the dossier hook email 1 is built on (`their_post`, `pagespeed_score`, `viewport` ...) — both feed `learn.py`. `prospects/<slug>/OUTREACH-SEQUENCE.md` is the human view (`references/output-format.md`)
    with the same emails plus A/B subjects and the LinkedIn touches.
 5. **Check all five at once:** `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --check` runs the
    claim check, the quality score (`python <SCRIPTS>/email_lint.py`, 0-100, must reach `LINT_MIN_SCORE` — aim for 80+),
@@ -597,7 +604,8 @@ you learn the seller's business properly and save it, so every agent after you b
    then `{PROF} check` until it says `Ready.`
 5. **Keys check:** `{PIPE} status` (and `python <SCRIPTS>/find_email.py --providers`); look for `BRIGHTDATA_API_KEY` +
    `BRIGHTDATA_ZONE` (the lead engine), `APIFY_TOKEN`, `SMTP_*`, `IMAP_*`,
-   `BOOKING_URL`, `APOLLO_API_KEY` in `~/.ai-sales-team/.env` (template `examples/env.example`), and whether your
+   `BOOKING_URL`, `APOLLO_API_KEY`, an alert channel (`TELEGRAM_BOT_TOKEN`, `SLACK_WEBHOOK_URL`) in `~/.ai-sales-team/.env`
+   (template `examples/env.example`), extra inboxes in `mailboxes.json`, and whether your
    agent has an Apollo connector. Tell the user which sources and
    automations are on, and the one key that would add the most (usually `APIFY_TOKEN`, then a verifier).
 6. **Show the queries this profile produces:** `{QL}` — 3 LinkedIn queries, 2 X-ray queries, the Apollo URL and the
@@ -776,6 +784,13 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
    tomorrow, and one suggestion (e.g. "3 leads from hunt:li-posts booked meetings — run more of that query").
    On Mondays, offer `sales-report`.
 
+## Speed and learning
+- Alerts: with `TELEGRAM_BOT_TOKEN`+`TELEGRAM_CHAT_ID`, `SLACK_WEBHOOK_URL` or `DISCORD_WEBHOOK_URL` set, every tick pings the
+  user's phone about fresh buyer posts, replies and bookings (`python <SCRIPTS>/notify.py test` checks the setup).
+- Volume: several inboxes on secondary domains go in `mailboxes.json` (`python <SCRIPTS>/mailboxes.py example`); each keeps
+  its own limit and warm-up and a prospect always hears from the same one.
+- Every Monday: `{LEARN} report --apply`, then tell the user the 3 recommendations.
+
 ## Team mode
 If several agents work together, give each a role from `../sales/references/team.md` (Manager, Hunter, Researcher,
 Writer, Closer). You are then the Manager: run the tick and the agenda, assign items, and review the weekly numbers.
@@ -805,7 +820,10 @@ in the next 24 hours · funnel ≥ 20 open leads.
    `{PIPE} list` and `{PIPE} today`; upcoming meetings with `{MEET} list`.
 2. Fill in from files: for prospects in `prospects/*/` not yet in the pipeline, read their files and add them
    (`{PIPE} add ...`, `{PIPE} score ...`) so the report is complete.
-3. Analyse (`references/playbook.md`): pipeline health, stuck deals and why, which sources/queries produce
+3. **What works:** `{LEARN} report` — reply, positive-reply and meeting rates by source, query, platform, hook, subject
+   A/B, reply step, quality score and country, with recommendations; `{LEARN} report --apply` writes the query weights
+   so the next `serp.py watch/hunt` runs the winners first and skips queries that never produced a positive reply.
+   Analyse (`references/playbook.md`): pipeline health, stuck deals and why, which sources/queries produce
    replies and meetings (`by_source`), which sequence step gets replies (`{OUT} queue` statuses), score
    distribution, gaps (e.g. no verified contacts, sequences not approved, inbox not connected), and the
    **forecast** (`forecast`: open, weighted and won value per currency from `{PIPE} value`). Missing values on

@@ -103,6 +103,11 @@ def connect(path=None):
     for col, typ in (("country", "TEXT"), ("tz", "TEXT"), ("value", "REAL"), ("currency", "TEXT")):  # migrate in place
         if col not in cols:
             conn.execute(f"ALTER TABLE prospects ADD COLUMN {col} {typ}")
+    for table, col, typ in (("sequence_steps", "variant", "TEXT"), ("sequence_steps", "hook", "TEXT"),
+                            ("sequence_steps", "quality", "INTEGER"), ("touches", "sender", "TEXT"),
+                            ("sequence_steps", "sender", "TEXT")):
+        if col not in {r[1] for r in conn.execute(f"PRAGMA table_info({table})")}:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {typ}")
     return conn
 
 

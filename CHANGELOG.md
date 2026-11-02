@@ -1,5 +1,20 @@
 # Changelog
 
+## 3.8.0 — 2026-11-02 (learning loop, A/B, mailbox rotation, alerts, PageSpeed)
+
+### Added
+- `learn.py report [--apply]` / `learn.py ab`: rates by source, query, platform, hook, subject variant, reply step,
+  quality score and country; recommendations; `learned.json` query weights and drops used by `serp.py`.
+- Subject A/B: `subject_b` and `hook` fields in SEQUENCE.json; variant, hook and quality score stored per sequence step.
+- `mailboxes.py` + `mailboxes.json`: rotation across inboxes, sticky sender per prospect, per-mailbox limits and
+  warm-up, IMAP read from every inbox; single-inbox `.env` setup still works unchanged.
+- `notify.py`: Telegram / Slack / Discord alerts; autopilot pings for fresh leads, replies and bookings (`ALERT_ON`).
+- Google PageSpeed Insights facts (`site_audit.py --pagespeed`, on by default in `prospect_scan.py`) and hooks.
+
+### Fixed
+- `prospect_scan.py` no longer marks an unreachable site as `researched`.
+- `learn.py` counts a meeting only when one was booked, not when a reply asked for one.
+
 ## 3.7.0 — 2026-11-02 (Bright Data freshness + lessons from other sales skill sets)
 
 ### Added

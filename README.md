@@ -32,6 +32,16 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.8 — it learns what works, scales across inboxes, and pings your phone
+
+| | What it does |
+|---|---|
+| **Learning loop** (`learn.py`) | Reply, positive-reply and meeting rates by source, query, platform, hook, subject A/B, reply step, quality score and country, with recommendations; `--apply` makes the next hunt run winning queries first and skip ones that never got a positive reply |
+| **Subject A/B tests** | `subject_b` in email 1 goes to every second prospect; `learn.py ab` names the winner with a significance test |
+| **Mailbox rotation** (`mailboxes.py`) | Several inboxes on secondary domains, each with its own limit and warm-up; a prospect always hears from the same inbox; replies are read from all of them |
+| **Alerts** (`notify.py`) | Telegram / Slack / Discord ping the moment autopilot finds a fresh buyer post, a reply or a booking |
+| **PageSpeed facts** | `site_audit.py --pagespeed` and every deep scan add Google's own mobile score, LCP, layout shift and real-user (CrUX) verdict — the strongest hooks for slow sites |
+
 ## What's new in v3.7 — freshest leads via Bright Data, lessons from the best open-source sales skills
 
 We cloned and read the leading open-source sales/outbound skill sets (coreyhaines31/marketingskills, gtmagents/gtm-agents,

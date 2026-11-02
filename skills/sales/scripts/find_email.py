@@ -284,6 +284,34 @@ def providers(kind):
     return out
 
 
+def log_verification(email, status, provider):
+    """Append-only record of every real verification result. pipeline.py trusts 'verified' only when it is in here —
+    an agent cannot mark an address verified just by typing it."""
+    import json as _json
+    from datetime import datetime, timezone
+    from sales_common import data_home
+    with open(data_home() / "verifications.jsonl", "a", encoding="utf-8") as f:
+        f.write(_json.dumps({"email": email.lower(), "status": status, "provider": provider,
+                             "at": datetime.now(timezone.utc).replace(microsecond=0).isoformat()}) + "\n")
+
+
+def verified_in_log(email):
+    import json as _json
+    from sales_common import data_home
+    path = data_home() / "verifications.jsonl"
+    if not path.exists():
+        return False
+    last = None
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            r = _json.loads(line)
+        except ValueError:
+            continue
+        if r.get("email") == (email or "").lower():
+            last = r
+    return bool(last and last.get("status") == "verified")
+
+
 def verify_only(email, call=api_json):
     """Run the verifier chain on one known address (e.g. from Apollo or a post). No finder credits."""
     steps = []
@@ -293,6 +321,7 @@ def verify_only(email, call=api_json):
         except RuntimeError as exc:
             steps.append({"verifier": name, "error": str(exc)})
             continue
+        log_verification(email, v["status"], name)
         return {"email": email.lower(), "status": v["status"], "verified_by": name, "provider_status": v.get("provider_status"),
                 "steps": steps}
     return {"email": email.lower(), "status": "unverified", "verified_by": None, "steps": steps,
@@ -359,6 +388,7 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
                 res = fn(key, first, last, domain, call)
                 steps.append({"step": f"{name}_finder", "result": res})
                 if res:
+                    log_verification(res["email"], res["status"], f"{name}_finder")
                     add(res["email"], res["status"], f"{name}_finder", provider_status=res.get("provider_status"),
                         title=res.get("title"), linkedin=res.get("linkedin"))
             except RuntimeError as exc:
@@ -382,6 +412,7 @@ def find(domain="", first="", last="", text="", use_hunter=True, fetch=fetch_man
                 used += 1
                 steps.append({"step": f"{name}_verifier", "email": c["email"], **v})
                 c["status"], c["verified_by"] = v["status"], name
+                log_verification(c["email"], v["status"], name)
                 break
         for c in cands:      # an unverified pattern is still just a guess
             if c["source"] == "pattern" and c["status"] == "unverified":

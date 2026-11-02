@@ -574,11 +574,19 @@ def research(domain, name=None, city=None, out_dir=None, call=api_json):
         k = by_query.get(r.get("query")) or "mentions"
         if len(sections[k]) < 8 and r["url"] not in [x["url"] for x in sections[k]]:
             sections[k].append({"url": r["url"], "title": r["title"], "snippet": r["text"]})
+    # A result only counts as being about this prospect if it names their domain or their (full) name; the rest may be
+    # a different company with a similar name, so it is kept for reading but never becomes evidence.
+    keys = [slug.lower(), slug.split(".")[0].lower()] + ([name.lower()] if name else [])
+    for xs in sections.values():
+        for x in xs:
+            blob = f"{x['url']} {x['title']} {x['snippet']}".lower()
+            x["about_prospect"] = any(k and k in blob for k in keys)
     facts = [{"key": f"web_{k}", "statement": f"{x['title']}: {x['snippet']}", "evidence": x["url"]}
-             for k, xs in sections.items() for x in xs]
+             for k, xs in sections.items() for x in xs if x["about_prospect"]]
     result = {"domain": slug, "name": name, "searched_at": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
               "queries": qs, "sections": sections, "facts": facts,
-              "note": "Search snippets are leads to check, not facts: open a page before stating anything from it."}
+              "note": "Search snippets are leads to check, not facts: open a page (fetch_page.py --save prospects/<slug>/sources) "
+                      "before stating anything from it. Results that don't name the prospect are marked about_prospect=false."}
     path = Path(out_dir or Path("prospects") / slug) / "WEB-RESEARCH.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(result, indent=2, ensure_ascii=False), encoding="utf-8")

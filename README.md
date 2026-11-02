@@ -32,6 +32,12 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.9 — it can't make things up
+Every sentence an agent writes to a prospect is checked against real evidence: script output, pages it opened and
+saved, the prospect's own words and your profile. Invented clients, tools, numbers, quotes, flipped facts, industry
+"stats", promises and made-up tails on true sentences are blocked; "verified" emails need a verifier on record; the
+greeting must match the contact. See `skills/sales/references/truth-rules.md`.
+
 ## What's new in v3.8 — it learns what works, scales across inboxes, and pings your phone
 
 | | What it does |

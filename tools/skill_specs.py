@@ -137,7 +137,8 @@ sales-report       weekly pipeline review
 ```
 """,
 "before": True,
-"refs": [("team.md", "running the skills as a sales team: roles, handoffs, daily rhythm, targets, rules")],
+"refs": [("team.md", "running the skills as a sales team: roles, handoffs, daily rhythm, targets, rules"),
+         ("truth-rules.md", "what counts as evidence, every place an agent could invent facts and the guard that stops it")],
 },
 # --------------------------------------------------------------------------- hunt
 {
@@ -180,7 +181,8 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
    neutral; writing 0 would claim "posted today, no competition" and inflate the score.
 5. **Add to the pipeline** (one per buyer) — their own website if the post or profile names one, else the post URL
    with the person's name (it becomes `name@platform`, e.g. `anita-desai@linkedin`, so leads never merge):
-   `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source serp:<the candidate's query id>`
+   `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source serp:<the candidate's query id> --quote "<exact words>" --post-text "<the post>"`
+   (the quote is checked word-for-word against the post and saved as a note; a paraphrase is refused)
    (the exact `query` id the lead came from — `learn.py` uses it to rank and prune queries; `maps:...`, `apollo`... for other sources)
    When you save the person (`{PIPE} contact`), `--linkedin` takes their **profile** URL (`author_url`), never the post URL.
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
@@ -298,9 +300,12 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 3. Cover the 8 dimensions in `references/playbook.md`. Adapt to the business type: for a local business or
    SMB focus on owner, locations, reviews, website quality and marketing activity; for SaaS on product,
    pricing, team growth; for e-commerce on catalogue, platform, channels.
-4. Write `prospects/<slug>/COMPANY-RESEARCH.md` using `references/output-format.md`, with a source for each fact,
+4. Save every page you rely on as evidence: `python <SCRIPTS>/fetch_page.py <url> --save prospects/<slug>/sources`
+   (search snippets alone are leads, not facts). Write `prospects/<slug>/COMPANY-RESEARCH.md` using `references/output-format.md`, with a source for each fact,
    ending with **"Why now"** (the trigger: their post, a launch, hiring, bad reviews, an outdated site) and the
    **3 best hooks** for outreach.
+   Then `python <SCRIPTS>/claim_check.py --draft prospects/<slug>/COMPANY-RESEARCH.md --prospect <slug>` and fix every
+   unsupported line (your own document is never evidence for itself or for later emails).
 5. Record: `{PIPE} add --url <url> --name "<company>" --stage researched` and
    `{PIPE} attach <slug> prospects/<slug>/COMPANY-RESEARCH.md --kind research`; add named leaders with
    `{PIPE} contact <slug> --name ... --title ... --source website`.
@@ -363,7 +368,8 @@ deliverability, so verification status is always shown.""",
    If the post or website already shows an address it is used and only verified — no finder credits. An address
    from a people database (Apollo, Leads Finder): `python <SCRIPTS>/find_email.py --email <address>` (verify only).
    Use the status exactly as returned: `verified`, `catch_all`, `unverified`, `pattern-guessed`, `invalid`.
-   Only `verified` addresses are safe for cold email; say so.
+   Only `verified` addresses are safe for cold email; say so. Never type `--email-status verified` for an address no
+   verifier checked — the pipeline downgrades it to `unverified` unless a verification is on record.
    **Best channel** per person: verified email → email; business phone from the site or Google Maps → WhatsApp
    click-to-chat (`python <SCRIPTS>/outreach.py whatsapp`); only a LinkedIn/Reddit/HN profile → the user replies
    where they posted or sends a DM themselves.
@@ -508,7 +514,9 @@ Never disparage a competitor with claims you can't source.
 4. Add a **3-minute screen-share plan**: open their site on a phone view, show the top 2 audit facts, show one
    competitor doing it better — then ask, don't pitch. End the brief with the exact ask for the meeting's close
    ("Shall I send a proposal with 2 options by Friday?").
-5. Write `prospects/<slug>/MEETING-PREP.md` (`references/output-format.md`, `references/template-meeting-prep.md`).
+5. Write `prospects/<slug>/MEETING-PREP.md` (`references/output-format.md`, `references/template-meeting-prep.md`) and run
+   `python <SCRIPTS>/claim_check.py --draft prospects/<slug>/MEETING-PREP.md --prospect <slug>` — talking points built on an
+   invented fact are worse than none.
 6. Record: `{PIPE} attach <slug> prospects/<slug>/MEETING-PREP.md --kind meeting-prep`. If the meeting isn't in
    the pipeline yet, book it with `sales-book` (`{MEET} book ...`) so reminders and outcomes are tracked.
 7. Give the user the reminder message to send the day before (from `{MEET} list`) and, after the call,

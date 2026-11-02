@@ -167,7 +167,14 @@ def propose(conn, prospect_tz, count=2, minutes=None, days=7, now=None, my_tz=No
         note = "No free slot found — widen --days, WORK_HOURS or EXTENDED_HOURS."
     elif any(x["outside_your_work_hours"] for x in slots):
         note = "Some slots are outside your WORK_HOURS (little overlap with their time zone) — confirm you can do them."
-    return {"your_tz": mine.key, "prospect_tz": theirs.key, "slots": slots, "message": msg, "note": note}
+    out = {"your_tz": mine.key, "prospect_tz": theirs.key, "slots": slots, "message": msg, "note": note}
+    try:   # remembered so the claim checker can verify the times written in a reply
+        from sales_common import data_home
+        import json as _json
+        (data_home() / "last_slots.json").write_text(_json.dumps(out), encoding="utf-8")
+    except OSError:
+        pass
+    return out
 
 
 def parse_start(start, zone):

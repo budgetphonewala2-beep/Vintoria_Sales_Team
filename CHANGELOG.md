@@ -1,5 +1,22 @@
 # Changelog
 
+## 3.9.0 — 2026-11-02 (hallucination guards)
+
+### Added
+- `references/truth-rules.md`: what counts as evidence (script output, saved pages, the prospect's words, the seller
+  profile) and the guard for every place an agent could invent something.
+- `claim_check.py`: every declarative sentence is checked; source tiers (tool / page / prospect / profile / guarantee /
+  calendar / snippet); names, brands and places must be in the evidence; numbers must come from one source; quotes
+  verbatim; negation flips caught; generalisations and promises need strong / guarantee support; a search snippet alone
+  never proves a claim; every clause of a sentence needs evidence (no invented tail on a true sentence); opinions
+  about the prospect are claims; agent-written research docs are never evidence; replies, holidays and proposed slots are.
+- `fetch_page.py --save DIR`: saves opened pages (with URL and fetch time) as evidence.
+- `pipeline.py add --quote --post-text/--post-file`: refuses a quote that isn't word-for-word in the post.
+- `find_email.py` logs every verification; `pipeline.py contact --email-status verified` is downgraded without one.
+- `outreach.py` blocks a greeting whose name doesn't match the contact on file.
+- `lead_sources.py research` only turns results that name the prospect into facts.
+- `tests/test_hallucination_guards.py`: adversarial sentences that must be blocked and true ones that must pass.
+
 ## 3.8.0 — 2026-11-02 (learning loop, A/B, mailbox rotation, alerts, PageSpeed)
 
 ### Added

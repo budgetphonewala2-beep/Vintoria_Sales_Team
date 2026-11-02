@@ -235,9 +235,25 @@ def touch(conn, pid):
     conn.execute("UPDATE prospects SET updated_at = ? WHERE id = ?", (now(), pid))
 
 
-def add(conn, url=None, name=None, source=None, services=None, stage="new"):
+def _qnorm(t):
+    t = (t or "").lower().replace("’", "'").replace("‘", "'").replace("“", '"').replace("”", '"')
+    return re.sub(r"\s+", " ", re.sub(r"[^\w\s'$%.,-]", " ", t)).strip()
+
+
+def quote_in(post, quote):
+    """True when the quote appears word for word in the post (case, quotes and spacing ignored)."""
+    q = _qnorm(quote).strip(" .,")
+    return bool(q) and q in _qnorm(post)
+
+
+def add(conn, url=None, name=None, source=None, services=None, stage="new", quote=None, post=None):
     if not url and not name:
         raise UserError("give --url or --name")
+    if quote is not None:
+        if not post:
+            raise UserError("--quote needs the post itself (--post-text or --post-file) so the quote can be checked")
+        if not quote_in(post, quote):
+            raise UserError("the quote is not word-for-word in the post — copy it exactly (no paraphrase); nothing was saved")
     if stage not in STAGES:
         raise UserError(f"stage must be one of {STAGES}")
     slug = platform_slug(url, name) if url and platform_of_url(url) else _slug(url or name)
@@ -253,6 +269,8 @@ def add(conn, url=None, name=None, source=None, services=None, stage="new"):
         cur = conn.execute("""INSERT INTO prospects(slug, name, url, stage, source, services, created_at, updated_at, country)
                               VALUES (?,?,?,?,?,?,?,?,?)""", (slug, name, url, stage, source, services, ts, ts, infer_country(slug)))
         event(conn, cur.lastrowid, "stage", "added" + (f" from {source}" if source else ""), None, stage)
+        if quote:
+            event(conn, cur.lastrowid, "note", f"Post: {url or ''} — quote (verified verbatim): \"{quote.strip()}\"")
     return {"created": True, "prospect": get(conn, slug)}
 
 
@@ -283,6 +301,14 @@ def set_score(conn, key, score, breakdown=None):
 def add_contact(conn, key, name, **fields):
     if fields.get("email_status") and fields["email_status"] not in EMAIL_STATUS:
         raise UserError(f"email-status must be one of {EMAIL_STATUS}")
+    warnings = []
+    if fields.get("email_status") == "verified" and fields.get("email"):
+        import os
+        import find_email
+        if not find_email.verified_in_log(fields["email"]) and os.environ.get("AI_SALES_TRUST_VERIFIED") != "1":
+            fields["email_status"] = "unverified"     # 'verified' must come from a verifier, not from whoever typed it
+            warnings.append(f"{fields['email']} has no verification on record — saved as unverified; run "
+                            "find_email.py --email <address> to verify it")
     p = get(conn, key)
     cols = ["title", "email", "email_status", "email_source", "linkedin", "phone", "role"]
     vals = [fields.get(c) for c in cols]
@@ -292,7 +318,10 @@ def add_contact(conn, key, name, **fields):
                      ", ".join(f"{c} = COALESCE(excluded.{c}, {c})" for c in cols),
                      (p["id"], name, *vals, now()))
         touch(conn, p["id"])
-    return {"prospect": p["slug"], "contacts": contacts(conn, p["id"])}
+    out = {"prospect": p["slug"], "contacts": contacts(conn, p["id"])}
+    if warnings:
+        out["warnings"] = warnings
+    return out
 
 
 def contacts(conn, pid):
@@ -551,6 +580,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(description="Persistent sales pipeline (SQLite).")
     sub = ap.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("add"); a.add_argument("--url"); a.add_argument("--name"); a.add_argument("--source")
+    a.add_argument("--quote", help="exact words from their post that prove intent (checked against --post-text/--post-file)")
+    a.add_argument("--post-text"); a.add_argument("--post-file")
     a.add_argument("--services"); a.add_argument("--stage", default="new")
     l = sub.add_parser("list"); l.add_argument("--stage"); l.add_argument("--min-score", type=float)
     s = sub.add_parser("show"); s.add_argument("prospect")
@@ -575,7 +606,8 @@ def main(argv=None):
     conn = connect()
     try:
         if args.cmd == "add":
-            out = add(conn, args.url, args.name, args.source, args.services, args.stage)
+            post = Path(args.post_file).read_text(encoding="utf-8-sig") if args.post_file else args.post_text
+            out = add(conn, args.url, args.name, args.source, args.services, args.stage, args.quote, post)
         elif args.cmd == "list":
             out = {"prospects": listing(conn, args.stage, args.min_score)}
         elif args.cmd == "show":

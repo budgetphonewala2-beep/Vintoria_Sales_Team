@@ -260,6 +260,10 @@ def preflight(conn, key, to, subject, body, evidence=None, evidence_text=None, a
         problems.append("address is catch_all (may bounce) — pass --allow-catch-all only if the user accepts the risk")
     elif status not in ("verified", "catch_all"):
         problems.append(f"email status is '{status}' — only verified addresses are sent to (run find_email.py)")
+    g = re.match(r"^\s*(?i:hi|hello|hey|dear)\s+([A-Z][\w'-]+)", body or "")
+    cname = ((c or {}).get("name") or "").strip()
+    if g and cname and "@" not in cname and g.group(1).lower() not in {x.lower() for x in re.findall(r"[\w'-]+", cname)}:
+        problems.append(f"greeting says '{g.group(1)}' but the contact on file is '{cname}' — wrong name")
     sup = pipeline.is_suppressed(conn, to or "")
     if sup:
         problems.append(f"{sup['value']} is on the do-not-contact list ({sup['reason'] or 'no reason'})")

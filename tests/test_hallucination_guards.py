@@ -50,6 +50,7 @@ def src():
     ("We rebuilt the Brew Co store in 4 weeks and doubled their revenue.", "part of this sentence"),
     ("Your homepage took 4.2 seconds to download and your customers hate it.", "part of this sentence"),
     ("I think your checkout is losing you thousands every month.", ""),
+    ("A Shopify rebuild typically comes in around $9,000.", ""),
     ("Worth fixing, since Google penalises slow stores.", "google"),
     ("Saw your post about relaunching before Black Friday, and congrats on the new funding.", "part of this sentence"),
 ])
@@ -69,6 +70,8 @@ def test_invented_claims_are_blocked(sentence, why):
     "Worth a quick call this week?",
     "Ravi Sharma\n12 MG Road, Pune 411001, India",
     "We rebuilt the Brew Co store in 4 weeks, and checkout conversion went from 1.8% to 2.6%.",
+    "The fix is one line in the theme layout file, worth doing whichever theme you relaunch on.",
+    "We work at a fixed price per milestone, and a Shopify rebuild like yours typically comes in around $6,000, with smaller scopes from $2,000.",
     "Coffee, not skincare, but the same DTC Shopify setup you're relaunching.",
     "Our Shopify rebuilds start at 2000 USD and typically run 6000 USD, with delivery in 4-6 weeks.",
 ])

@@ -76,7 +76,8 @@ def _stem(w):
 
 
 def tokens(text):
-    return {_stem(w) for w in re.findall(r"[^\W_]+(?:'[^\W_]+)?", (text or "").lower()) if len(w) > 1 and w not in STOP}
+    text = re.sub(r"(?<=\d),(?=\d{3})", "", (text or "").lower())      # "$6,000" is one number, not "6" + "000"
+    return {_stem(w) for w in re.findall(r"[^\W_]+(?:'[^\W_]+)?", text) if len(w) > 1 and w not in STOP}
 
 
 def numbers(text):
@@ -205,6 +206,8 @@ def _score(claim, src, ct, cn, quotes, ents, shared_text=""):
     return score, None
 
 
+OUTCOME = re.compile(r"\b(los(e|es|ing|t)|revenue|sales|money|thousands|millions|profit|conversions?|customers?|visitors?|traffic|"
+                     r"hate|frustrat\w*|complain\w*|churn\w*|bounce\w*|leads?|orders?)\b", re.I)   # their results: never an "opinion"
 CLAUSE_SPLIT = re.compile(r",?\s+(?:and|but|plus|while|whereas|since|because|so|which)\s+|;\s+|\s+[—–]\s+", re.I)
 MODAL = re.compile(r"\b(may|might|could|probably|likely|possibly|perhaps)\b", re.I)
 
@@ -217,7 +220,7 @@ def unsupported_clause(claim, sources):
         return None
     for part in parts:
         ct = tokens(part)
-        if len(ct) < 2 or MODAL.search(part) or (OPINION.search(part) and not ABOUT_THEM.search(part)):
+        if len(ct) < 2 or MODAL.search(part) or (OPINION.search(part) and not (ABOUT_THEM.search(part) and OUTCOME.search(part))):
             continue
         best = max((len(ct & tokens(x["text"])) / len(ct) for x in sources if x.get("tier") != "snippet"), default=0)
         if best < 0.34:
@@ -233,7 +236,7 @@ def match(claim, sources):
     need = 0.75 if GENERAL.search(claim) else THRESHOLD
     # questions, and opinions that are NOT about the prospect, need only clean names/numbers; an opinion about THEM
     # ("I think your checkout is losing you thousands") is a claim like any other — soften it with may/might instead
-    lenient = claim.rstrip().endswith("?") or (bool(OPINION.search(claim)) and not ABOUT_THEM.search(claim))
+    lenient = claim.rstrip().endswith("?") or (bool(OPINION.search(claim)) and not (ABOUT_THEM.search(claim) and OUTCOME.search(claim)))
     promise = bool(PROMISE.search(claim))
     shared = " ".join(x["text"].lower() for x in sources if x.get("tier") in ("profile", "calendar", "guarantee"))
     best = {"supported": False, "score": 0.0, "source": None, "tier": None, "why": "no matching evidence"}

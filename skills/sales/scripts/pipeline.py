@@ -20,6 +20,7 @@ Usage (every command prints one JSON object):
     python pipeline.py report [--pdf-input out.json]     # funnel + stale deals + next actions
     python pipeline.py remove acme.com                   # delete a prospect and its records
     python pipeline.py today                             # the day's agenda: replies, meetings, follow-ups, new leads
+    python pipeline.py find priya@acme.com               # which prospect is this? (email, name, domain)
     python pipeline.py where acme.com --country US --tz America/Chicago   # where they are (send times, slots)
     python pipeline.py value acme.com 6000 --currency USD                  # deal value → forecast in the report
     python pipeline.py suppress priya@acme.com --reason "asked not to be contacted"   # or a whole domain: acme.com
@@ -34,6 +35,7 @@ disqualified. Any move is allowed (sales is messy) but every move is recorded wi
 
 import argparse
 import json
+import re
 import sqlite3
 import sys
 from datetime import datetime, timedelta, timezone
@@ -162,11 +164,52 @@ class UserError(Exception):
     pass
 
 
+# Hosts that are platforms, not the prospect's own website: a post URL there must never become the prospect's
+# identity (every LinkedIn lead would otherwise merge into one prospect called "linkedin.com").
+PLATFORM_HOSTS = {"linkedin.com": "linkedin", "lnkd.in": "linkedin", "reddit.com": "reddit", "x.com": "x", "twitter.com": "x",
+                  "facebook.com": "facebook", "fb.com": "facebook", "instagram.com": "instagram", "news.ycombinator.com": "hn",
+                  "producthunt.com": "producthunt", "upwork.com": "upwork", "quora.com": "quora", "indiehackers.com": "indiehackers",
+                  "youtube.com": "youtube", "medium.com": "medium", "github.com": "github", "threads.net": "threads",
+                  "google.com": "google", "maps.google.com": "google", "goo.gl": "google", "t.co": "x", "wa.me": "whatsapp"}
+
+
+def platform_of_url(value):
+    v = (value or "").strip()
+    if "." not in v or " " in v:
+        return None
+    host = domain_slug(v)
+    return next((tag for h, tag in PLATFORM_HOSTS.items() if host == h or host.endswith("." + h)), None)
+
+
+def _name_slug(text):
+    return re.sub(r"[^a-z0-9]+", "-", (text or "").lower()).strip("-")
+
+
+def platform_slug(url, name=None):
+    """'https://linkedin.com/posts/anita-desai_need-…' + 'Anita Desai' → 'anita-desai@linkedin'."""
+    tag = platform_of_url(url)
+    base = _name_slug(name)
+    if not base:
+        u = url.split("://")[-1]
+        rules = [r"linkedin\.com/(?:posts|in|company)/([^/_?]+)", r"reddit\.com/(?:r/[^/]+/)?comments/([a-z0-9]+)",
+                 r"reddit\.com/u(?:ser)?/([^/?]+)", r"(?:x|twitter)\.com/([^/?]+)/status", r"ycombinator\.com/item\?id=(\d+)",
+                 r"ycombinator\.com/user\?id=([^&]+)", r"upwork\.com/.*?(~[0-9a-f]+)", r"producthunt\.com/(?:posts|products)/([^/?]+)",
+                 r"facebook\.com/groups/[^/]+/(?:posts|permalink)/(\d+)", r"[^/]+/([^/?#]+)"]
+        m = next((re.search(rx, u, re.I) for rx in rules if re.search(rx, u, re.I)), None)
+        tok = m.group(1) if m else "lead"
+        base = (f"post-{tok}" if tok.isdigit() or ("reddit" in u and "comments" in u) else _name_slug(tok))[:48] or "lead"
+    return f"{base}@{tag}"
+
+
 def _slug(value):
     v = (value or "").strip()
     if not v:
         raise UserError("prospect is required (domain, URL or id)")
-    return v if v.isdigit() else (domain_slug(v) if "." in v else v.lower().replace(" ", "-"))
+    if v.isdigit() or "@" in v and "." not in v.split("@")[-1]:
+        return v.lower()                                     # id, or an existing platform slug like anita-desai@linkedin
+    if platform_of_url(v):
+        return platform_slug(v)
+    return domain_slug(v) if "." in v and " " not in v else _name_slug(v)
 
 
 def get(conn, key):
@@ -191,7 +234,7 @@ def add(conn, url=None, name=None, source=None, services=None, stage="new"):
         raise UserError("give --url or --name")
     if stage not in STAGES:
         raise UserError(f"stage must be one of {STAGES}")
-    slug = _slug(url or name)
+    slug = platform_slug(url, name) if url and platform_of_url(url) else _slug(url or name)
     r = conn.execute("SELECT * FROM prospects WHERE slug = ?", (slug,)).fetchone()
     if r:
         with conn:
@@ -310,6 +353,20 @@ def report(conn, today=None):
             "stale": sorted(stale, key=lambda x: -x["days_idle"]), "due_today": due, "by_source": by_source,
             "top": [{"prospect": r["slug"], "score": r["score"], "grade": r["grade"], "stage": r["stage"],
                      "next_action": r["next_action"]} for r in sorted(scored, key=lambda r: -r["score"])[:10]]}
+
+
+def find(conn, text):
+    """Prospects matching a slug, name, domain, contact name or contact email (e.g. the sender of a reply)."""
+    t = f"%{(text or '').strip().lower()}%"
+    rows = conn.execute("""SELECT DISTINCT p.id, p.slug, p.name, p.stage, p.url FROM prospects p LEFT JOIN contacts c ON c.prospect_id = p.id
+                           WHERE lower(p.slug) LIKE ? OR lower(COALESCE(p.name,'')) LIKE ? OR lower(COALESCE(p.url,'')) LIKE ?
+                           OR lower(COALESCE(c.email,'')) LIKE ? OR lower(COALESCE(c.name,'')) LIKE ? ORDER BY p.updated_at DESC LIMIT 10""",
+                        (t, t, t, t, t)).fetchall()
+    email_dom = text.split("@")[-1].lower() if "@" in (text or "") else None
+    out = [dict(r) for r in rows]
+    if not out and email_dom:
+        out = [dict(r) for r in conn.execute("SELECT id, slug, name, stage, url FROM prospects WHERE slug = ?", (email_dom,))]
+    return out
 
 
 def suppress(conn, value, reason=""):
@@ -444,6 +501,7 @@ def main(argv=None):
     r = sub.add_parser("report"); r.add_argument("--pdf-input", help="also write generate_pdf_report.py input JSON here")
     rm = sub.add_parser("remove"); rm.add_argument("prospect")
     sub.add_parser("today")
+    fd = sub.add_parser("find"); fd.add_argument("text", help="email, name, domain or part of it")
     va = sub.add_parser("value"); va.add_argument("prospect"); va.add_argument("value", type=float); va.add_argument("--currency")
     wh = sub.add_parser("where"); wh.add_argument("prospect"); wh.add_argument("--country"); wh.add_argument("--tz")
     su = sub.add_parser("suppress"); su.add_argument("value", help="email address or domain"); su.add_argument("--reason", default="")
@@ -506,6 +564,8 @@ def main(argv=None):
                 out = set_where(conn, args.prospect, args.country, args.tz)
             except Exception as exc:  # noqa: BLE001 - bad time zone name
                 raise UserError(str(exc))
+        elif args.cmd == "find":
+            out = {"matches": find(conn, args.text)}
         elif args.cmd == "today":
             out = today_agenda(conn)
         elif args.cmd == "suppress":

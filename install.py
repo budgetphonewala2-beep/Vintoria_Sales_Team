@@ -69,7 +69,7 @@ def link_or_copy(src, dst, link):
                 if r.returncode == 0:
                     return "junction"
             print(f"    (could not link, copying instead)")
-    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc"))
+    shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "evals"))   # test cases stay in the repo
     return "copied"
 
 

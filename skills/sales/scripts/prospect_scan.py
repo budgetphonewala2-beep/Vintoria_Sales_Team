@@ -99,6 +99,9 @@ def decision_maker(people, first=None, last=None):
 def scan(url, name=None, first=None, last=None, post=None, post_url=None, city=None, web=True, use_api=True, links=True,
          out_dir=None, record=True, source=None):
     url = normalize_url(url)
+    if pipeline.platform_of_url(url):
+        raise ValueError(f"{url} is a post/profile on a platform, not the prospect's website — pass their own site "
+                         "(or use find_email.py --text '<post>' when they have none)")
     slug = domain_slug(url)
     folder = Path(out_dir or Path("prospects") / slug)
     folder.mkdir(parents=True, exist_ok=True)
@@ -227,6 +230,8 @@ def main(argv=None):
     ap.add_argument("--no-links", action="store_true"); ap.add_argument("--out-dir")
     a = ap.parse_args(argv)
     post = Path(a.post_file).read_text(encoding="utf-8-sig") if a.post_file else a.post_text
+    if pipeline.platform_of_url(a.url):
+        emit({"ok": False, "error": f"{a.url} is a platform post/profile, not a website — pass the prospect's own site"}, 2)
     d = scan(a.url, a.name, a.first, a.last, post, a.post_url, a.city, not a.no_web, not a.no_api, not a.no_links, a.out_dir,
              source=a.source)
     emit({"ok": True, "data": {k: d[k] for k in ("slug", "company", "decision_maker", "email", "hooks", "readiness", "steps",

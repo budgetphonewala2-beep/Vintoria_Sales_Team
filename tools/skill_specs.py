@@ -135,8 +135,9 @@ sales-report       weekly pipeline review
 # --------------------------------------------------------------------------- hunt
 {
 "name": "sales-hunt",
+"profile": "required",
 "title": "Intent Hunt — find people asking for what you sell",
-"description": "Finds people publicly asking to hire a service the user sells (website, app, SEO, marketing, design, software, e-commerce, video) on LinkedIn posts (Apify HarvestAPI), Hacker News (incl. the Seeking-freelancer thread), Reddit (r/forhire and more), X, Facebook groups, Quora, Indie Hackers and Upwork via Google X-ray, plus companies with a visible need from Google Maps and Product Hunt — using a query library with strong boolean queries — plus decision-maker lists from Apollo, Leads Finder and LinkedIn people search — all built from the seller profile (niches, countries, buyer titles) — filters sellers, job seekers, job ads and excluded markets, judges real buyers, deep-scans the best and adds them to the pipeline. Use when the user says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
+"description": "Finds people publicly asking to hire a service the user sells (website, app, SEO, marketing, design, software, e-commerce, video) on LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Quora, Indie Hackers and Upwork, plus companies with a visible need from Google Maps and Product Hunt — plus decision-maker lists from Apollo, Leads Finder and LinkedIn people search — all built from the seller profile (niches, countries, buyer titles) — filters sellers, job seekers, job ads and excluded markets, judges real buyers, deep-scans the best and adds them to the pipeline. Use it whenever the user wants more clients or leads, even without naming a platform, or says 'find leads', 'find people looking for a web developer', 'who needs an agency', 'hunt for clients', or in Hinglish 'clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'developer chahiye wale posts dhundo'.",
 "intro": """Intent beats cold lists: a person who wrote "need a website for my clinic" this week is worth fifty
 cold contacts. This skill finds those posts, separates real buyers from noise, and puts them in the pipeline.""",
 "body": f"""## Steps
@@ -144,34 +145,18 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 1. **Know the seller.** `{PROF} check` — if the profile is missing or incomplete, run `sales-setup` first. The
    queries are generated from it (niches, platforms, pains, triggers, tools clients leave, buyer titles,
    countries, excluded markets): preview them with `{QL}`. Read `references/queries.md` for the formula.
-2. **Collect posts** — any of these (best first):
-   - Everything at once: `{SRC} hunt --posted week --max 30 --save hunt.json` (profile-driven; leads from excluded
-     markets are dropped and counted in `excluded_market`)
-     (Hacker News free; LinkedIn, Reddit, X, Google X-ray with `APIFY_TOKEN`). Or one source:
-     `{SRC} linkedin` · `{SRC} hackernews` (incl. the monthly "Seeking freelancer" thread) · `{SRC} reddit`
-     (r/forhire [Hiring] and more; free JSON without Apify) · `{SRC} x` · `{SRC} facebook --group-url <public group>`
-     · `{SRC} google` — each uses the profile, or `--services/--location`, or your own `--query` (repeatable).
-   - **People databases** (decision makers matching the profile — lists, no intent). Best: Apollo's official
-     API — `{SRC} apollo-api` with your `APOLLO_API_KEY`, or your agent's Apollo connector if it has one (search
-     people with the profile's titles, countries, size and niches, then reveal emails per person). Otherwise
-     `{SRC} apollo` (Apollo search
-     URLs built from the profile, or `--url` from your Apollo account), `{SRC} leads` (Apollo-style filters, no
-     account), `{SRC} people` (LinkedIn profile search), `{SRC} employees --company <LinkedIn company URL>`.
-     Add `--add --verify` to save them with verified emails. These need a stronger first line — deep-scan first.
-   - Companies with a visible need (outbound): `{SRC} maps --add` (cities from the profile; no website,
-     social-only page, low rating, few reviews + phone) and `{SRC} producthunt --days 7 --add` (new launches).
-   - Any other Apify actor: `{SRC} actor <user/actor> --input in.json`.
-     Spend is capped by `APIFY_MAX_USD` (default $1/run) and `APIFY_MAX_RUNS`; tell the user what ran and the counts
-     (`sources_run`, `by_source`, `kept_by_source`).
-   - With a Bright Data key: `python <SCRIPTS>/intent_scan.py --serp --lookback 7 --max-calls 10 [--country in] --save hunt.json`
-     (`--list-queries` shows the default X-ray queries; add your own with `--query '...'`, repeatable).
-   - Without a key: search yourself (your web tool, or ask the user to paste posts) for queries like those in
-     `references/queries.md`, save posts one per line or as JSON lines (`url`, `text`, `author`) and run
-     `python <SCRIPTS>/intent_scan.py --file posts.jsonl --save hunt.json`.
-   - One post: `python <SCRIPTS>/intent_scan.py --text "..."`.
-   The scanner skips posts seen in earlier runs and rejects sellers, job seekers and job ads for free.
-   LinkedIn results include the author's name, headline and profile URL — keep them for step 6. A candidate with
-   `contact_in_post` already has an email/phone from the post: use it, don't pay a finder for it.
+2. **Collect leads** with what the user has (details for every source: `references/queries.md`):
+   | They have | Run | Gives |
+   |---|---|---|
+   | `APIFY_TOKEN` | `{SRC} hunt --posted week --max 30 --save hunt.json` | LinkedIn posts, Hacker News, Reddit, X, Google X-ray — people asking now |
+   | `APOLLO_API_KEY` or an Apollo connector in your agent | `{SRC} apollo-api --max 100` (or the connector's people search with the profile's titles, countries, size, niches) | decision-maker lists (no intent) |
+   | `APIFY_TOKEN`, no Apollo key | `{SRC} apollo` / `{SRC} leads` / `{SRC} people` (+ `--add --verify`) | the same lists via Apify |
+   | a local niche (dentists, restaurants…) | `{SRC} maps --add` | businesses with no site / poor reviews + phone |
+   | nothing | `{SRC} hackernews` (free) and `{SRC} reddit` (free JSON, may be rate-limited); for the rest run the queries from `{QL}` in your own web search, save posts as JSON lines (`url`, `text`, `author`) and score them with `python <SCRIPTS>/intent_scan.py --file posts.jsonl --save hunt.json` | |
+   Before the first paid run, tell the user the ceiling (`APIFY_MAX_USD` per run × `APIFY_MAX_RUNS`, default $1 × 8)
+   and afterwards what ran (`sources_run`, `by_source`, `kept_by_source`, `excluded_market`). Leads arrive
+   de-duplicated; sellers, job ads and job seekers are already filtered out. A candidate with `contact_in_post`
+   already has an email/phone from the post — use it, don't pay a finder for it.
 3. **Judge every candidate** with `references/intent-rubric.md`. For each, decide: buyer / seller /
    job_seeker / other, services wanted, urgency, budget (only if stated), location/timezone (only if stated
    or obvious), and an **exact quote** from the post that proves intent. Discard anything below confidence 0.6.
@@ -179,8 +164,9 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
    `python <SCRIPTS>/lead_scorer.py --mode agency signals.json` (fields: `intent_confidence`, `urgency`,
    `posted_days_ago`, `comments`, `budget_stated`, `services_requested`, `services_offered`, `email_status`,
    `sources_count`).
-5. **Add to the pipeline** (one per buyer):
-   `{PIPE} add --url <their site or post URL> --name "<name/company>" --source hunt:<query-id> --services web,seo`
+5. **Add to the pipeline** (one per buyer) — their own website if the post or profile names one, else the post URL
+   with the person's name (it becomes `name@platform`, e.g. `anita-desai@linkedin`, so leads never merge):
+   `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source <source>:<query-id>`
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
 6. **Deep-scan the top buyers** (best 5-10, freshest first):
    `{SCAN} <their site or domain> --post-text "<post>" --post-url <url> [--first X --last Y] --source hunt:<query-id>`
@@ -241,6 +227,7 @@ This skill produces only facts the page itself proves, so outreach built on it s
 # --------------------------------------------------------------------------- prospect
 {
 "name": "sales-prospect",
+"profile": "required",
 "title": "Full Prospect Analysis",
 "description": "Full scored prospect audit of a company URL using five role playbooks — company fit, contacts, opportunity (BANT), competitive position, then outreach strategy — run in sequence in any agent (or in parallel where supported), producing PROSPECT-ANALYSIS.md with a 0-100 prospect score, grade, action plan and a claim-checked first email, recorded in the pipeline. Use when the user says 'analyze this prospect', 'score this company', 'full audit of acme.com', '/sales prospect', or in Hinglish 'is company ka pura analysis karo', 'ye prospect kaisa hai'.",
 "intro": """You run the deepest analysis in the team: discovery, five role playbooks, a weighted score, an action
@@ -307,6 +294,7 @@ plan and a ready first email for `prospects/<slug>/PROSPECT-ANALYSIS.md`.""",
 # --------------------------------------------------------------------------- qualify
 {
 "name": "sales-qualify",
+"profile": "required",
 "title": "Lead Qualification (BANT + MEDDIC)",
 "description": "Qualifies a prospect with BANT and MEDDIC from public signals and any notes or replies the user has, cross-checked with the deterministic lead_scorer.py (or its agency-buyer mode for service sellers), and writes LEAD-QUALIFICATION.md with grade, gaps and discovery questions, recorded in the pipeline. Use when the user says 'qualify this lead', 'is this a good lead', 'BANT score', 'MEDDIC', '/sales qualify', or in Hinglish 'ye lead qualified hai kya', 'lead check karo'.",
 "intro": """You decide whether a prospect deserves time, and what is still unknown.""",
@@ -398,8 +386,9 @@ Never disparage a competitor with claims you can't source.
 # --------------------------------------------------------------------------- outreach
 {
 "name": "sales-outreach",
+"profile": "required",
 "title": "Cold Outreach Sequence",
-"description": "Writes a personalized, compliant cold outreach sequence for a prospect — a short first email built on one verified observation (their public post or a site-audit fact), 4 follow-ups and LinkedIn touches — with A/B subject lines, every sentence claim-checked against evidence before it is shown, written to OUTREACH-SEQUENCE.md and tracked in the pipeline. Use when the user says 'write a cold email', 'outreach sequence', 'email this prospect', 'LinkedIn message', '/sales outreach', or in Hinglish 'is client ko email likho', 'cold email banao', 'pehla message likho'.",
+"description": "Writes a personalized, compliant cold outreach sequence for a prospect — a short first email built on one verified observation (their public post or a site-audit fact), 4 follow-ups and LinkedIn touches — with A/B subject lines, every sentence claim-checked against evidence before it is shown, written to OUTREACH-SEQUENCE.md and tracked in the pipeline. Use it whenever a prospect needs a first message or a sequence — even if the user just names a company and asks what to say — or says 'write a cold email', 'outreach sequence', 'email this prospect', 'LinkedIn message', '/sales outreach', or in Hinglish 'is client ko email likho', 'cold email banao', 'pehla message likho'.",
 "intro": """You write outreach a busy owner actually answers: short, specific, true, and easy to say yes to.""",
 "body": f"""## Steps
 
@@ -428,21 +417,19 @@ Never disparage a competitor with claims you can't source.
    UK/IE/AU/NZ — no Indian-English idioms ("do the needful", "revert", "kindly"), prices in their currency.
    Pull the signature, offer line and proof only from `SELLER-PROFILE.json` (`{PROF} show`).
    Use the warm or referral template only for a real, confirmed connection.
-4. **Claim check** every email (see "Before anything is sent"); fix until it passes.
-5. Write `prospects/<slug>/OUTREACH-SEQUENCE.md` (`references/output-format.md`).
-6. Record: `{PIPE} attach <slug> prospects/<slug>/OUTREACH-SEQUENCE.md --kind outreach`.
-7. **Put it on autopilot** (with SMTP + IMAP set up): save the 5 emails as `prospects/<slug>/SEQUENCE.json`
-   (`[{{"step": 1, "subject": "...", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]` — follow-ups reply in the same
-   thread), show them to the user, and on approval run
-   `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json` (the dossier, audit and research files
-   and your profile's proof are used as evidence automatically; add `--evidence-text "<their post>"` if it isn't in the dossier).
-   It checks every email now and queues them; `{AUTO} tick --send` (scheduled) sends each on its day and stops
-   the moment they reply, opt out, bounce or book.
-8. **Or send one at a time** (see "Before anything is sent"): either the user sends it and you log it —
-   `{OUT} log <slug> --channel email --step 1 --to <email> --subject "<subject>"` — or, if SMTP is set up and the
-   user approves this exact email, `{OUT} send ...` (dry run first, then `--send`). Logging moves the stage to
-   `contacted` and schedules follow-up #1 automatically (`{OUT} cadence` shows the schedule).
-9. Other channels: LinkedIn/WhatsApp messages are sent by the user; for WhatsApp give a click-to-chat link
+4. **Write the files.** `prospects/<slug>/SEQUENCE.json` is the source of truth for the emails
+   (`[{{"step": 1, "subject": "...", "body": "..."}}, {{"step": 2, "body": "..."}}, ...]`; follow-ups without a subject
+   reply in the same thread). `prospects/<slug>/OUTREACH-SEQUENCE.md` is the human view (`references/output-format.md`)
+   with the same emails plus A/B subjects and the LinkedIn touches.
+5. **Check all five at once:** `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --check` runs the
+   claim check, opt-out, address, booking-link and recipient gates on every email and queues nothing. Fix and re-run
+   until it says the check passed (dossier, audit, research and the profile's proof are used as evidence automatically;
+   add `--evidence-text "<their post>"` if the post isn't in the dossier).
+6. **Show the user and deliver** in the mode `{OUT} doctor` reports: `autopilot` → after approval run the same
+   approve command without `--check` (each email then goes out on its day in the prospect's morning and the rest
+   stops the moment they reply, opt out, bounce or book); `send-one-by-one` / `manual` → see "Before anything is sent".
+7. Record: `{PIPE} attach <slug> prospects/<slug>/OUTREACH-SEQUENCE.md --kind outreach`.
+8. Other channels: LinkedIn/WhatsApp messages are sent by the user; for WhatsApp give a click-to-chat link
    (`{OUT} whatsapp <number with country code> --text-file msg.txt`), then log it with `--channel whatsapp`.
 """,
 "writes_email": True,
@@ -455,6 +442,7 @@ Never disparage a competitor with claims you can't source.
 # --------------------------------------------------------------------------- followup
 {
 "name": "sales-followup",
+"profile": "required",
 "title": "Follow-Up Sequences",
 "description": "Writes follow-up sequences after a meeting, demo, proposal, a prospect going silent, or for long-term nurture — emails, LinkedIn touches, voicemail and SMS scripts with a cadence calendar — based on what actually happened (meeting notes, replies), claim-checked, written to FOLLOWUP-SEQUENCE.md and tracked in the pipeline. Use when the user says 'follow up with', 'they went quiet', 'after the demo', 'proposal follow-up', 'ghosted', '/sales followup', or in Hinglish 'follow up likho', 'reply nahi aaya', 'meeting ke baad kya bhejun'.",
 "intro": """Follow-ups win most deals. You write ones that add value instead of "just checking in".""",
@@ -511,6 +499,7 @@ Never disparage a competitor with claims you can't source.
 # --------------------------------------------------------------------------- proposal
 {
 "name": "sales-proposal",
+"profile": "required",
 "title": "Client Proposal",
 "description": "Writes a client-ready proposal from the prospect's stated needs and the user's real pricing — executive summary, situation, solution, scope, timeline, three investment options, ROI with stated assumptions, team, real case studies only, next steps — plus a post-send follow-up sequence, claim-checked, written to CLIENT-PROPOSAL.md and tracked in the pipeline. Use when the user says 'write a proposal', 'quote for this client', 'pricing proposal', 'SOW', '/sales proposal', or in Hinglish 'proposal banao', 'quotation bhejna hai', 'client ko price batana hai'.",
 "intro": """You write a proposal that sells the outcome, priced from the user's real numbers.""",
@@ -543,6 +532,7 @@ Never disparage a competitor with claims you can't source.
 # --------------------------------------------------------------------------- objections
 {
 "name": "sales-objections",
+"profile": "required",
 "title": "Objection Handling Playbook",
 "description": "Generates word-for-word objection responses for calls, emails and chat — 15 universal objections, industry-specific and competitor objections, pricing tactics and prevention — tailored to what the user sells and, optionally, one prospect or industry, written to OBJECTION-PLAYBOOK.md. Covers the objections overseas clients raise about offshore agencies (time zones, communication, quality, trust, IP, payment). Use when the user says 'handle objections', 'they said it's too expensive', 'what do I say if', '/sales objections', or in Hinglish 'client bol raha hai mehenga hai', 'objection ka jawab do'.",
 "intro": """You give the user exact words for the hard moments, true to their offer.""",
@@ -572,7 +562,7 @@ Never disparage a competitor with claims you can't source.
 {
 "name": "sales-setup",
 "title": "Seller Setup — learn everything about the seller first",
-"description": "First-run onboarding that interviews the seller before any prospecting: agency name, sender identity, postal address, services, niches, platforms, outcomes, deal size and currency, target countries and cities, excluded markets, buyer job titles, company size, real case studies and proof, differentiators, buyer pains, buying triggers, tools clients leave, booking link — saved to SELLER-PROFILE.json, which every other skill and script (queries, Apollo/LinkedIn filters, emails, proposals, send times) is built from. Also checks which API keys are set. Use at the start of any new session or when the user says 'set up', 'onboard me', 'start', 'here is my business', 'update my profile', 'change my niche', or in Hinglish 'setup karo', 'mere business ke baare mein pucho', 'profile banao'.",
+"description": "First-run onboarding that interviews the seller before any prospecting: agency name, sender identity, postal address, services, niches, platforms, outcomes, deal size and currency, target countries and cities, excluded markets, buyer job titles, company size, real case studies and proof, differentiators, buyer pains, buying triggers, tools clients leave, booking link — saved to SELLER-PROFILE.json, which every other skill and script (queries, Apollo/LinkedIn filters, emails, proposals, send times) is built from. Also checks which API keys are set. Use it before any other sales skill whenever SELLER-PROFILE.json is missing or incomplete, at the start of a new workspace, or when the user says 'set up', 'onboard me', 'start', 'here is my business', 'update my profile', 'change my niche', or in Hinglish 'setup karo', 'mere business ke baare mein pucho', 'profile banao'.",
 "intro": """Nothing good comes from generic queries and generic emails. Before hunting, writing or pricing anything,
 you learn the seller's business properly and save it, so every agent after you builds on the same facts.""",
 "body": f"""## Steps
@@ -611,6 +601,7 @@ you learn the seller's business properly and save it, so every agent after you b
 # --------------------------------------------------------------------------- icp
 {
 "name": "sales-icp",
+"profile": "required",
 "title": "Ideal Customer Profile",
 "description": "Builds the Ideal Customer Profile every other sales skill scores against — firmographics, buying signals, pain points, budget qualifiers, negative ICP, scoring rubric, 2-3 buyer personas, channels, the phrases buyers use and the best search queries — from the seller profile (sales-setup), written to IDEAL-CUSTOMER-PROFILE.md. Use when the user says 'build my ICP', 'who should I target', 'ideal customer', 'I sell X to Y', '/sales icp', or in Hinglish 'mera ideal client kaun hai', 'kisko target karun'.",
 "intro": """Start here. Every fit score in the other skills is only as good as this profile.""",
@@ -637,11 +628,12 @@ you learn the seller's business properly and save it, so every agent after you b
 {
 "name": "sales-reply",
 "title": "Reply Handling",
-"description": "Handles a prospect's reply to outreach: classifies it (interested, meeting request, question, price/timing/vendor objection, referral, not interested, opt-out, out-of-office, bounce) in English, Hindi or Hinglish, updates the pipeline (stage, follow-ups stopped, opt-outs suppressed, bounced emails marked invalid) and drafts a short, truthful answer whose goal is a booked call. Use when the user pastes a reply or says 'they replied', 'what should I answer', 'client ne reply kiya', 'iska jawab likho', 'unhone price poocha', '/sales reply'.",
+"description": "Handles a prospect's reply to outreach: classifies it (interested, meeting request, question, price/timing/vendor objection, referral, not interested, opt-out, out-of-office, bounce) in English, Hindi or Hinglish, updates the pipeline (stage, follow-ups stopped, opt-outs suppressed, bounced emails marked invalid) and drafts a short, truthful answer whose goal is a booked call. Use it whenever the user pastes or forwards an email/message from a prospect — even with no instructions — or says 'they replied', 'what should I answer', 'client ne reply kiya', 'iska jawab likho', 'unhone price poocha', '/sales reply'.",
 "intro": """A reply is the most valuable moment in the pipeline. Answer fast, answer exactly what they asked, and move to a call.""",
 "body": f"""## Steps
 
-1. Get the reply text (the user pastes it or saves it to a file) and the prospect slug.
+1. Get the reply text and find the prospect: `{PIPE} find <sender email or name>` (then `{PIPE} show <slug>` for the
+   thread so far, their country/time zone and the stage). Unknown sender → ask the user which prospect it is.
 2. Classify and update the pipeline in one go. With IMAP set up, `{INBOX} check --apply` does this for every new
    reply and bounce (read-only); otherwise the user pastes the reply and you run
    `{TRIAGE} --file reply.txt --apply <slug> [--from <their email>]`. Either way the queued sequence stops.
@@ -650,7 +642,7 @@ you learn the seller's business properly and save it, so every agent after you b
    | Category | What you write |
    |---|---|
    | `meeting_request` | Go straight to `sales-book`: confirm the time they named, or offer 2-3 slots |
-   | `interested` / `question` | Answer in 1-3 sentences (facts only from the ICP / their files), then offer 2-3 slots (`{MEET} slots --prospect-tz <tz>`) and the booking link — now it is welcome |
+   | `interested` / `question` | Answer in 1-3 sentences (facts only from the ICP / their files), then offer 2-3 slots in their time zone (`{MEET} slots --prospect-tz <their tz from show, or ask>`) and the booking link — now it is welcome |
    | `objection_price` / `_has_vendor` | Use `OBJECTION-PLAYBOOK.md` or `sales-objections`; offer a smaller first step, then a call |
    | `objection_timing` | Agree a date; `{PIPE} next <slug> "Check back as agreed" --due <date>`; stage stays `nurture` |
    | `referral` | Thank them; write a 3-line email to the named person mentioning who referred you (`sales-outreach`) |
@@ -718,6 +710,7 @@ when time zones barely overlap), `WORK_DAYS` (Mon-Fri), `MEETING_MINUTES` (30), 
 # --------------------------------------------------------------------------- autopilot
 {
 "name": "sales-autopilot",
+"profile": "required",
 "title": "Sales Autopilot — find clients to booked meetings, every day",
 "description": "Runs the whole sales loop end-to-end from the persistent pipeline: builds today's agenda (replies to answer, meetings to prep or close out, follow-ups due, stale deals, best new leads), works through it in priority order using the other sales skills, refills the funnel with sales-hunt when it runs low, and asks the user to approve every message before it goes out. Use when the user says 'run my sales', 'what should I do today', 'daily sales routine', 'autopilot', 'end to end', 'find clients and book meetings', or in Hinglish 'aaj ka kaam batao', 'pura sales process chalao', 'client dhundne se meeting book karne tak sab karo'.",
 "intro": """You are the user's sales operator. Every session you turn the pipeline into finished work — in the order that
@@ -776,7 +769,7 @@ in the next 24 hours · funnel ≥ 20 open leads.
 {
 "name": "sales-report",
 "title": "Pipeline Report",
-"description": "Produces a pipeline report from the persistent pipeline database and the prospects/*/ folders — funnel by stage, reply/meeting/win rates, grades, stale deals, actions due today, which sources produce meetings, and a prioritized weekly action plan — written to SALES-REPORT.md. Use when the user says 'pipeline report', 'how is my pipeline', 'what should I do today', 'weekly sales review', '/sales report', or in Hinglish 'pipeline ka report do', 'aaj kya karna hai', 'kitne leads hain'.",
+"description": "Produces a pipeline report from the persistent pipeline database and the prospects/*/ folders — funnel by stage, reply/meeting/win rates, grades, stale deals, actions due today, which sources produce meetings, and a prioritized weekly action plan — written to SALES-REPORT.md. Use when the user says 'pipeline report', 'how is my pipeline', 'weekly sales review', 'which sources work', 'how much revenue is in the pipeline', '/sales report', or in Hinglish 'pipeline ka report do', 'kitne leads hain', 'is hafte ka review'. For today's to-do list use sales-autopilot instead.",
 "intro": """You turn the pipeline into decisions: what to do today, this week, and what to stop doing.""",
 "body": f"""## Steps
 

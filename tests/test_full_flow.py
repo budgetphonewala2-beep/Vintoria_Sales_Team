@@ -247,3 +247,40 @@ def test_command_checker_catches_wrong_flags(tmp_path):
                                 "`python <SCRIPTS>/outreach.py teleport acme.com`.", encoding="utf-8")
     probs = vs.check_commands(d)
     assert any("--colour" in p for p in probs) and any("teleport" in p for p in probs)
+
+
+def test_platform_leads_never_merge():
+    c = pipeline.connect()
+    a = pipeline.add(c, url="https://www.linkedin.com/posts/anita-desai_need-site-1", name="Anita Desai")["prospect"]
+    b = pipeline.add(c, url="https://www.linkedin.com/posts/bob-lee_seo-2", name="Bob Lee")["prospect"]
+    h = pipeline.add(c, url="https://news.ycombinator.com/item?id=4242")["prospect"]
+    r = pipeline.add(c, url="https://www.reddit.com/r/forhire/comments/abc123/hiring/")["prospect"]
+    assert [a["slug"], b["slug"], h["slug"], r["slug"]] == ["anita-desai@linkedin", "bob-lee@linkedin", "post-4242@hn", "post-abc123@reddit"]
+    assert a["url"].startswith("https://www.linkedin.com/posts/") and pipeline.get(c, "anita-desai@linkedin")["name"] == "Anita Desai"
+    assert pipeline.add(c, url="https://glowskin.com")["prospect"]["slug"] == "glowskin.com"
+    pipeline.add_contact(c, "bob-lee@linkedin", "Bob Lee", email="bob@leeco.com")
+    assert [m["slug"] for m in pipeline.find(c, "bob@leeco.com")] == ["bob-lee@linkedin"]
+    assert [m["slug"] for m in pipeline.find(c, "Anita")] == ["anita-desai@linkedin"]
+    c.close()
+    import prospect_scan
+    with pytest.raises(ValueError):
+        prospect_scan.scan("https://www.linkedin.com/posts/anita-desai_need-site-1", web=False, record=False)
+
+
+def test_doctor_modes_and_approve_check(monkeypatch):
+    assert outreach.doctor()["mode"] == "manual"
+    monkeypatch.setenv("SMTP_HOST", "smtp.gmail.com")
+    monkeypatch.setenv("SMTP_PASSWORD", "app-password-123")
+    d = outreach.doctor()
+    assert d["mode"] == "autopilot" and d["checks"]["imap_reply_detection"]          # IMAP derived from SMTP + profile email
+    c = pipeline.connect()
+    pipeline.add(c, url="https://glowskin.com")
+    pipeline.add_contact(c, "glowskin.com", "Jane", email="jane@glowskin.com", email_status="verified")
+    folder = Path("prospects/glowskin.com"); folder.mkdir(parents=True)
+    (folder / "DOSSIER.json").write_text(json.dumps({"facts": [
+        {"key": "their_post", "statement": "Looking for a Shopify developer for Glow Skin", "evidence": "post"},
+        {"key": "viewport", "statement": "The homepage does not set a mobile viewport meta tag.", "evidence": "x"}]}))
+    r = outreach.approve(c, "glowskin.com", "jane@glowskin.com", [{"step": 1, "subject": "glow skin store", "body": BODY1}],
+                         check_only=True)
+    assert r["check_passed"] and not outreach.queue(c, "glowskin.com")              # checked, nothing queued
+    c.close()

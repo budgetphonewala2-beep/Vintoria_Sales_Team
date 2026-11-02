@@ -16,6 +16,8 @@ Usage (every command prints one JSON object):
   Approved sequences (send themselves on schedule until the prospect replies):
     python outreach.py approve acme.com --to priya@acme.com --file prospects/acme.com/SEQUENCE.json \
         --evidence "prospects/acme.com/*.md" --evidence prospects/acme.com/SITE-AUDIT.json [--start 2026-11-03]
+    python outreach.py approve ... --check             # validate every email of the sequence, queue nothing
+    python outreach.py doctor                          # is sending ready? which mode: autopilot / send-one-by-one / manual
     python outreach.py queue [acme.com]                # what is approved and when each email is due
     python outreach.py run                             # dry run: what would go out now
     python outreach.py run --send [--limit 20]         # send every due, still-valid step (cron/Task Scheduler)
@@ -343,7 +345,42 @@ def parse_sequence(path):
     return steps
 
 
-def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None, allow_catch_all=False, today=None):
+def doctor(conn=None):
+    """Is sending ready, and which delivery mode should the agent use?"""
+    import inbox
+    smtp = {k: bool(setting(k) if k != "SMTP_PASSWORD" else secret(k)) for k in ("SMTP_HOST", "SMTP_PASSWORD", "SENDER_EMAIL")}
+    try:
+        inbox.config()
+        imap = True
+    except Exception:  # noqa: BLE001
+        imap = False
+    smtp_ok = all(smtp.values())
+    checks = {"smtp": smtp_ok, "imap_reply_detection": imap, "sender_address": bool(setting("SENDER_ADDRESS")),
+              "booking_url": bool(setting("BOOKING_URL")), "daily_limit_today": daily_limit(),
+              "warmup_ramp": bool(setting("SENDING_STARTED")), "cadence_days": cadence(),
+              "send_hours_prospect_tz": setting("SEND_HOURS", "09:00-17:00")}
+    if smtp_ok and imap:
+        mode = "autopilot"
+        how = ("Write SEQUENCE.json → outreach.py approve --check → show the user → outreach.py approve. "
+               "autopilot.py tick --send (scheduled) sends each email on its day and stops on any reply.")
+    elif smtp_ok:
+        mode = "send-one-by-one"
+        how = ("SMTP works but replies can't be detected: send approved emails with outreach.py send (dry run, then --send) "
+               "and paste every reply into sales-reply before the next follow-up. Don't queue sequences.")
+    else:
+        mode = "manual"
+        how = "The user sends each email from their own mailbox; you log it with outreach.py log so follow-ups are scheduled."
+    missing = [k for k, v in {**smtp, "IMAP": imap}.items() if not v]
+    warn = []
+    if not checks["sender_address"]:
+        warn.append("SENDER_ADDRESS / seller.postal_address missing — required for US cold email (CAN-SPAM)")
+    if smtp_ok and not checks["warmup_ramp"]:
+        warn.append("set SENDING_STARTED=YYYY-MM-DD for a new inbox so volume ramps up (10/day, +5/week)")
+    return {"mode": mode, "how": how, "checks": checks, "missing_for_autopilot": missing, "warnings": warn}
+
+
+def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None, allow_catch_all=False, today=None,
+            check_only=False):
     """Check every email of a sequence now; store them as approved. Step 1 is due on `start` (default today)."""
     p = pipeline.get(conn, key)
     report, bad = [], 0
@@ -358,6 +395,9 @@ def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None,
     if bad:
         return {"approved": False, "prospect": p["slug"], "steps": report,
                 "next": "Fix the problems in the listed emails and run approve again. Nothing was queued."}
+    if check_only:
+        return {"approved": False, "check_passed": True, "prospect": p["slug"], "steps": report,
+                "next": "All emails pass. Show them to the user; after they approve, run the same command without --check."}
     d0 = (datetime.fromisoformat(start).date() if start else (today or datetime.now(timezone.utc).date()))
     with conn:
         conn.execute("UPDATE sequence_steps SET status = 'cancelled' WHERE prospect_id = ? AND status = 'approved'", (p["id"],))
@@ -544,6 +584,8 @@ def main(argv=None):
     apv = sub.add_parser("approve"); apv.add_argument("prospect"); apv.add_argument("--to", required=True)
     apv.add_argument("--file", required=True); apv.add_argument("--evidence", action="append")
     apv.add_argument("--evidence-text", action="append"); apv.add_argument("--start"); apv.add_argument("--allow-catch-all", action="store_true")
+    apv.add_argument("--check", action="store_true", help="validate every email, queue nothing (run before showing the user)")
+    sub.add_parser("doctor")
     qu = sub.add_parser("queue"); qu.add_argument("prospect", nargs="?")
     rn = sub.add_parser("run"); rn.add_argument("--send", action="store_true"); rn.add_argument("--limit", type=int)
     cn = sub.add_parser("cancel"); cn.add_argument("prospect"); cn.add_argument("--reason", default="cancelled by user")
@@ -563,10 +605,12 @@ def main(argv=None):
         elif a.cmd == "approve":
             try:
                 out = approve(conn, a.prospect, a.to, parse_sequence(a.file), a.evidence, a.evidence_text, a.start,
-                              a.allow_catch_all)
+                              a.allow_catch_all, check_only=a.check)
             except FileNotFoundError as exc:
                 raise UserError(str(exc))
-            emit({"ok": True, "data": out}, 0 if out["approved"] else 1)
+            emit({"ok": True, "data": out}, 0 if out["approved"] or out.get("check_passed") else 1)
+        elif a.cmd == "doctor":
+            out = doctor(conn)
         elif a.cmd == "queue":
             out = {"queue": queue(conn, a.prospect)}
         elif a.cmd == "run":

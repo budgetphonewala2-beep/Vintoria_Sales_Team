@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: glowskin-sequence-from-dossier
+expected_outcome: |
+  A 5-email sequence for Jane at Glow Skin saved as prospects/glowskin.com/SEQUENCE.json (plus a readable OUTREACH-SEQUENCE.md),
+  built on the dossier hooks (her Black Friday relaunch post, 4.2 s load, no viewport), short, in US English, with opt-out and the postal address,
+  no booking link, no invented results — only the Brew Co case study from the profile — and every email passing the claim check. Nothing is sent.
+context:
+  scaffold_script: place-files.sh

@@ -5,6 +5,7 @@ OUT = "python <SCRIPTS>/outreach.py"
 MEET = "python <SCRIPTS>/meeting.py"
 TRIAGE = "python <SCRIPTS>/reply_triage.py"
 SRC = "python <SCRIPTS>/lead_sources.py"
+SERP = "python <SCRIPTS>/serp.py"
 AUTO = "python <SCRIPTS>/autopilot.py"
 INBOX = "python <SCRIPTS>/inbox.py"
 SCAN = "python <SCRIPTS>/prospect_scan.py"
@@ -87,6 +88,7 @@ Read `references/team.md` for the roles, daily rhythm, targets and rules.
 | Script | Purpose |
 |---|---|
 | `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report (+ forecast), `today`, `value`, `where`, suppress |
+| `serp.py` | **Main lead engine**: the profile's Google X-ray queries via Serper / SerpAPI / Bright Data / Brave / Apify, recency, pages, countries |
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
@@ -148,7 +150,8 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 2. **Collect leads** with what the user has (details for every source: `references/queries.md`):
    | They have | Run | Gives |
    |---|---|---|
-   | `APIFY_TOKEN` | `{SRC} hunt --posted week --max 30 --save hunt.json` | LinkedIn posts, Hacker News, Reddit, X, Google X-ray — people asking now |
+   | a SERP key — `SERPER_API_KEY` (cheapest, ~$1 per 1,000 searches), `SERPAPI_API_KEY`, `BRIGHTDATA_API_KEY` or `BRAVE_API_KEY` | `{SERP} hunt --days 7 --pages 2 --save hunt.json` (`{SERP} providers` shows the cost) | **the main source**: one Google X-ray query covers LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers and Upwork jobs at once, across the profile's countries |
+   | `APIFY_TOKEN` | `{SRC} hunt --posted week --max 30 --save hunt.json` | LinkedIn post search (more posts than Google indexes), Hacker News, Reddit, X |
    | `APOLLO_API_KEY` or an Apollo connector in your agent | `{SRC} apollo-api --max 100` (or the connector's people search with the profile's titles, countries, size, niches) | decision-maker lists (no intent) |
    | `APIFY_TOKEN`, no Apollo key | `{SRC} apollo` / `{SRC} leads` / `{SRC} people` (+ `--add --verify`) | the same lists via Apify |
    | a local niche (dentists, restaurants…) | `{SRC} maps --add` | businesses with no site / poor reviews + phone |
@@ -163,10 +166,12 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 4. **Score buyers**: write their signals to a JSON file and run
    `python <SCRIPTS>/lead_scorer.py --mode agency signals.json` (fields: `intent_confidence`, `urgency`,
    `posted_days_ago`, `comments`, `budget_stated`, `services_requested`, `services_offered`, `email_status`,
-   `sources_count`).
+   `sources_count`). Leave a field out when you don't know it (e.g. a pasted post with no date) — unknowns score
+   neutral; writing 0 would claim "posted today, no competition" and inflate the score.
 5. **Add to the pipeline** (one per buyer) — their own website if the post or profile names one, else the post URL
    with the person's name (it becomes `name@platform`, e.g. `anita-desai@linkedin`, so leads never merge):
    `{PIPE} add --url <their site, or the post URL> --name "<person or company>" --source <source>:<query-id>`
+   When you save the person (`{PIPE} contact`), `--linkedin` takes their **profile** URL (`author_url`), never the post URL.
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
 6. **Deep-scan the top buyers** (best 5-10, freshest first):
    `{SCAN} <their site or domain> --post-text "<post>" --post-url <url> [--first X --last Y] --source hunt:<query-id>`
@@ -650,9 +655,13 @@ you learn the seller's business properly and save it, so every agent after you b
    | `not_interested` | One gracious line, no pitch; never follow up again |
    | `unsubscribe` | Nothing to write. It's already suppressed — confirm to the user |
    | `bounce` | Find another verified contact with `sales-contacts` |
-4. Claim-check the answer (see "Before anything is sent"), show it to the user, and log it when it's sent:
+4. **Keep it short:** at most ~100 words before the slots/link and signature — answer their questions in the first
+   two sentences, one honest caveat if there is one, then the call. A busy buyer reads a reply on a phone; long
+   replies and several `[TO CONFIRM]` blocks slow the user down. Use at most one `[TO CONFIRM]` and list any other
+   open points in your message to the user instead.
+5. Claim-check the answer (see "Before anything is sent"), show it to the user, and log it when it's sent:
    `{OUT} log <slug> --channel email --to <email> --subject "Re: <their subject>" --no-schedule`.
-5. Tell the user the new stage and the next step with its due date (`{PIPE} show <slug>`).
+6. Tell the user the new stage and the next step with its due date (`{PIPE} show <slug>`).
 
 ## Rules
 - Reply within the hour for `meeting_request` and `interested` — speed decides most deals.

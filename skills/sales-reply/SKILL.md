@@ -52,9 +52,13 @@ A reply is the most valuable moment in the pipeline. Answer fast, answer exactly
    | `not_interested` | One gracious line, no pitch; never follow up again |
    | `unsubscribe` | Nothing to write. It's already suppressed — confirm to the user |
    | `bounce` | Find another verified contact with `sales-contacts` |
-4. Claim-check the answer (see "Before anything is sent"), show it to the user, and log it when it's sent:
+4. **Keep it short:** at most ~100 words before the slots/link and signature — answer their questions in the first
+   two sentences, one honest caveat if there is one, then the call. A busy buyer reads a reply on a phone; long
+   replies and several `[TO CONFIRM]` blocks slow the user down. Use at most one `[TO CONFIRM]` and list any other
+   open points in your message to the user instead.
+5. Claim-check the answer (see "Before anything is sent"), show it to the user, and log it when it's sent:
    `python <SCRIPTS>/outreach.py log <slug> --channel email --to <email> --subject "Re: <their subject>" --no-schedule`.
-5. Tell the user the new stage and the next step with its due date (`python <SCRIPTS>/pipeline.py show <slug>`).
+6. Tell the user the new stage and the next step with its due date (`python <SCRIPTS>/pipeline.py show <slug>`).
 
 ## Rules
 - Reply within the hour for `meeting_request` and `interested` — speed decides most deals.

@@ -41,3 +41,4 @@ SITE-AUDIT*.json
 .env
 *.db
 prospects/
+eval-review/

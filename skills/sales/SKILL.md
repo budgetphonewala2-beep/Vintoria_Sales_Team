@@ -101,6 +101,7 @@ Read `references/team.md` for the roles, daily rhythm, targets and rules.
 | Script | Purpose |
 |---|---|
 | `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report (+ forecast), `today`, `value`, `where`, suppress |
+| `serp.py` | **Main lead engine**: the profile's Google X-ray queries via Serper / SerpAPI / Bright Data / Brave / Apify, recency, pages, countries |
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |

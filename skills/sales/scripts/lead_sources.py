@@ -197,6 +197,15 @@ def linkedin(queries, posted="week", max_posts=30, call=api_json):
 
 
 def google(queries, country="", pages=1, call=api_json):
+    """Google results: a cheap SERP API first (Serper, SerpAPI, Bright Data, Brave — see serp.py), then Apify."""
+    import serp
+    cheap = [x for x in serp.configured() if x[0] != "apify"]
+    if cheap:
+        out = []
+        for q in queries:
+            rows, _, _ = serp.search(q, 30, country or "us", pages, call, cheap)
+            out += [{**r, "source": "google", "query": q} for r in rows]
+        return out
     if secret("APIFY_TOKEN"):
         inp = {"queries": "\n".join(queries), "maxPagesPerQuery": int(pages), "resultsPerPage": 10}
         if country:
@@ -209,7 +218,8 @@ def google(queries, country="", pages=1, call=api_json):
                 out.append({"url": r["link"], "title": r.get("title", ""), "text": r.get("description", ""), "source": "google",
                             "query": q, "platform": intent_scan.platform_of(r["link"]), "author": None, "posted": None})
         return out
-    raise UserError("Google search needs APIFY_TOKEN or BRIGHTDATA_API_KEY — or use your agent's own web search")
+    raise UserError("Google search needs a SERP key (SERPER_API_KEY is cheapest; or SERPAPI_API_KEY, BRIGHTDATA_API_KEY, "
+                    "BRAVE_API_KEY) or APIFY_TOKEN — or use your agent's own web search")
 
 
 def reddit(plan, max_items=30, call=api_json):

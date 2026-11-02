@@ -1,5 +1,29 @@
 # Changelog
 
+## 3.6.0 — 2026-11-02 (skill-creator review: evals, SERP first, bug fixes)
+
+### Fixed
+- Leads from post URLs (LinkedIn, Reddit, X, HN, Facebook, Upwork ...) no longer merge into one "linkedin.com" prospect:
+  the slug is `name@platform` (e.g. `anita-desai@linkedin`, `post-abc123@reddit`); `prospect_scan.py` refuses platform URLs.
+- `lead_scorer.py --mode agency`: unknown post age / comment count score neutral (were treated as "today, 0 comments").
+- `prospect_scan.py` no longer overwrites a prospect's real name with its slug.
+
+### Added
+- `serp.py` — SERP lead engine: the profile's Google X-ray queries via Serper (cheapest), SerpAPI, Bright Data, Brave or
+  Apify, with recency, pages and country rotation; now the first row of the hunt playbook. `lead_sources.google`
+  (research, X-ray) uses a cheap SERP provider before Apify.
+- `outreach.py doctor` (delivery mode) and `outreach.py approve --check` (validate a sequence, queue nothing).
+- `pipeline.py find <email|name|domain>`.
+- Skill-creator eval cases in `skills/sales-outreach|sales-reply|sales-hunt/evals/`; the installer skips `evals/`.
+
+### Changed
+- Shared skill blocks rewritten: shorter, explain why; the seller profile is required only where queries, emails or
+  prices are built from it; one delivery section driven by `outreach.py doctor`.
+- `sales-hunt` step 2 is a "keys → command" table with a cost ceiling before paid runs; LinkedIn contact field takes the
+  author's profile URL; unknown score inputs are left out.
+- `sales-reply` drafts stay under ~100 words with at most one `[TO CONFIRM]`; the prospect is found by sender and its time zone used.
+- `sales-report` no longer competes with `sales-autopilot` for "what should I do today".
+
 ## 3.5.0 — 2026-11-01 (end-to-end tested, team mode)
 
 ### Fixed

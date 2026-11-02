@@ -1,0 +1,6 @@
+schema_version: "1.1"
+name: post-urls-without-names
+expected_outcome: |
+  All three posts are buyers and become three separate prospects (no merged linkedin.com or reddit.com prospect), each with its post URL and exact quote, scored without invented post dates.
+context:
+  scaffold_script: place-files.sh

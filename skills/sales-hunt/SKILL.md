@@ -42,7 +42,8 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 2. **Collect leads** with what the user has (details for every source: `references/queries.md`):
    | They have | Run | Gives |
    |---|---|---|
-   | `APIFY_TOKEN` | `python <SCRIPTS>/lead_sources.py hunt --posted week --max 30 --save hunt.json` | LinkedIn posts, Hacker News, Reddit, X, Google X-ray — people asking now |
+   | a SERP key — `SERPER_API_KEY` (cheapest, ~$1 per 1,000 searches), `SERPAPI_API_KEY`, `BRIGHTDATA_API_KEY` or `BRAVE_API_KEY` | `python <SCRIPTS>/serp.py hunt --days 7 --pages 2 --save hunt.json` (`python <SCRIPTS>/serp.py providers` shows the cost) | **the main source**: one Google X-ray query covers LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers and Upwork jobs at once, across the profile's countries |
+   | `APIFY_TOKEN` | `python <SCRIPTS>/lead_sources.py hunt --posted week --max 30 --save hunt.json` | LinkedIn post search (more posts than Google indexes), Hacker News, Reddit, X |
    | `APOLLO_API_KEY` or an Apollo connector in your agent | `python <SCRIPTS>/lead_sources.py apollo-api --max 100` (or the connector's people search with the profile's titles, countries, size, niches) | decision-maker lists (no intent) |
    | `APIFY_TOKEN`, no Apollo key | `python <SCRIPTS>/lead_sources.py apollo` / `python <SCRIPTS>/lead_sources.py leads` / `python <SCRIPTS>/lead_sources.py people` (+ `--add --verify`) | the same lists via Apify |
    | a local niche (dentists, restaurants…) | `python <SCRIPTS>/lead_sources.py maps --add` | businesses with no site / poor reviews + phone |
@@ -57,10 +58,12 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 4. **Score buyers**: write their signals to a JSON file and run
    `python <SCRIPTS>/lead_scorer.py --mode agency signals.json` (fields: `intent_confidence`, `urgency`,
    `posted_days_ago`, `comments`, `budget_stated`, `services_requested`, `services_offered`, `email_status`,
-   `sources_count`).
+   `sources_count`). Leave a field out when you don't know it (e.g. a pasted post with no date) — unknowns score
+   neutral; writing 0 would claim "posted today, no competition" and inflate the score.
 5. **Add to the pipeline** (one per buyer) — their own website if the post or profile names one, else the post URL
    with the person's name (it becomes `name@platform`, e.g. `anita-desai@linkedin`, so leads never merge):
    `python <SCRIPTS>/pipeline.py add --url <their site, or the post URL> --name "<person or company>" --source <source>:<query-id>`
+   When you save the person (`python <SCRIPTS>/pipeline.py contact`), `--linkedin` takes their **profile** URL (`author_url`), never the post URL.
    `python <SCRIPTS>/pipeline.py score <slug> <score>` · `python <SCRIPTS>/pipeline.py note <slug> "Post: <url> — quote: '<exact quote>'"`
 6. **Deep-scan the top buyers** (best 5-10, freshest first):
    `python <SCRIPTS>/prospect_scan.py <their site or domain> --post-text "<post>" --post-url <url> [--first X --last Y] --source hunt:<query-id>`

@@ -38,6 +38,7 @@ target countries and excluded markets into every query. `python <SCRIPTS>/query_
 
 | Source | Command | Best for | Notes |
 |---|---|---|---|
+| **Google SERP (main)** | `serp.py hunt` | Everything at once: LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers, Upwork jobs via X-ray, in your countries | Serper (~$1/1k), SerpAPI, Bright Data, Brave, Apify — first key that works; `serp.py providers` |
 | LinkedIn posts | `lead_sources.py linkedin` | B2B founders/owners asking publicly | Apify HarvestAPI; author name + headline + profile URL included |
 | Hacker News | `lead_sources.py hackernews` | Startups: "Seeking freelancer" thread (monthly), Ask HN asks | Free, no key; posts often include an email → no finder needed |
 | Reddit | `lead_sources.py reddit` | r/forhire `[Hiring]`, r/smallbusiness, r/startups, r/shopify, r/indianstartups | Apify, or free public JSON; buyers rarely leave an email → reply where they posted (user does it) |

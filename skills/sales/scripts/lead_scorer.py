@@ -76,6 +76,15 @@ def to_number(value):
     return float(m.group(1)) * _MULT.get(m.group(2) or "", 1)
 
 
+def num_or_none(value):
+    """Like to_number, but unknown stays unknown (None) — 'no date given' must not score as 'posted today'."""
+    if value is None or value == "" or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return max(0, value)
+    return to_number(value) if any(ch.isdigit() for ch in str(value)) else None
+
+
 def to_bool(value):
     if isinstance(value, bool):
         return value
@@ -255,13 +264,13 @@ EXAMPLE_AGENCY = {
 def score_agency(d):
     """Agency-buyer score (0-100) with parts. Unknown inputs get neutral points, never full marks."""
     parts = {}
-    conf = to_number(d.get("intent_confidence"))
+    conf = num_or_none(d.get("intent_confidence"))
     conf = conf if conf is not None and 0 <= conf <= 1 else (conf / 100 if conf and 1 < conf <= 100 else 0.5)
     parts["intent"] = round(25 * conf, 1)
     parts["urgency"] = {"high": 15, "medium": 9, "low": 4}.get(str(d.get("urgency") or "").lower(), 6)
-    age = to_number(d.get("posted_days_ago"))
+    age = num_or_none(d.get("posted_days_ago"))
     parts["freshness"] = 7 if age is None else 15 if age <= 1 else 12 if age <= 3 else 8 if age <= 7 else 4 if age <= 14 else 1
-    c = to_number(d.get("comments"))
+    c = num_or_none(d.get("comments"))
     parts["low_competition"] = 5 if c is None else 10 if c <= 2 else 7 if c <= 10 else 3 if c <= 30 else 0
     parts["budget"] = 8 if to_bool(d.get("budget_stated")) else 0
     want = [x.lower() for x in to_list(d.get("services_requested"))]

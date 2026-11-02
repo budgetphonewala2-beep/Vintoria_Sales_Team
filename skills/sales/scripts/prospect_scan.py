@@ -171,7 +171,8 @@ def scan(url, name=None, first=None, last=None, post=None, post_url=None, city=N
 def _record(d, source=None):
     conn = pipeline.connect()
     try:
-        pipeline.add(conn, url=d["url"], name=d["company"].get("name"), source=source)
+        nm = d["company"].get("name")
+        pipeline.add(conn, url=d["url"], name=None if nm in (None, d["slug"]) else nm, source=source)   # never overwrite a real name with the slug
         if pipeline.get(conn, d["slug"])["stage"] == "new":
             pipeline.set_stage(conn, d["slug"], "researched", "deep scan done")
         best = (d.get("email") or {}).get("best")

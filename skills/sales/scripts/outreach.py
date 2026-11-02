@@ -57,6 +57,7 @@ from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import claim_check  # noqa: E402
+import email_lint  # noqa: E402
 import pipeline  # noqa: E402
 from sales_common import emit, secret, setting, tls_context  # noqa: E402
 
@@ -197,14 +198,38 @@ def _contact(conn, pid, email):
     return dict(r) if r else None
 
 
+def stop_loss(conn, now_dt=None):
+    """Deliverability stop-loss over the last 14 days: pause cold sends when bounces pass 2% (≥ 20 sends);
+    warn when the reply rate stays under 1% after 300 sends (the targeting or offer is wrong, not the volume)."""
+    now_dt = now_dt or datetime.now(timezone.utc)
+    since = (now_dt - timedelta(days=14)).replace(microsecond=0).isoformat()
+    sent = conn.execute("SELECT COUNT(*) FROM touches WHERE channel = 'email' AND status = 'sent' AND at >= ?", (since,)).fetchone()[0]
+    bounces = conn.execute("SELECT COUNT(*) FROM events WHERE kind = 'reply' AND text LIKE '[bounce]%' AND at >= ?", (since,)).fetchone()[0]
+    total = conn.execute("SELECT COUNT(*) FROM touches WHERE channel = 'email' AND status = 'sent'").fetchone()[0]
+    replied = conn.execute("SELECT COUNT(DISTINCT prospect_id) FROM events WHERE kind = 'reply' AND text NOT LIKE '[bounce]%' "
+                           "AND text NOT LIKE '[out_of_office]%'").fetchone()[0]
+    out = {"sent_14d": sent, "bounces_14d": bounces, "bounce_rate_pct": round(100 * bounces / sent, 1) if sent else 0.0,
+           "sent_total": total, "reply_rate_pct": round(100 * replied / total, 1) if total else None, "paused": False, "reason": None,
+           "warning": None}
+    limit = float(setting("BOUNCE_STOP_PCT", "2"))
+    if sent >= 20 and out["bounce_rate_pct"] > limit:
+        out["paused"] = True
+        out["reason"] = (f"bounce rate {out['bounce_rate_pct']}% over the last {sent} sends (> {limit:g}%) — re-verify the "
+                         "list (find_email.py --email) and check the domain before sending more")
+    if total >= 300 and (out["reply_rate_pct"] or 0) < 1:
+        out["warning"] = f"reply rate {out['reply_rate_pct']}% after {total} sends — change targeting/offer, more volume makes it worse"
+    return out
+
+
 def daily_limit(now_dt=None):
-    """DAILY_SEND_LIMIT, ramped while a new inbox warms up: SENDING_STARTED=YYYY-MM-DD → 10/day in week 1, +5 per week."""
+    """DAILY_SEND_LIMIT, ramped while a new inbox warms up (SENDING_STARTED=YYYY-MM-DD): 5/day in weeks 1-2, then +5 per
+    week. Practitioners keep 20-30 cold sends per mailbox per day once warm."""
     cap = int(setting("DAILY_SEND_LIMIT", "30"))
     start = setting("SENDING_STARTED")
     if start:
         try:
             weeks = max(0, ((now_dt or datetime.now(timezone.utc)).date() - datetime.fromisoformat(start).date()).days // 7)
-            return min(cap, 10 + 5 * weeks)
+            return min(cap, 5 if weeks < 2 else 5 + 5 * (weeks - 1))
         except ValueError:
             pass
     return cap
@@ -251,15 +276,22 @@ def preflight(conn, key, to, subject, body, evidence=None, evidence_text=None, a
         problems.extend(f"unsupported claim: {u['text']}" for u in cc["unsupported"])
         problems.extend(f"placeholder not filled: {h}" for h in cc["placeholders"])
     now_dt = today or datetime.now(timezone.utc)
+    cold = p["stage"] in ("new", "researched", "qualified", "contacted", "nurture")   # answering a reply is never "too soon"
     limit = daily_limit(now_dt)
     sent_today = conn.execute("SELECT COUNT(*) FROM touches WHERE status = 'sent' AND at >= ?",
                               (now_dt.date().isoformat(),)).fetchone()[0]
     info["sent_today"], info["daily_limit"] = sent_today, limit
     if sent_today >= limit:
         problems.append(f"daily send limit reached ({sent_today}/{limit}) — protects your domain's reputation")
+    sl = stop_loss(conn, now_dt)
+    if sl["paused"] and cold:
+        problems.append("stop-loss: " + sl["reason"])
+    week_ago = (now_dt - timedelta(days=7)).replace(microsecond=0).isoformat()
+    touches7 = conn.execute("SELECT COUNT(*) FROM touches WHERE prospect_id = ? AND at >= ?", (p["id"], week_ago)).fetchone()[0]
+    if cold and touches7 >= int(setting("MAX_TOUCHES_PER_WEEK", "4")):
+        problems.append(f"{touches7} touches to this prospect in 7 days across channels — over-contact; wait")
     recent = conn.execute("SELECT MAX(at) FROM touches WHERE prospect_id = ? AND channel = 'email' AND status = 'sent'",
                           (p["id"],)).fetchone()[0]
-    cold = p["stage"] in ("new", "researched", "qualified", "contacted", "nurture")   # answering a reply is never "too soon"
     if cold and recent and recent >= (now_dt - timedelta(days=2)).replace(microsecond=0).isoformat():
         problems.append(f"this prospect was already emailed at {recent} — wait at least 2 days")
     return problems, info
@@ -376,6 +408,13 @@ def doctor(conn=None):
         warn.append("SENDER_ADDRESS / seller.postal_address missing — required for US cold email (CAN-SPAM)")
     if smtp_ok and not checks["warmup_ramp"]:
         warn.append("set SENDING_STARTED=YYYY-MM-DD for a new inbox so volume ramps up (10/day, +5/week)")
+    if conn is not None:
+        sl = stop_loss(conn)
+        checks["stop_loss"] = sl
+        if sl["paused"]:
+            warn.insert(0, "SENDING PAUSED — " + sl["reason"])
+        if sl["warning"]:
+            warn.append(sl["warning"])
     return {"mode": mode, "how": how, "checks": checks, "missing_for_autopilot": missing, "warnings": warn}
 
 
@@ -388,10 +427,16 @@ def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None,
         subj = st["subject"] or (f"Re: {steps[0]['subject']}" if st["step"] > 1 else "")
         problems, info = preflight(conn, key, to, subj if st["step"] == 1 else steps[0]["subject"], st["body"], evidence,
                                    evidence_text, allow_catch_all)
-        problems = [x for x in problems if "daily send limit" not in x and "already emailed" not in x]
+        problems = [x for x in problems if "daily send limit" not in x and "already emailed" not in x and "stop-loss" not in x
+                    and "contacted" not in x]
+        q = email_lint.lint(st["body"], subj if st["step"] == 1 else None, int(st["step"]))
+        floor = int(setting("LINT_MIN_SCORE", "65"))
+        if q["score"] < floor:
+            problems.append(f"quality score {q['score']}/100 (< {floor}): " + "; ".join(q["issues"][:4]))
         bad += bool(problems)
         report.append({"step": st["step"], "subject": subj, "words": len(re.findall(r"\w+", st["body"])), "problems": problems,
-                       "claim_check": info.get("claim_check")})
+                       "claim_check": info.get("claim_check"), "quality": {"score": q["score"], "verdict": q["verdict"],
+                                                                           "issues": q["issues"]}})
     if bad:
         return {"approved": False, "prospect": p["slug"], "steps": report,
                 "next": "Fix the problems in the listed emails and run approve again. Nothing was queued."}

@@ -87,8 +87,9 @@ Read `references/team.md` for the roles, daily rhythm, targets and rules.
 
 | Script | Purpose |
 |---|---|
-| `pipeline.py` | Persistent pipeline: add, score, stage, contact, note, attach, next, report (+ forecast), `today`, `value`, `where`, suppress |
-| `serp.py` | **Main lead engine**: the profile's Google X-ray queries via Serper / SerpAPI / Bright Data / Brave / Apify, recency, pages, countries |
+| `pipeline.py` | **`status` (start here)**, `today`, add, score, stage, contact, note, attach, next, report (+ forecast), `value`, `where`, `find`, suppress |
+| `serp.py` | **Main lead engine** (Bright Data SERP): `watch` = newest posts since the last run with exact post times; `hunt`; `fresh` |
+| `email_lint.py` | 0-100 reply-worthiness score per email with the exact fixes (gate in `outreach.py approve --check`) |
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
@@ -150,7 +151,7 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
 2. **Collect leads** with what the user has (details for every source: `references/queries.md`):
    | They have | Run | Gives |
    |---|---|---|
-   | a SERP key — `SERPER_API_KEY` (cheapest, ~$1 per 1,000 searches), `SERPAPI_API_KEY`, `BRIGHTDATA_API_KEY` or `BRAVE_API_KEY` | `{SERP} hunt --days 7 --pages 2 --save hunt.json` (`{SERP} providers` shows the cost) | **the main source**: one Google X-ray query covers LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers and Upwork jobs at once, across the profile's countries |
+   | `BRIGHTDATA_API_KEY` + `BRIGHTDATA_ZONE` (SERP zone) | **`{SERP} watch`** — the newest posts since the last watch (1-24 h), never-seen-before only; or `{SERP} hunt --hours 24` / `--days 7` for a bigger sweep (`{SERP} providers` shows the cost) | **the main source**: Google X-ray across LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers and Upwork jobs in the profile's countries, sorted by date, each with its exact post time |
    | `APIFY_TOKEN` | `{SRC} hunt --posted week --max 30 --save hunt.json` | LinkedIn post search (more posts than Google indexes), Hacker News, Reddit, X |
    | `APOLLO_API_KEY` or an Apollo connector in your agent | `{SRC} apollo-api --max 100` (or the connector's people search with the profile's titles, countries, size, niches) | decision-maker lists (no intent) |
    | `APIFY_TOKEN`, no Apollo key | `{SRC} apollo` / `{SRC} leads` / `{SRC} people` (+ `--add --verify`) | the same lists via Apify |
@@ -160,6 +161,11 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
    and afterwards what ran (`sources_run`, `by_source`, `kept_by_source`, `excluded_market`). Leads arrive
    de-duplicated; sellers, job ads and job seekers are already filtered out. A candidate with `contact_in_post`
    already has an email/phone from the post — use it, don't pay a finder for it.
+   **Freshness decides who wins the client.** Work newest first (`age_hours`): a post under 6 hours old gets judged,
+   scanned and answered in the same session; under 48 hours the same day; older than a week only if nobody has
+   replied under it. LinkedIn and X post times are exact (encoded in the post ID); others come from the snippet.
+   With autopilot, `serp.py watch` runs every `HUNT_EVERY_HOURS` (default 2) and fresh leads sit at the top of
+   `{PIPE} today` until you mark them: `{SERP} judged <url> ...`.
 3. **Judge every candidate** with `references/intent-rubric.md`. For each, decide: buyer / seller /
    job_seeker / other, services wanted, urgency, budget (only if stated), location/timezone (only if stated
    or obvious), and an **exact quote** from the post that proves intent. Discard anything below confidence 0.6.
@@ -427,7 +433,9 @@ Never disparage a competitor with claims you can't source.
    reply in the same thread). `prospects/<slug>/OUTREACH-SEQUENCE.md` is the human view (`references/output-format.md`)
    with the same emails plus A/B subjects and the LinkedIn touches.
 5. **Check all five at once:** `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --check` runs the
-   claim check, opt-out, address, booking-link and recipient gates on every email and queues nothing. Fix and re-run
+   claim check, the quality score (`python <SCRIPTS>/email_lint.py`, 0-100, must reach `LINT_MIN_SCORE` — aim for 80+),
+   opt-out, address, booking-link, over-contact and recipient gates on every email and queues nothing.
+   Before that, do the panel review and the deletion test in `references/quality.md`. Fix and re-run
    until it says the check passed (dossier, audit, research and the profile's proof are used as evidence automatically;
    add `--evidence-text "<their post>"` if the post isn't in the dossier).
 6. **Show the user and deliver** in the mode `{OUT} doctor` reports: `autopilot` → after approval run the same
@@ -442,7 +450,8 @@ Never disparage a competitor with claims you can't source.
          ("playbook.md", "personalization research, 4 frameworks, the 5-email sequence, LinkedIn, A/B, sending"),
          ("output-format.md", "OUTREACH-SEQUENCE.md template"), ("template-outreach-cold.md", "cold template"),
          ("template-outreach-warm.md", "warm intro template"), ("template-outreach-referral.md", "referral template"),
-         ("compliance.md", "legal and deliverability rules"), ("rules.md", "terminal output, errors, cross-skill use")],
+         ("compliance.md", "legal and deliverability rules"), ("quality.md", "the 0-100 score, banned/AI phrases, 4 personalization levels, deletion test, 5-lens panel review"),
+         ("rules.md", "terminal output, errors, cross-skill use")],
 },
 # --------------------------------------------------------------------------- followup
 {
@@ -586,7 +595,8 @@ you learn the seller's business properly and save it, so every agent after you b
 3. **Read their website** (if given) to pre-fill and confirm, not invent: services, niches, case studies, address.
 4. **Save** each answer: `{PROF} set <field> '<json or text>'` (e.g. `{PROF} set offer.niches '["DTC skincare", "coffee brands"]'`),
    then `{PROF} check` until it says `Ready.`
-5. **Keys check:** `python <SCRIPTS>/find_email.py --providers` and look for `APIFY_TOKEN`, `SMTP_*`, `IMAP_*`,
+5. **Keys check:** `{PIPE} status` (and `python <SCRIPTS>/find_email.py --providers`); look for `BRIGHTDATA_API_KEY` +
+   `BRIGHTDATA_ZONE` (the lead engine), `APIFY_TOKEN`, `SMTP_*`, `IMAP_*`,
    `BOOKING_URL`, `APOLLO_API_KEY` in `~/.ai-sales-team/.env` (template `examples/env.example`), and whether your
    agent has an Apollo connector. Tell the user which sources and
    automations are on, and the one key that would add the most (usually `APIFY_TOKEN`, then a verifier).
@@ -651,11 +661,15 @@ you learn the seller's business properly and save it, so every agent after you b
    | `objection_price` / `_has_vendor` | Use `OBJECTION-PLAYBOOK.md` or `sales-objections`; offer a smaller first step, then a call |
    | `objection_timing` | Agree a date; `{PIPE} next <slug> "Check back as agreed" --due <date>`; stage stays `nurture` |
    | `referral` | Thank them; write a 3-line email to the named person mentioning who referred you (`sales-outreach`) |
-   | `out_of_office` | No reply; `{PIPE} next <slug> "Follow up after they return" --due <return date + 1>` |
+   | `out_of_office` | No reply. The triage reads their return date and moves the queued emails to after it; if it couldn't, `{PIPE} next <slug> "Follow up after they return" --due <return date + 1>` |
+   | `send_info` | Send ONE specific thing (a 2-minute teardown of their page, one case study) + one easy question — not a brochure |
+   | `how_got_email` | Say honestly where the address came from (their post, their site, a database) and offer to remove them |
+   | `wrong_person` | Ask once who owns it; no name → stop |
    | `not_interested` | One gracious line, no pitch; never follow up again |
    | `unsubscribe` | Nothing to write. It's already suppressed — confirm to the user |
    | `bounce` | Find another verified contact with `sales-contacts` |
-4. **Keep it short:** at most ~100 words before the slots/link and signature — answer their questions in the first
+4. **Keep it short and match them:** at most ~100 words before the slots/link and signature, and not much longer than
+   their own message (a 1-line reply deserves 2-3 lines back) — answer their questions in the first
    two sentences, one honest caveat if there is one, then the call. A busy buyer reads a reply on a phone; long
    replies and several `[TO CONFIRM]` blocks slow the user down. Use at most one `[TO CONFIRM]` and list any other
    open points in your message to the user instead.
@@ -684,7 +698,7 @@ you learn the seller's business properly and save it, so every agent after you b
    address, phone code (+91 India, +1 US/Canada, +44 UK, +61 Australia) or email signature; if unsure, ask.
 2. **If they named a time**, use it (check it with `{MEET} slots` only if it may clash). Otherwise propose:
    `{MEET} slots --prospect-tz <IANA zone> [--count 3] [--minutes 30]`
-   It returns 2-3 slots on different days in both zones, avoiding meetings already booked, plus a ready
+   It returns 2 slots on different days in both zones (two concrete times get a faster yes than a bare link), avoiding meetings already booked, plus a ready
    message that includes `BOOKING_URL` if the user has one (Cal.com, Calendly, Google booking page). Slots
    marked `outside_your_work_hours` need the user's OK (common for Asia ↔ US). Record where they are once:
    `{PIPE} where <slug> --country US --tz America/Chicago` — follow-ups then land in their morning too.
@@ -694,10 +708,13 @@ you learn the seller's business properly and save it, so every agent after you b
    `{MEET} book <slug> --start "YYYY-MM-DD HH:MM" [--tz <zone the time is in>] --prospect-tz <their zone> --attendee <email> --attendee-name "<name>" [--link <video link>] [--agenda "<one line>"]`
    This writes `prospects/<slug>/MEETING-<date>.ics`, sets the stage to `meeting`, stops follow-ups and
    schedules prep for the day before. Give the user the confirmation message and tell them to attach the `.ics`.
-5. **Before the meeting:** run `sales-prep`; the day before, give the user the reminder message.
+5. **Before the meeting:** run `sales-prep`; the day before, give the user a confirmation that carries something
+   useful — the agenda plus the 2-3 audit findings you'll walk through (a pre-read raises show rates); an hour
+   before, a one-line reminder.
 6. **After the meeting:** `{MEET} outcome <id> held|no_show|rescheduled|cancelled --notes "<what was agreed>"`.
    Held → `{PIPE} stage <slug> proposal` when a proposal is due and run `sales-followup` (post-meeting recap)
-   and `sales-proposal`. No-show → send a kind note with 2 new slots (step 2). Rescheduled → book the new time.
+   and `sales-proposal`. No-show → the same day, one warm note with 2 new slots (step 2); a second no-show moves
+   them to `nurture` automatically. Rescheduled → book the new time.
 
 ## Settings (in `~/.ai-sales-team/.env`)
 `TIMEZONE` (default Asia/Kolkata), `WORK_HOURS` (10:00-18:00), `EXTENDED_HOURS` (07:00-23:00, used only
@@ -737,11 +754,13 @@ ICP → hunt → audit/research → contact (verified) → email 1 → follow-up
    (Apify, an email finder, a verifier, SMTP + IMAP) — and point them to `examples/env.example`.
    For hands-free running: SMTP + IMAP configured, then `{AUTO} schedule` prints the cron / Task Scheduler line
    for `{AUTO} tick --send` every 30 minutes (inbox first, then due follow-ups; it never sends without an inbox check).
-2. **Today's agenda:** `{PIPE} today`. Show it as a short numbered list grouped by priority and say how long
+2. **Where are we:** `{PIPE} status` (never spends: profile, keys, funnel, queue, sending health incl. stop-loss, fresh
+   leads, next action). **Today's agenda:** `{PIPE} today`. Show it as a short numbered list grouped by priority and say how long
    it will take. Then work through it top-down, one item at a time:
    | Priority | Item | Skill |
    |---|---|---|
    | 1 | `reply` — someone answered | `sales-reply` (then `sales-book` if they want to talk) |
+   | 1 | `fresh-leads` — new buyer posts from `serp.py watch` | `sales-hunt` step 3 (judge newest first), scan, answer within the hour |
    | 2 | `meeting` / `meeting-outcome` | `sales-prep` for tomorrow's calls; `sales-book` step 6 for past ones |
    | 3 | `due` — follow-up or next action due | `sales-followup` / `sales-outreach` / `sales-proposal` |
    | 4 | `stale` — idle deal | `sales-followup` (ghost recovery), or move to `nurture` / `lost` |

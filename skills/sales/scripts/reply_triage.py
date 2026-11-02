@@ -8,7 +8,7 @@ Usage:
     python reply_triage.py --text "Sounds good, can we talk Thursday 4pm?"
     python reply_triage.py --file reply.txt --apply acme.com [--from priya@acme.com]
 
-Categories (first match by priority): bounce, unsubscribe, out_of_office, not_interested, meeting_request,
+Categories (first match by priority): bounce, unsubscribe, out_of_office, not_interested, meeting_request, how_got_email, send_info,
 interested, referral, objection_price, objection_has_vendor, objection_timing, question, unclear.
 ("Not interested right now" counts as objection_timing → nurture, not lost.)
 Deterministic keyword rules on purpose — the agent reads the reply too and can override.
@@ -17,6 +17,7 @@ Deterministic keyword rules on purpose — the agent reads the reply too and can
 import argparse
 import re
 import sys
+from datetime import timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -42,6 +43,10 @@ RULES = [
                           r"what time works", r"when are you (free|available)", r"\b(calendly|cal\.com|zoom|google meet|teams)\b",
                           r"call (kar|karte|karo|karlo|kare)", r"baat (kar|karte|karo|karlo|kare|ho)", r"mil(te|ke|na) (hain|hai|ho)",
                           r"(kal|parso|aaj) (call|baat|mil)", r"time (do|bata|batao)", r"meeting (rakh|fix|set)")),
+    ("how_got_email", R(r"how did you (get|find) (my|this) (email|address|details|contact)", r"where did you get (my|this)",
+                        r"who gave you (my|this)")),
+    ("send_info", R(r"\bsend (me |us |over )?(\w+ ){0,2}(info|information|details|deck|brochure|one[- ]pager|case stud(y|ies)|examples|portfolio|samples)\b",
+                    r"\bdo you have (a |any )?(deck|portfolio|case stud|examples|one[- ]pager)")),
     ("interested", R(r"\b(interested|sounds (good|great|interesting)|tell me more|go ahead|let'?s do (it|this))\b",
                      r"\bsend (me )?(details|more info|the proposal|a quote|pricing|your portfolio|samples)\b",
                      r"\bwhat would (it|this) cost\b", r"\bhow much (would|does|for)\b", r"\bkitna (lagega|hoga|charge)",
@@ -57,6 +62,8 @@ RULES = [
     ("objection_timing", R(r"\bnot (right )?now\b", r"\b(maybe|try|check back|reach out|circle back) (later|next (month|quarter|year))\b",
                            r"\bnext (month|quarter|year)\b", r"\bafter (diwali|the holidays|the festive season|q[1-4]|the launch)\b",
                            r"\btoo busy\b", r"\bbaad mein\b", r"\babhi nahi\b", r"\babhi (time|busy)\b", r"\bagle (mahine|saal)\b")),
+    ("wrong_person", R(r"\bnot (my|the right) (area|department|team|person|call|decision)\b", r"\bi'?m not (the|in charge|responsible)",
+                       r"\bwrong person\b", r"\bno longer (work|with) ", r"\bi (left|have left) ")),
     ("question", R(r"\?\s*$", r"\?\s", r"\b(how|what|which|who|why|can you|do you|have you)\b.*\?", r"\b(kaise|kya|kitne|kaun)\b")),
 ]
 
@@ -66,6 +73,9 @@ PLAN = {
     "out_of_office": (None, "Auto-reply — follow up the day after they return", "sales-followup", False, False),
     "meeting_request": ("meeting", "Book it now: propose 2-3 slots or send the booking link", "sales-book", True, False),
     "interested": ("replied", "Answer in 1-2 lines and ask for a 15-minute call with 2-3 slots", "sales-book", True, False),
+    "how_got_email": ("replied", "Say honestly where the address came from (their post, their site, a database) and offer to remove them", "sales-reply", True, False),
+    "send_info": ("replied", "Send ONE specific thing (a 2-minute teardown, one case study) plus one easy question — not a brochure", "sales-reply", True, False),
+    "wrong_person": ("replied", "Ask once who owns this; if no name, stop", "sales-reply", True, False),
     "referral": ("replied", "Thank them, then write to the person they named (mention who referred you)", "sales-outreach", True, False),
     "objection_price": ("replied", "Handle the price objection, then offer a smaller first step + a call", "sales-objections", True, False),
     "objection_has_vendor": ("replied", "Acknowledge their vendor; offer a second opinion/audit, low pressure", "sales-objections", True, False),
@@ -118,6 +128,35 @@ def classify(text):
             "reply_excerpt": body[:400], "respond_within": "1 business hour" if cat in ("meeting_request", "interested") else "same day"}
 
 
+MONTHS = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
+
+
+def return_date(text, today=None):
+    """'back on Nov 10' / 'until 10 November' / 'returning 1/5' → date (best effort, None if unclear)."""
+    from datetime import date as _d, timedelta as _td
+    today = today or _d.today()
+    t = (text or "").lower()
+    lead = r"(?:until|till|back(?: on)?|return(?:ing)?(?: on)?|away to|from)\s+(?:\w+day,?\s+)?(?:the\s+)?"
+    mon = r"(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?"
+    try:
+        m = re.search(lead + r"(\d{1,2})(?:st|nd|rd|th)?\s+(?:of\s+)?" + mon, t)
+        if m:
+            d, mo = int(m.group(1)), MONTHS[m.group(2)]
+        else:
+            m = re.search(lead + mon + r"\s+(\d{1,2})\b", t)
+            if m:
+                mo, d = MONTHS[m.group(1)], int(m.group(2))
+            else:
+                m = re.search(lead + r"(\d{1,2})/(\d{1,2})\b", t)
+                if not m:
+                    return None
+                mo, d = int(m.group(1)), int(m.group(2))          # US style m/d
+        cand = _d(today.year, mo, d)
+        return cand if cand >= today - _td(days=2) else _d(today.year + 1, mo, d)
+    except (ValueError, KeyError):
+        return None
+
+
 def apply(conn, key, result, sender=None):
     p = pipeline.get(conn, key)
     done = []
@@ -141,6 +180,17 @@ def apply(conn, key, result, sender=None):
     if st and st != p["stage"] and not (st in ("replied", "contacted") and p["stage"] in order[order.index("replied"):]):
         pipeline.set_stage(conn, p["slug"], st, f"reply: {result['category']}")
         done.append(f"stage {p['stage']} → {st}")
+    if result["category"] == "out_of_office":
+        back = return_date(result["reply_excerpt"])
+        if back:
+            resume = outreach.weekday_on_or_after(back + timedelta(days=1)).isoformat()
+            with conn:
+                n = conn.execute("UPDATE sequence_steps SET due = ? WHERE prospect_id = ? AND status = 'approved' AND (due IS NULL OR due < ?)",
+                                 (resume, p["id"], resume)).rowcount
+                conn.execute("UPDATE prospects SET next_action = ?, next_due = ? WHERE id = ?",
+                             (f"Out of office until {back.isoformat()} — follow up {resume}", resume, p["id"]))
+            done.append(f"paused until {resume}" + (f" ({n} queued email(s) moved)" if n else ""))
+            return done
     if result["next_skill"] or result["category"] == "out_of_office":
         with conn:
             conn.execute("UPDATE prospects SET next_action = ?, next_due = date('now') WHERE id = ?",

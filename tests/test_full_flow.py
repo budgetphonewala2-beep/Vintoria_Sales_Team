@@ -173,8 +173,9 @@ def test_profile_proof_supports_claims_about_you_only_when_real():
 def test_warmup_ramp(monkeypatch):
     monkeypatch.setenv("DAILY_SEND_LIMIT", "40")
     monkeypatch.setenv("SENDING_STARTED", "2026-11-02")
-    assert outreach.daily_limit(datetime(2026, 11, 3, tzinfo=timezone.utc)) == 10
-    assert outreach.daily_limit(datetime(2026, 11, 17, tzinfo=timezone.utc)) == 20
+    assert outreach.daily_limit(datetime(2026, 11, 3, tzinfo=timezone.utc)) == 5       # weeks 1-2
+    assert outreach.daily_limit(datetime(2026, 11, 10, tzinfo=timezone.utc)) == 5
+    assert outreach.daily_limit(datetime(2026, 11, 17, tzinfo=timezone.utc)) == 10      # week 3: +5 per week
     assert outreach.daily_limit(datetime(2027, 3, 1, tzinfo=timezone.utc)) == 40
 
 

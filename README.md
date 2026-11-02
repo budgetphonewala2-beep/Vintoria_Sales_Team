@@ -32,6 +32,24 @@ Say **"aaj ka kaam batao"** / "run my sales" and `sales-autopilot` builds today'
 replies first, then meetings to prep, follow-ups due, stale deals, best new leads — and works through it with
 you, refilling the funnel with `sales-hunt` when it runs low. You approve every message before it goes out.
 
+## What's new in v3.7 — freshest leads via Bright Data, lessons from the best open-source sales skills
+
+We cloned and read the leading open-source sales/outbound skill sets (coreyhaines31/marketingskills, gtmagents/gtm-agents,
+louisblythe/Sales-Skills, OpenOutreach, ericosiu/ai-marketing-skills, getaero-io/gtm-eng-skills, borghei/Claude-Skills,
+manojbajaj95/claude-gtm-plugin, ComposioHQ/awesome-claude-skills) and brought over what made them better — as code, not prose:
+
+| Learned | Now in this repo |
+|---|---|
+| A reply-worthiness rubric (gtm-agents) + AI-tell lists (marketingskills) | `email_lint.py`: 0-100 score per email with exact fixes; `approve --check` refuses weak emails |
+| Deliverability stop-loss: bounces > 2 %, reply rate < 1 % after 300 sends; slower warm-up | auto-pause in `outreach.py`, shown by `doctor` / `status`; 5/day for 2 weeks, then +5/week |
+| Reply types we were missing; OOO return dates; two times + a link; no-show policy | `how_got_email`, `send_info`, `wrong_person`; queue moved past the return date; 2 slots; 2nd no-show → nurture |
+| One "status" call that never spends (OpenOutreach) | `pipeline.py status` — start here |
+| Over-contact limits (Sales-Skills) | ≤ 4 touches per prospect per week across channels |
+
+And leads arrive faster: **Bright Data only** for SERP, `serp.py watch` searches just the hours since the last run
+(Google `qdr:hN`, sorted by date), reads the **exact post time from LinkedIn and X post IDs**, keeps only never-seen
+posts and puts them at the top of today's agenda; autopilot runs it every `HUNT_EVERY_HOURS` (default 2).
+
 ## What's new in v3.5 — tested end to end, ready for a team of agents
 
 A full-loop test now runs the whole job with no network: profile → lead → dossier → approved sequence → day-0 send in

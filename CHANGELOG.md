@@ -1,5 +1,25 @@
 # Changelog
 
+## 3.7.0 — 2026-11-02 (Bright Data freshness + lessons from other sales skill sets)
+
+### Added
+- `serp.py watch` / `fresh` / `judged`: newest buyer posts since the last run (1-24 h, `qdr:hN`, sorted by date), exact
+  post times from LinkedIn activity IDs and X status IDs (else parsed from the snippet), never-seen-only, queued at the
+  top of `pipeline.py today`; autopilot runs it every `HUNT_EVERY_HOURS` (default 2, `HUNT_MAX_QUERIES` per run).
+- `email_lint.py`: deterministic 0-100 reply-worthiness score (situation, value, you-ratio, CTA, length by step,
+  subject, AI tells/jargon) with exact fixes; `approve --check` enforces `LINT_MIN_SCORE` (default 65).
+- Deliverability stop-loss (`BOUNCE_STOP_PCT`, default 2 % over 14 days; reply-rate warning after 300 sends) and an
+  over-contact limit (`MAX_TOUCHES_PER_WEEK`, default 4).
+- Reply categories `how_got_email`, `send_info`, `wrong_person`; out-of-office return dates move queued emails.
+- `pipeline.py status` — one call for setup, keys, funnel, queue, sending health, fresh leads and the next action.
+- `skills/sales-outreach/references/quality.md` (score, banned phrases, 4 personalization levels, deletion test, panel review).
+- THIRD_PARTY_NOTICES: marketingskills (MIT) and gtm-agents (Apache-2.0).
+
+### Changed
+- SERP is Bright Data only by default (`SERP_PROVIDERS=brightdata`; others only if listed).
+- Warm-up ramp: 5/day for weeks 1-2, then +5 per week. Booking proposes 2 slots + link; the day-before confirmation
+  carries a pre-read; a second no-show moves the deal to nurture.
+
 ## 3.6.0 — 2026-11-02 (skill-creator review: evals, SERP first, bug fixes)
 
 ### Fixed

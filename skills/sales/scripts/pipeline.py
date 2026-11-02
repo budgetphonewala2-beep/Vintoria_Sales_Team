@@ -19,6 +19,7 @@ Usage (every command prints one JSON object):
     python pipeline.py next acme.com "Send follow-up #1 on Thursday" [--due 2026-11-06]
     python pipeline.py report [--pdf-input out.json]     # funnel + stale deals + next actions
     python pipeline.py remove acme.com                   # delete a prospect and its records
+    python pipeline.py status                            # START HERE: setup, keys, funnel, queue, sending health, next action
     python pipeline.py today                             # the day's agenda: replies, meetings, follow-ups, new leads
     python pipeline.py find priya@acme.com               # which prospect is this? (email, name, domain)
     python pipeline.py where acme.com --country US --tz America/Chicago   # where they are (send times, slots)
@@ -409,6 +410,18 @@ def today_agenda(conn, today=None):
         if not booked and (not last_touch or last_touch < last_reply["at"]):
             add_item(1, "reply", p, "Answer their reply — aim to book a call", "sales-reply",
                      reply=(last_reply["text"] or "")[:160])
+    # 1b. fresh leads found by serp.py watch and not judged yet — minutes matter, so they come right after replies
+    try:
+        import serp
+        fresh = serp.fresh_leads(48)
+    except Exception:  # noqa: BLE001 - the agenda must never fail because of the lead store
+        fresh = []
+    if fresh:
+        ages = [f.get("age_hours") for f in fresh if f.get("age_hours") is not None]
+        newest = f"newest {min(ages):g} h old" if ages else "age unknown"
+        items.append({"priority": 1, "kind": "fresh-leads", "prospect": None, "stage": None,
+                      "action": f"Judge {len(fresh)} fresh lead{'s' if len(fresh) != 1 else ''} from serp.py watch ({newest}) — "
+                                "answer real buyers within the hour", "skill": "sales-hunt", "count": len(fresh)})
     # 2. meetings today / tomorrow (prep), meetings that happened with no outcome
     for m in conn.execute("SELECT * FROM meetings WHERE status = 'scheduled' ORDER BY starts_at"):
         p = rows.get(m["prospect_id"])
@@ -464,8 +477,54 @@ def today_agenda(conn, today=None):
     if leads_open < 20:
         tip = f"Only {leads_open} open leads — run sales-hunt to refill the top of the funnel."
     return {"date": d, "items": out, "counts": {k: sum(1 for i in out if i["kind"] == k) for k in
-            ("reply", "meeting", "meeting-outcome", "due", "stale", "new-lead")},
+            ("reply", "fresh-leads", "meeting", "meeting-outcome", "due", "stale", "new-lead")},
             "emails_sent_today": sent_today, "open_leads": leads_open, "tip": tip}
+
+
+def status(conn):
+    """One call that never spends or blocks: setup, keys, funnel, queue, sending health, fresh leads, and the next action.
+    Start here whenever you are unsure what state the user is in."""
+    out = {"profile": None, "keys": {}, "funnel": {}, "queue": {}, "sending": None, "fresh_leads": 0, "next_action": None}
+    try:
+        import seller_profile
+        c = seller_profile.check(seller_profile.load())
+        out["profile"] = {"ready": c.get("next") == "Ready.", "complete_pct": c.get("complete_pct"), "missing": c.get("missing_required")}
+    except Exception as exc:  # noqa: BLE001
+        out["profile"] = {"error": str(exc)}
+    from sales_common import secret
+    out["keys"] = {"bright_data_serp": bool(secret("BRIGHTDATA_API_KEY")), "apify": bool(secret("APIFY_TOKEN")),
+                   "apollo": bool(secret("APOLLO_API_KEY")),
+                   "email_finder": any(secret(k) for k in ("PROSPEO_API_KEY", "FINDYMAIL_API_KEY", "HUNTER_API_KEY", "APOLLO_API_KEY")),
+                   "email_verifier": any(secret(k) for k in ("MILLIONVERIFIER_API_KEY", "ZEROBOUNCE_API_KEY", "NEVERBOUNCE_API_KEY", "HUNTER_API_KEY"))}
+    rep = report(conn)
+    out["funnel"] = {k: v for k, v in rep["funnel"].items() if v}
+    out["queue"] = {r["status"]: r["n"] for r in conn.execute("SELECT status, COUNT(*) n FROM sequence_steps GROUP BY status")}
+    try:
+        import outreach
+        d = outreach.doctor(conn)
+        out["sending"] = {"mode": d["mode"], "daily_limit_today": d["checks"]["daily_limit_today"], "warnings": d["warnings"]}
+    except Exception as exc:  # noqa: BLE001
+        out["sending"] = {"error": str(exc)}
+    try:
+        import serp
+        out["fresh_leads"] = len(serp.fresh_leads(48))
+        out["last_watch"] = serp.load_fresh().get("last_watch")
+    except Exception:  # noqa: BLE001
+        pass
+    agenda = today_agenda(conn)
+    if out["profile"] and not out["profile"].get("ready"):
+        out["next_action"] = "Run sales-setup: the seller profile is incomplete"
+    elif out["sending"] and any("PAUSED" in w for w in out["sending"].get("warnings") or []):
+        out["next_action"] = out["sending"]["warnings"][0]
+    elif agenda["items"]:
+        i = agenda["items"][0]
+        out["next_action"] = f"{i['action']} ({i['skill']})" + (f" — {i['prospect']}" if i.get("prospect") else "")
+    elif not out["keys"]["bright_data_serp"] and not out["keys"]["apify"]:
+        out["next_action"] = "Add BRIGHTDATA_API_KEY (SERP) to find leads, or paste posts into sales-hunt"
+    else:
+        out["next_action"] = "Funnel is quiet: run serp.py watch (or sales-hunt) for fresh leads"
+    out["agenda_counts"] = agenda["counts"]
+    return out
 
 
 def pdf_input(conn):
@@ -501,6 +560,7 @@ def main(argv=None):
     r = sub.add_parser("report"); r.add_argument("--pdf-input", help="also write generate_pdf_report.py input JSON here")
     rm = sub.add_parser("remove"); rm.add_argument("prospect")
     sub.add_parser("today")
+    sub.add_parser("status")
     fd = sub.add_parser("find"); fd.add_argument("text", help="email, name, domain or part of it")
     va = sub.add_parser("value"); va.add_argument("prospect"); va.add_argument("value", type=float); va.add_argument("--currency")
     wh = sub.add_parser("where"); wh.add_argument("prospect"); wh.add_argument("--country"); wh.add_argument("--tz")
@@ -564,6 +624,8 @@ def main(argv=None):
                 out = set_where(conn, args.prospect, args.country, args.tz)
             except Exception as exc:  # noqa: BLE001 - bad time zone name
                 raise UserError(str(exc))
+        elif args.cmd == "status":
+            out = status(conn)
         elif args.cmd == "find":
             out = {"matches": find(conn, args.text)}
         elif args.cmd == "today":

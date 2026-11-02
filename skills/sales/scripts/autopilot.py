@@ -9,8 +9,10 @@ One command to keep the machine running — schedule it every 30-60 minutes:
 Each tick, in this order (a reply always wins over a follow-up):
   1. inbox.py   — new replies/bounces → pipeline (sequences stop, opt-outs suppressed); with AUTO_REPLY=1 a
                   "let's talk" reply gets your booking link straight away
-  2. outreach.py run — every approved sequence email that is due, inside SEND_HOURS, under DAILY_SEND_LIMIT
-  3. pipeline.py today — what still needs you (replies to answer, meetings to prep, new leads)
+  2. serp.py watch — every HUNT_EVERY_HOURS (default 2, needs BRIGHTDATA_API_KEY; 0 = off): the newest posts from
+                  buyers since the last watch, queued as fresh leads at the top of the agenda (HUNT_MAX_QUERIES per run)
+  3. outreach.py run — every approved sequence email that is due, inside SEND_HOURS, under DAILY_SEND_LIMIT
+  4. pipeline.py today — what still needs you (replies, fresh leads to judge, meetings to prep, new leads)
 Only emails you approved with `outreach.py approve` are ever sent. A lock file stops overlapping runs.
 """
 
@@ -37,8 +39,29 @@ def _lock():
     return path
 
 
-def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None):
-    out = {"inbox": None, "sequences": None, "today": None, "notes": []}
+def hunt_if_due(now=None, call=None):
+    """Run serp.py watch when HUNT_EVERY_HOURS have passed since the last watch."""
+    import serp
+    from datetime import datetime, timezone
+    every = float(setting("HUNT_EVERY_HOURS", "2") or 0)
+    if every <= 0:
+        return {"skipped": "HUNT_EVERY_HOURS=0"}
+    if not serp.configured():
+        return {"skipped": "no BRIGHTDATA_API_KEY"}
+    now = now or datetime.now(timezone.utc)
+    last = serp.load_fresh().get("last_watch")
+    if last and (now - datetime.fromisoformat(last)).total_seconds() < every * 3600:
+        return {"skipped": f"last watch {last}, next after {every:g} h"}
+    try:
+        kw = {"call": call} if call else {}
+        r = serp.watch(int(setting("HUNT_MAX_QUERIES", "12")), 1, now=now, **kw)
+        return {k: r[k] for k in ("window_hours", "new_buyers", "rejected", "excluded_market", "queries_run", "errors")}
+    except Exception as exc:  # noqa: BLE001 - a hunting problem must never stop replies or sends
+        return {"error": f"{type(exc).__name__}: {exc}"}
+
+
+def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None, hunt_call=None):
+    out = {"inbox": None, "hunt": None, "sequences": None, "today": None, "notes": []}
     try:
         msgs = fetch() if fetch else inbox.fetch_messages(inbox.config(), days=int(setting("INBOX_DAYS", "7")))
         out["inbox"] = inbox.check(conn, msgs, apply=True, auto_reply=auto_reply, smtp=smtp, now=now)
@@ -51,6 +74,7 @@ def tick(conn, send=False, auto_reply=False, fetch=None, smtp=None, now=None):
     except Exception as exc:  # noqa: BLE001 - IMAP/network errors: never send blind
         out["notes"].append(f"inbox error: {type(exc).__name__}: {exc} — not sending this run")
         send = False
+    out["hunt"] = hunt_if_due(now=now, call=hunt_call)
     out["sequences"] = outreach.run(conn, really=send, now=now, smtp=smtp or outreach.smtplib)
     agenda = pipeline.today_agenda(conn)
     out["today"] = {"counts": agenda["counts"], "top": agenda["items"][:8], "tip": agenda["tip"]}

@@ -194,7 +194,7 @@ def scan(posts, dedupe=True):
         item = {"url": post.get("url"), "platform": post.get("platform") or platform_of(post.get("url", "")),
                 "author": post.get("author"), "title": post.get("title"), "text": post.get("text", "")[:1500],
                 "query": post.get("query"), **s}
-        for k in ("author_url", "author_headline", "posted", "source"):
+        for k in ("author_url", "author_headline", "posted", "source", "posted_at", "age_hours", "age_source", "posted_days_ago", "provider"):
             if post.get(k):
                 item[k] = post[k]
         if s["keep"]:

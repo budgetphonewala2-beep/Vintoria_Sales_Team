@@ -135,7 +135,7 @@ def _pick(per_day, count, key, found):
     return found
 
 
-def propose(conn, prospect_tz, count=3, minutes=None, days=7, now=None, my_tz=None, hours=None, workdays=None, step=30):
+def propose(conn, prospect_tz, count=2, minutes=None, days=7, now=None, my_tz=None, hours=None, workdays=None, step=30):
     mine = tz(my_tz or setting("TIMEZONE", "Asia/Kolkata"))
     theirs = tz(prospect_tz) if prospect_tz else mine
     minutes = int(minutes or setting("MEETING_MINUTES", "30"))
@@ -285,11 +285,18 @@ def outcome(conn, meeting_id, status, notes=""):
                      (status, f"\n{status}: {notes}" if notes else f"\n{status}", m["id"]))
         pipeline.event(conn, p["id"], "meeting", f"meeting #{m['id']} {status}" + (f": {notes}" if notes else ""))
     today = datetime.now(timezone.utc).date()
+    prior_no_shows = conn.execute("SELECT COUNT(*) FROM meetings WHERE prospect_id = ? AND status = 'no_show' AND id != ?",
+                                  (p["id"], m["id"])).fetchone()[0]
     plan = {"held": ("Send recap + proposal within 24-48h (sales-followup post-meeting, then sales-proposal); "
                      "set the deal value: pipeline.py value <slug> <amount> --currency USD", 1),
             "no_show": ("Send a friendly 'sorry we missed each other' with 2 new slots (meeting.py slots)", 0),
             "rescheduled": ("Book the new time: meeting.py book ...", 0),
             "cancelled": ("Ask whether to rebook later; otherwise move to nurture", 2)}[status]
+    if status == "no_show" and prior_no_shows >= 1:      # second no-show: stop chasing, back to nurture
+        plan = ("Second no-show — moved to nurture; one friendly note, then check back in a month", 0)
+        pipeline.set_stage(conn, p["slug"], "nurture", "second no-show")
+    elif status == "no_show":
+        plan = ("No-show: send a warm 'sorry we missed each other' TODAY with 2 new times (meeting.py slots --count 2)", 0)
     due = outreach.add_business_days(today, plan[1]).isoformat() if plan[1] else today.isoformat()
     with conn:
         conn.execute("UPDATE prospects SET next_action = ?, next_due = ?, updated_at = ? WHERE id = ?",
@@ -317,7 +324,7 @@ def listing(conn, all_=False):
 def main(argv=None):
     ap = argparse.ArgumentParser(description="Propose slots, book meetings with .ics invites, record outcomes.")
     sub = ap.add_subparsers(dest="cmd", required=True)
-    sl = sub.add_parser("slots"); sl.add_argument("--prospect-tz"); sl.add_argument("--count", type=int, default=3)
+    sl = sub.add_parser("slots"); sl.add_argument("--prospect-tz"); sl.add_argument("--count", type=int, default=2)
     sl.add_argument("--minutes", type=int); sl.add_argument("--days", type=int, default=7)
     bk = sub.add_parser("book"); bk.add_argument("prospect"); bk.add_argument("--start", required=True); bk.add_argument("--tz")
     bk.add_argument("--minutes", type=int); bk.add_argument("--attendee"); bk.add_argument("--attendee-name")

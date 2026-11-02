@@ -201,6 +201,16 @@ def render_md(d):
     L = [f"# Dossier — {c.get('name')}", "", f"{d['url']} · scanned {d['scanned_at']}", ""]
     if d.get("post"):
         L += ["## Their post", "", f"> {d['post']['text'][:600]}", "", f"Source: {d['post'].get('url') or 'pasted'}", ""]
+    au = d.get("author") or {}
+    if au.get("name") or au.get("profile"):
+        pr = au.get("profile") or {}
+        L += ["## Who wrote it", "", f"- {au.get('name') or pr.get('name')}" + (f" — {au.get('headline')}" if au.get("headline") else ""),
+              f"- Company: {pr.get('company') or 'Not found'} · Location: {pr.get('location') or 'Not found'}",
+              f"- Profile: {au.get('url') or pr.get('linkedin') or 'Not found'}" + (" (from a search snippet — confirm)" if pr.get("from") else "")]
+        if pr.get("about"):
+            L.append(f"- About (their words): {pr['about'][:400]}")
+        wf = d.get("website_found") or {}
+        L += [f"- Website: {wf.get('site') or 'Not found'} — {wf.get('how', '')}", ""]
     L += ["## Best hooks (facts → angle)", ""]
     for h in d["hooks"] or [{"observation": "None found", "angle": "", "weight": 0}]:
         L.append(f"- **{h['observation']}** — {h['angle']}" + (f" _(evidence: {h.get('evidence')})_" if h.get("evidence") else ""))

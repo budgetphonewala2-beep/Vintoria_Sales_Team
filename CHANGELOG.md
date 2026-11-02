@@ -1,5 +1,17 @@
 # Changelog
 
+## 3.10.0 — 2026-11-02 (every post → deep research → premium emails)
+
+### Added
+- `post_lead.py`: one command per buyer post (or `--hunt hunt.json` for all of them): contacts written in the post,
+  the author's LinkedIn profile (Apify profile scraper, else their public search result), the company website
+  (post → profile → a search whose domain matches the company name — never guessed), the full deep scan, and the
+  person's profile added to the dossier ("Who wrote it"). Posts with no website still get a dossier and a next step.
+- `email_lint.py` premium checks: `--prospect` runs the deletion test against the dossier (first two lines must use
+  something only this prospect has), no sentence over 28 words, follow-ups that repeat an earlier email lose points;
+  85+ is "premium". `outreach.py approve` uses them; `LINT_MIN_SCORE` now defaults to 80.
+- `references/quality.md`: the premium bar.
+
 ## 3.9.0 — 2026-11-02 (hallucination guards)
 
 ### Added

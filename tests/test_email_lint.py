@@ -37,7 +37,7 @@ def home(tmp_path, monkeypatch):
 
 def test_good_email_ships_bad_email_is_rewritten_with_reasons():
     g = email_lint.lint(GOOD, "glow skin relaunch", 1)
-    assert g["verdict"] == "ship" and g["score"] >= 80, g
+    assert g["verdict"] in ("ship", "premium") and g["score"] >= 80, g
     b = email_lint.lint(BAD, "Quick question!", 1)
     assert b["verdict"] == "rewrite" and b["score"] < 50
     text = " | ".join(b["issues"])
@@ -50,7 +50,7 @@ def test_follow_up_rules_differ_from_first_email():
     assert any("just checking in" in i for i in weak["issues"]) and weak["score"] < 80
     useful = email_lint.lint("Hi Jane,\n\nOne more thing I noticed: your homepage has no mobile viewport tag, so phones may get "
                              "the desktop layout. The fix is one line in theme.liquid.\n\nWant me to send the exact line?\n\nRavi", None, 2)
-    assert useful["verdict"] == "ship", useful
+    assert useful["verdict"] in ("ship", "premium"), useful
     breakup = email_lint.lint("Hi Jane,\n\nI'll close the file on my side for now. If the relaunch is still on your list, "
                               "just reply here.\n\nRavi", None, 5)
     assert breakup["score"] >= 75, breakup

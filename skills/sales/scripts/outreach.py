@@ -436,14 +436,16 @@ def approve(conn, key, to, steps, evidence=None, evidence_text=None, start=None,
     """Check every email of a sequence now; store them as approved. Step 1 is due on `start` (default today)."""
     p = pipeline.get(conn, key)
     report, bad = [], 0
+    terms, prev = email_lint.dossier_terms(p["slug"]), []
     for st in steps:
         subj = st["subject"] or (f"Re: {steps[0]['subject']}" if st["step"] > 1 else "")
         problems, info = preflight(conn, key, to, subj if st["step"] == 1 else steps[0]["subject"], st["body"], evidence,
                                    evidence_text, allow_catch_all)
         problems = [x for x in problems if "daily send limit" not in x and "already emailed" not in x and "stop-loss" not in x
                     and "contacted" not in x]
-        q = email_lint.lint(st["body"], subj if st["step"] == 1 else None, int(st["step"]))
-        floor = int(setting("LINT_MIN_SCORE", "65"))
+        q = email_lint.lint(st["body"], subj if st["step"] == 1 else None, int(st["step"]), terms=terms, previous=list(prev))
+        prev.append(st["body"])
+        floor = int(setting("LINT_MIN_SCORE", "80"))
         if q["score"] < floor:
             problems.append(f"quality score {q['score']}/100 (< {floor}): " + "; ".join(q["issues"][:4]))
         bad += bool(problems)

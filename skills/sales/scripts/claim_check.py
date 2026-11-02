@@ -424,7 +424,7 @@ def load_sources(paths, texts, draft_path=None, slug=None, profile=True):
                             tier = "snippet" if snippet_file or key.startswith("web_") else "tool"
                             sources.append({"id": f"{p.name}#fact{i}", "tier": tier,
                                             # a measured audit fact is crisp: "does not set a viewport" can be contradicted
-                                            "crisp": tier == "tool" and key not in ("their_post", "site_description", "person"),
+                                            "crisp": tier == "tool" and key not in ("their_post", "site_description", "person", "person_profile", "person_company", "person_about"),
                                             "text": f"{fct.get('statement', '')} {fct.get('evidence', '')}"})
                         continue
                     raw = json.dumps(data, ensure_ascii=False)

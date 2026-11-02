@@ -1,7 +1,7 @@
 # Email quality: score, AI tells, personalization, panel review
 
 `python <SCRIPTS>/email_lint.py --sequence prospects/<slug>/SEQUENCE.json` scores each email 0-100 and lists the exact
-fixes; `outreach.py approve --check` refuses emails under `LINT_MIN_SCORE` (default 65). Aim for **80+ on every email**.
+fixes; `outreach.py approve --check` refuses emails under `LINT_MIN_SCORE` (default 80). Aim for **85+ ("premium") on every email**.
 The claim check proves an email is true; this proves it is worth replying to.
 
 ## The score (what the 100 points reward)
@@ -50,3 +50,18 @@ Read each email as five people and fix what each would object to:
 5. **A compliance reviewer** — truthful sender and subject, real proof only, the right consent rule for their country?
 
 Then run the score and the claim check again.
+
+## The premium bar (85+)
+
+A premium email is one only this prospect could receive and that a busy founder finishes on a phone:
+- **Their world in the first two lines** — words from their post, their company name, a number from their own audit.
+  `email_lint.py --prospect <slug>` checks this against the dossier (the deletion test, automated).
+- **One sharp observation, not a list.** The best hook from the dossier, stated exactly, plus what it likely means
+  for them (hedged: "so phone visitors may…").
+- **Proof that matches them**: the closest real case study from the profile (same niche or platform), with its number.
+- **Short sentences** (none over 28 words), short paragraphs (1-2 sentences), plain text, no links in email 1.
+- **One easy question** they can answer in five words ("Worth sending the fix?").
+- **Every follow-up is new**: a second audit fact, a fix idea, a mini teardown, a market fact, then a polite close —
+  never "just following up", never the same wording (the linter flags a follow-up that repeats an earlier email).
+- **Written for their role**: a founder hears revenue and time; a marketing head hears conversion and campaigns;
+  a developer hears the exact technical fix. Use "Who wrote it" in the dossier.

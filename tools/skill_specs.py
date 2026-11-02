@@ -30,6 +30,7 @@ Every skill works in any agent: they use shell commands (`python <SCRIPTS>/...`)
 | To define who to sell to (**start here**) | `sales-icp` | `IDEAL-CUSTOMER-PROFILE.md` |
 | People publicly asking for what they sell (intent leads) | `sales-hunt` | scored candidates → pipeline |
 | Everything about one prospect in one run (site, people, email, web) | deep scan: `prospect_scan.py` | `prospects/<slug>/DOSSIER.json` + `.md` |
+| Deep research on a buyer's post (who wrote it, their company, email) | `post_lead.py` | `prospects/<slug>/DOSSIER.json` + `.md` |
 | A full scored audit of one company | `sales-prospect` | `prospects/<slug>/PROSPECT-ANALYSIS.md` |
 | A fast 60-second estimate | quick snapshot (below) | terminal only |
 | Fact-only website audit (proof-of-work for outreach) | `sales-audit` | `prospects/<slug>/SITE-AUDIT.json` + `.md` |
@@ -97,6 +98,7 @@ Read `references/team.md` for the roles, daily rhythm, targets and rules.
 | `lead_sources.py` | Intent: LinkedIn posts, Hacker News, Reddit, X, Facebook groups, Google X-ray · People: Apollo, Leads Finder, LinkedIn people/employees · Companies: Google Maps, Product Hunt · any Apify actor · `research` |
 | `query_library.py` | The search queries per service/platform/location (LinkedIn boolean ≤ 5 operators, X-ray, subreddits, Maps) |
 | `prospect_scan.py` | Deep scan → `DOSSIER.json/.md`: audit + company + people + email (skipped if already known) + web research + ranked hooks |
+| `post_lead.py` | A buyer post → author's profile, company site (never guessed), deep scan, email → `DOSSIER.json/.md`; `--hunt` for every lead in a hunt file |
 | `outreach.py` | Log touches, approve whole sequences, `run` due follow-ups (day 3/7/14/28), safe SMTP send, WhatsApp links |
 | `inbox.py` | Read replies/bounces over IMAP (read-only) → pipeline; optional instant booking-link reply |
 | `autopilot.py` | `tick`: inbox → due sequence emails → today's agenda (schedule it every 30 min) |
@@ -186,11 +188,14 @@ cold contacts. This skill finds those posts, separates real buyers from noise, a
    (the exact `query` id the lead came from — `learn.py` uses it to rank and prune queries; `maps:...`, `apollo`... for other sources)
    When you save the person (`{PIPE} contact`), `--linkedin` takes their **profile** URL (`author_url`), never the post URL.
    `{PIPE} score <slug> <score>` · `{PIPE} note <slug> "Post: <url> — quote: '<exact quote>'"`
-6. **Deep-scan the top buyers** (best 5-10, freshest first):
-   `{SCAN} <their site or domain> --post-text "<post>" --post-url <url> [--first X --last Y] --source hunt:<query-id>`
-   → `prospects/<slug>/DOSSIER.md` with the audit, people, the best email (finders skipped when the post or site
-   already has one), web research and ranked hooks; the prospect and contact go into the pipeline. No website?
-   `python <SCRIPTS>/find_email.py --text "<post text>"` and record with `{PIPE} contact ...`.
+6. **Deep research on every buyer you kept** (freshest first) — one command per post does all of it:
+   `python <SCRIPTS>/post_lead.py --post-url <url> --post-text "<the post>" --author "<name>" --author-url <their profile> --headline "<their headline>" --source serp:<query-id> --quote "<exact words>"`
+   (or all the buyers you kept at once: `python <SCRIPTS>/post_lead.py --hunt hunt.json --only <url>,<url> --top 20`). It reads the post (email,
+   phone, site written in it — free), the author's LinkedIn profile (Apify profile scraper, else their public search
+   result), finds the company website (post → profile → a search whose domain matches the company name; **never
+   guessed**), then runs the full deep scan (audit, PageSpeed, company, people, best email, web research, ranked
+   hooks) and adds the person's profile to `prospects/<slug>/DOSSIER.md`. No website found? It still builds a dossier
+   from the post and profile, takes the email from the post, and tells you the next step.
    No verified email? Suggest the user reply publicly under the post or DM from their own account — give
    them a 2-line message. Never post or DM on their behalf.
 7. **Report**: a table — buyer, platform, what they need, exact quote, posted, score, contact status, next step.
@@ -415,8 +420,10 @@ Never disparage a competitor with claims you can't source.
 "intro": """You write outreach a busy owner actually answers: short, specific, true, and easy to say yes to.""",
 "body": f"""## Steps
 
-1. **Evidence first.** If `prospects/<slug>/DOSSIER.json` is missing, run the deep scan:
-   `{SCAN} <url> [--post-text "<their post>" --post-url <url>]`. Read `DOSSIER.md` (ranked hooks, decision maker,
+1. **Evidence first.** If `prospects/<slug>/DOSSIER.json` is missing, run the deep research — from a post:
+   `python <SCRIPTS>/post_lead.py --post-url <url> --post-text "<their post>" --author "<name>" --author-url <profile>`; from a
+   website: `{SCAN} <url>`. Read "Who wrote it" (their role, company, location, their own words in About) — it sets
+   the tone and the angle. Read `DOSSIER.md` (ranked hooks, decision maker,
    best email), other `prospects/<slug>/` files and `{PIPE} show <slug>`. Recipient must have a `verified` email,
    or say clearly that it isn't.
    **Channel by source:** they posted asking (LinkedIn/Reddit/HN/X/FB) → reply there first (user posts it, 2 lines,
@@ -446,7 +453,9 @@ Never disparage a competitor with claims you can't source.
    `hook` names the dossier hook email 1 is built on (`their_post`, `pagespeed_score`, `viewport` ...) — both feed `learn.py`. `prospects/<slug>/OUTREACH-SEQUENCE.md` is the human view (`references/output-format.md`)
    with the same emails plus A/B subjects and the LinkedIn touches.
 5. **Check all five at once:** `{OUT} approve <slug> --to <email> --file prospects/<slug>/SEQUENCE.json --check` runs the
-   claim check, the quality score (`python <SCRIPTS>/email_lint.py`, 0-100, must reach `LINT_MIN_SCORE` — aim for 80+),
+   claim check, the quality score (`python <SCRIPTS>/email_lint.py --sequence prospects/<slug>/SEQUENCE.json --prospect <slug>`, 0-100,
+   must reach `LINT_MIN_SCORE`, default 80 — **aim for 85+ "premium" on every email**: first two lines only this prospect could
+   receive, no sentence over 28 words, every follow-up adds a new fact, idea or result instead of repeating),
    opt-out, address, booking-link, over-contact and recipient gates on every email and queues nothing.
    Before that, do the panel review and the deletion test in `references/quality.md`. Fix and re-run
    until it says the check passed (dossier, audit, research and the profile's proof are used as evidence automatically;

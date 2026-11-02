@@ -12,11 +12,17 @@ cold-email, MIT — see THIRD_PARTY_NOTICES.md):
   length     15  by step: email 1 50-120 words, follow-ups 25-90, breakup ≤ 60 (body, without the signature)
   subject     5  2-5 words, lower-case, no hype, no fake Re:/Fwd: (email 1 only)
   clean      10  no AI tells, banned openers, jargon, exclamation runs, em dashes, more than one link
-Score ≥ 80 ship · 65-79 one more pass · < 65 rewrite. Every deduction comes with the reason and the exact phrase.
+Score ≥ 85 premium · 80-84 ship · 65-79 one more pass · < 65 rewrite. Every deduction comes with the reason and the exact phrase.
+
+Premium checks on top (they cost points inside the parts above):
+  - with --prospect: email 1's first two sentences must use something only THIS prospect has (their post's words,
+    their company, a number from their audit) — the deletion test, automated
+  - no sentence over 28 words (it's read on a phone)
+  - in a sequence, a follow-up that repeats an earlier email (same 4-word runs) loses points: every touch adds something new
 
 Usage:
     python email_lint.py --file email.txt [--subject "glow skin relaunch"] [--step 1]
-    python email_lint.py --sequence prospects/acme.com/SEQUENCE.json
+    python email_lint.py --sequence prospects/acme.com/SEQUENCE.json [--prospect acme.com]
 """
 
 import argparse
@@ -44,6 +50,35 @@ LOW_EFFORT_CTA = re.compile(r"(worth|open to|interested|make sense|would (it|tha
                             r"is that (right|the case)|curious|fair|any (chance|interest)|ok if i|shall i|still a priority)", re.I)
 HYPE_SUBJECT = re.compile(r"(!|free|guarantee|urgent|act now|limited|\$\$|%|amazing|exclusive|last chance|quick question)", re.I)
 SIGNATURE_START = re.compile(r"\n\s*(best|thanks|cheers|regards|warmly|—|--)[,!]?\s*\n|\n(not relevant\?|if this isn'?t relevant)", re.I)
+
+
+COMMON = set("""a an the and or but if so to of in on at for with from by is are was were be been it its this that these those
+you your yours we our us i me my they them their he she his her there here what which who how when where why not no yes do does
+did can could would should will just also very really more most some any all one two get got have has had make made new need
+needs want wants looking help like about into over than then now week weeks day days month year site store website page email
+hi hello hey thanks best regards quick call worth chat time team business company""".split())
+
+
+def _toks(text):
+    return {w for w in re.findall(r"[a-z0-9][a-z0-9'-]+", re.sub(r"(?<=\d),(?=\d{3})", "", (text or "").lower()))
+            if len(w) > 2 and w not in COMMON}
+
+
+def dossier_terms(slug, home="prospects"):
+    """Words and numbers only this prospect has: their company, their post, their top hooks, the author's name."""
+    try:
+        d = json.loads((Path(home) / slug / "DOSSIER.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return set()
+    bits = [(d.get("company") or {}).get("name"), ((d.get("post") or {}).get("text") or "")[:1500],
+            ((d.get("author") or {}).get("name")), slug.split("@")[0].split(".")[0]]
+    bits += [h.get("observation") for h in (d.get("hooks") or [])[:5]]
+    return _toks(" ".join(b for b in bits if b))
+
+
+def _shingles(text, n=4):
+    w = re.findall(r"[a-z0-9']+", (text or "").lower())
+    return {" ".join(w[i:i + n]) for i in range(max(0, len(w) - n + 1))}
 
 
 def body_of(text):
@@ -75,7 +110,7 @@ def _hits(patterns, t):
     return [m.group(0) for p in patterns for m in [re.search(p, t, re.I)] if m]
 
 
-def lint(text, subject=None, step=1, evidence_hint=None):
+def lint(text, subject=None, step=1, evidence_hint=None, terms=None, previous=None):
     body = body_of(text)
     b = body.lower()
     sents = sentences(re.sub(r"^\s*(hi|hello|hey|dear)[^\n,]*,?\s*\n", "", body, flags=re.I))
@@ -94,6 +129,12 @@ def lint(text, subject=None, step=1, evidence_hint=None):
             issues.append("opens with I/we — start with their world (their post, their site), not yours")
         elif not specific:
             issues.append("first lines aren't specific to them — open on the strongest dossier hook")
+        if terms:                                         # the deletion test, automated
+            own = _toks(" ".join(sents[:2])) & terms
+            if len(own) < 2:
+                parts["situation"] = min(parts["situation"], 10)
+                issues.append("the first two sentences could go to anyone — use their post's words, their company or an audit "
+                              f"number from the dossier (found only: {', '.join(sorted(own)) or 'nothing'})")
     else:                                  # a follow-up only has to stay about them
         them_any = re.search(r"\b(you|your|you'?re)\b", b) is not None
         parts["situation"] = 25 if them_any and not about_me else 18 if them_any else 10 if breakup else 5
@@ -171,6 +212,9 @@ def lint(text, subject=None, step=1, evidence_hint=None):
         marks.append(f"{links} links")
     if re.search(r"\*\*|__|<[a-z]+>", body):
         marks.append("formatting (bold/HTML) — send plain text")
+    long = [x for x in sents if words(x) > 28]
+    for x in long[:2]:
+        marks.append(f"a {words(x)}-word sentence ('{x[:40]}…') — split it, it's read on a phone")
     deduct = 3 * len(bad) + 2 * len(marks)
     parts["clean"] = max(0, 10 - deduct)
     for x in bad:
@@ -178,16 +222,25 @@ def lint(text, subject=None, step=1, evidence_hint=None):
     for x in marks:
         issues.append(f"remove {x}")
 
+    for i, prev in enumerate(previous or [], 1):        # every touch must add something new
+        mine, theirs = _shingles(body), _shingles(body_of(prev))
+        if mine and len(mine & theirs) / len(mine) > 0.3:
+            parts["value"] = min(parts["value"], 8)
+            issues.append(f"repeats email {i} ({round(100 * len(mine & theirs) / len(mine))}% the same wording) — bring a new fact, "
+                          "idea or result")
+            break
+
     score = sum(parts.values())
-    verdict = "ship" if score >= 80 else "one more pass" if score >= 65 else "rewrite"
+    verdict = "premium" if score >= 85 else "ship" if score >= 80 else "one more pass" if score >= 65 else "rewrite"
     return {"score": score, "verdict": verdict, "step": step, "words": n, "parts": parts, "issues": issues,
             "personalization_test": "Delete the first two sentences: if the email still makes sense, the personalization isn't doing its job."}
 
 
-def lint_sequence(steps):
-    out = []
+def lint_sequence(steps, slug=None):
+    out, terms, prev = [], dossier_terms(slug) if slug else None, []
     for st in steps:
-        out.append({"step": st["step"], **lint(st.get("body", ""), st.get("subject"), int(st["step"]))})
+        out.append({"step": st["step"], **lint(st.get("body", ""), st.get("subject"), int(st["step"]), terms=terms, previous=list(prev))})
+        prev.append(st.get("body", ""))
     return {"emails": out, "min_score": min((e["score"] for e in out), default=0),
             "average": round(sum(e["score"] for e in out) / max(1, len(out)), 1)}
 
@@ -197,12 +250,13 @@ def main(argv=None):
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--file"); g.add_argument("--text"); g.add_argument("--sequence", help="SEQUENCE.json")
     ap.add_argument("--subject"); ap.add_argument("--step", type=int, default=1)
+    ap.add_argument("--prospect", help="slug: check email 1 is specific to prospects/<slug>/DOSSIER.json")
     a = ap.parse_args(argv)
     if a.sequence:
         import outreach
-        emit({"ok": True, "data": lint_sequence(outreach.parse_sequence(a.sequence))})
+        emit({"ok": True, "data": lint_sequence(outreach.parse_sequence(a.sequence), a.prospect)})
     text = Path(a.file).read_text(encoding="utf-8-sig") if a.file else a.text
-    emit({"ok": True, "data": lint(text, a.subject, a.step)})
+    emit({"ok": True, "data": lint(text, a.subject, a.step, terms=dossier_terms(a.prospect) if a.prospect else None)})
 
 
 if __name__ == "__main__":

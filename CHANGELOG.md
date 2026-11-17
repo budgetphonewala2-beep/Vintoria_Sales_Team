@@ -1,5 +1,25 @@
 # Changelog
 
+## 6.0.0 — 2026-11-17 (24/7 hourly run, bots as one sales team, accuracy)
+
+### Added
+- `vintoria-hourly-run` — every hour, 24/7: up to 10 valuable LinkedIn and 10 valuable Reddit leads under 24 hours old,
+  queue first, filter, score, claim, contact path, write, critic check, post / send within shared limits, log, check
+  replies, `HOURLY` summary.
+- `vintoria-sales/references/team.md` rewritten as the team protocol: 7 roles, the `TEAM-BOARD.md` message format (IDs,
+  13 message types), claims, handoffs, reviews, alerts, conflicts, shared limits, 24/7 rhythm, standups, escalation.
+- `lead-quality.md` — the exact 24-hour rule (`1d` = too old), must-haves, a 0-100 value score, red flags.
+- `critic-check.md` — the yes/no gate before anything is posted or sent (per channel).
+- `SEEN.md`, `RUN-LOG.md`, `TEAM-BOARD.md`; `owner` and `outcome` columns in `PIPELINE.md`.
+- Automation section of the profile: hourly targets and limits, circuit breakers.
+
+### Changed
+- Every skill reads the team board, claims leads and runs the critic check; limits counted in `RUN-LOG.md` for all bots.
+- Lead hunt uses the strict 24-hour rule and the value score; the report ranks queries, subreddits and openings by outcome.
+- Merged 5 outreach files into `sequence-playbook.md` and 7 analysis / role files into `full-analysis.md`
+  (73 → 65 reference files, about 2,400 fewer lines).
+- Rewrote US-SaaS examples (funding rounds, ARR, demos, enterprise org charts) for Vintoria's SMB buyers.
+
 ## 5.0.0 — 2026-11-17 (instruction-only skills for any bot; LinkedIn + Reddit)
 
 ### Changed

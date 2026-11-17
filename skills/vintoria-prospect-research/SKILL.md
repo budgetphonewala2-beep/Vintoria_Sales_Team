@@ -32,6 +32,8 @@ reach the decision maker, and the 1-3 Vintoria services the evidence actually ju
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## Pick the mode
 
@@ -94,11 +96,11 @@ Maps. One honest battle card per incumbent, switching cost, landmine questions (
 `COMPETITIVE-INTEL.md` (`references/competitors-output-format.md`). Never disparage a competitor with a claim you can't source.
 
 ## Full analysis
-Dossier → the five roles in order — `references/role-company.md`, `references/role-contacts.md`,
-`references/role-opportunity.md`, `references/role-competitive.md`, then `references/role-strategy.md` (it needs the other
-four; bots that run sub-agents may do the first four in parallel). Prospect Score = Company Fit 25 % + Contact Access 20 %
-+ Opportunity 20 % + Competitive 15 % + Outreach Readiness 20 % (a missing role = 50, lower confidence). Write
-`PROSPECT-ANALYSIS.md` (`references/analysis-playbook.md`, `references/analysis-output-format.md`) with a self-checked first email.
+For leads worth real effort (value score 80+, a website, a big scope). Dossier → the five roles in order — Company Fit,
+Contact Access, Opportunity, Competitive, then Outreach Readiness (it needs the other four; in a team the Researcher may
+hand roles 1-4 to other bots in parallel). Prospect Score = 25 % + 20 % + 20 % + 15 % + 20 % (a missing role = 50, lower
+confidence). Every dimension, the formula and the `PROSPECT-ANALYSIS.md` format: `references/full-analysis.md`.
+Finish with a self-checked, critic-checked first message.
 
 ## Record (every mode)
 Update the `PIPELINE.md` row (stage `researched`, score, services, contact, email status, next action + date) and add a line
@@ -109,6 +111,8 @@ to `HISTORY.md`. Finish with: score + grade, top 3 hooks with their catalog serv
 
 - **Self-check** every message with `../vintoria-sales/references/truth-rules.md`; delete or rewrite every unsourced sentence and fill or flag
   every `[PLACEHOLDER]`.
+- **Critic check** — the yes/no list in `../vintoria-sales/references/critic-check.md`, as a strict reviewer (another bot's `REVIEW` in a team).
+  One "no" = fix it; two failed rewrites = skip the lead.
 - **Score** it with `../vintoria-sales/references/quality-bar.md` (emails: 80 to show, 85+ premium) and say the score in one line.
 - **Compliance:** `../vintoria-sales/references/compliance.md` — opt-out line, postal address for US, consent rules (UK/EU/CA/AU/NZ/India),
   and check `DO-NOT-CONTACT.md` first.
@@ -118,7 +122,8 @@ to `HISTORY.md`. Finish with: score + grade, top 3 hooks with their catalog serv
 - **Approval mode** (`SELLER-PROFILE.md` → Automation): `auto` — you post or send it yourself from the logged-in
   Reddit / LinkedIn account or `business@vintoria.org`, but only after it passes the self-check, scores 85+, fits that
   platform's rules (`../vintoria-sales/references/compliance.md`) and today's limits; `review` — show the exact text and wait for the user's OK.
-  A message that fails any check is never sent in either mode — fix it or skip the lead.
+  A message that fails any check is never sent in either mode — fix it or skip the lead. Count every post / send in
+  `RUN-LOG.md` first; at the hourly limit (all bots together), queue it for the next hour.
 - **Log every message that went out** — `THREAD.md` (exact text, link to it), `HISTORY.md`, `PIPELINE.md` — and give the
   user a summary of what was posted and sent.
 - **No booking link** in a first message — only after they show interest.
@@ -134,11 +139,5 @@ to `HISTORY.md`. Finish with: score + grade, top 3 hooks with their catalog serv
 - `references/qualify-output-format.md` — LEAD-QUALIFICATION.md template
 - `references/competitors-playbook.md` — detection sources, battle cards, displacement strategy
 - `references/competitors-output-format.md` — COMPETITIVE-INTEL.md template
-- `references/analysis-playbook.md` — discovery, role orchestration, scoring and synthesis
-- `references/analysis-output-format.md` — PROSPECT-ANALYSIS.md template
-- `references/role-company.md` — Company Fit role
-- `references/role-contacts.md` — Contact Access role
-- `references/role-opportunity.md` — Opportunity role (BANT, pain, timeline)
-- `references/role-competitive.md` — Competitive Position role
-- `references/role-strategy.md` — Outreach Readiness role + first email
+- `references/full-analysis.md` — the five roles, their 0-10 dimensions, the Prospect Score, PROSPECT-ANALYSIS.md format
 - `references/rules.md` — terminal output, errors and cross-skill use

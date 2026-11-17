@@ -31,11 +31,11 @@ Every message must be legal to send. When a market's rule is unclear, ask the us
   pixels, no attachments in the first email, only to `verified` or `published` addresses, from a warmed-up domain with
   SPF/DKIM/DMARC. Start around 5 cold emails a day per inbox and grow slowly.
 - **Reddit** (bot comments from Vintoria's logged-in account): only on real buyer posts, only where the subreddit's rules
-  allow offers, one comment per post, said openly to be from Vintoria, helpful first, no identical text, at most 8 a day
-  and 20+ minutes apart; no vote manipulation, no second accounts. A removed comment or a warning stops Reddit activity
+  allow offers, one comment per post, said openly to be from Vintoria, helpful first, no identical text, within the
+  limits in `SELLER-PROFILE.md` → Automation (counted for all bots in `RUN-LOG.md`); no vote manipulation, no second accounts. A removed comment or a warning stops Reddit activity
   until the user reviews it. Reddit's rules and each subreddit's rules win over this playbook.
 - **LinkedIn** (bot works from the logged-in account): LinkedIn's terms don't allow automation, so keep a person's pace —
-  at most 10 comments, 15 connection requests and 20 DMs a day, no identical text; stop for the day at any warning.
+  the limits in `SELLER-PROFILE.md` → Automation, no identical text; stop at any warning and escalate to the owner.
   DMs only to people who invited them or accepted a connection.
 - **WhatsApp** — Vintoria's link (`https://wa.me/918766033979`) is offered so the buyer messages first. Vintoria
   writes to a prospect's WhatsApp only after they messaged or shared their number; no bulk, no groups.

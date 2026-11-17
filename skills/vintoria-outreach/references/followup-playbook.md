@@ -65,22 +65,22 @@ Use this when: A discovery call, introductory meeting, or strategy session has t
 
 ---
 
-### Scenario 2: Post-Demo Follow-Up (4 Emails)
+### Scenario 2: After the Call or Proposal Walkthrough (4 Emails)
 
-Use this when: A product demo, walkthrough, or technical presentation has been delivered.
+Use this when: a discovery call, portfolio walkthrough or proposal walkthrough has happened.
 
-**Email 1 — Recap + Resources** (Send: Same day, within 3 hours of demo)
-- Subject line format: "[Feature they were most excited about] + Next Steps"
-- Open by referencing the specific moment in the demo where they showed the most interest or asked the most questions
-- Provide a bulleted recap of the 3-4 features demonstrated that align with their needs
-- Attach: Demo recording (if available), relevant documentation, setup guide, or one-pager
-- Include answers to any questions asked during the demo that you promised to follow up on
+**Email 1 — Recap + Next Step** (Send: Same day, within 3 hours of the call)
+- Subject line format: "<their project> — next steps"
+- Open by referencing the specific moment in the call where they showed the most interest or asked the most questions
+- Recap in 3-4 bullets what they need (their words) and the scope / catalog services discussed
+- Attach: the portfolio links shown, the proposal or a one-page plan (only real material from the profile)
+- Include answers to any questions asked during the call that you promised to follow up on
 - Close with: "What questions came up after we hung up?"
 - Length: 80-100 words
 
 **Email 2 — Address Objections** (Send: 3 days after Email 1)
 - Subject line format: Address the biggest concern or hesitation they expressed
-- Proactively address the top 1-2 concerns or hesitations they raised during the demo
+- Proactively address the top 1-2 concerns or hesitations they raised during the call
 - Use the Feel-Felt-Found framework: "Other [similar role] at [similar company] had the same concern. What they found was [specific outcome]."
 - Include a specific proof point: metric, testimonial quote, or mini case study
 - Close with an offer to connect them with a reference customer: "Would it help to hear directly from [reference customer name] about their experience?"

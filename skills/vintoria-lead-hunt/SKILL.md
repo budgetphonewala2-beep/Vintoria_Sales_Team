@@ -33,6 +33,8 @@ answers.
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## Steps
 
@@ -54,13 +56,13 @@ answers.
    - **Reddit** — r/forhire (`flair:Hiring`), r/smallbusiness, r/Entrepreneur, r/startups, r/indianstartups and Indian city
      subs, r/shopify, r/ChatGPT / r/automation, niche owner subs; sort **New**, past week. For each hit note: username,
      post URL, age, comment count, and the subreddit's rule on self-promotion.
-   **Freshness wins the client:** under 6 h → judge and contact this session; under 48 h → today; older than 7 days → skip
-   (Reddit) or only if nobody answered (LinkedIn).
+   **Freshness wins the client:** under 24 hours only, by the age shown on the post (`1d` = too old) —
+   `../vintoria-sales/references/lead-quality.md`. Skip every URL already in `SEEN.md`; add each one you judge.
 3. **Judge every candidate** with `references/intent-rubric.md`: buyer / seller / job_seeker / other, what they want (as a
    catalog service where clear — "AI chatbot for my clinic" → `123 AI Chatbot Development`), urgency, budget (only if
    stated), location, and an **exact quote** that proves intent. Drop anything under confidence 0.6 (0.7 for a Reddit comment).
-4. **Score** with the agency-buyer table in `../vintoria-prospect-research/references/qualify-playbook.md` — unknown parts
-   score neutral, never 0.
+4. **Score** with the value score in `../vintoria-sales/references/lead-quality.md` (must-haves first, then 0-100);
+   valuable = 65+. Hourly 24/7 hunting runs through `vintoria-hourly-run`; this skill is the deeper one-off hunt.
 5. **Contact path:**
    - **LinkedIn** → find the email: the post, the profile's **Contact info**, then their company website (contact/about
      pages). Found → status `published`, outreach by email. Not found → a LinkedIn comment or connection note.
@@ -78,8 +80,7 @@ answers.
 - The quote is copied exactly from the post. No quote = not a buyer.
 - Agencies, freelancers offering services, "#hiring" job posts and job seekers are never buyers.
 - Only public posts and what the logged-in account can normally see; no bulk scraping.
-- Respect the daily limits in `../vintoria-sales/references/compliance.md` (Reddit 8 comments, LinkedIn 10 comments /
-  15 connection requests / 20 DMs).
+- Respect the limits in `SELLER-PROFILE.md` → Automation, counted for all bots together in `RUN-LOG.md`.
 - Speed beats polish on intent leads: most asks get answered within a day or two.
 
 ## References (read when you reach that step)

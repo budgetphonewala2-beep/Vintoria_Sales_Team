@@ -6,7 +6,7 @@
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `vintoria-prospect-research` (<url>). Perform the full research procedure and output COMPANY-RESEARCH.md.
-- **Within `vintoria-prospect-research`:** this work is done by the company role (`vintoria-prospect-research/references/role-company.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
+- **Within `vintoria-prospect-research`:** a shorter version is the Company Fit role in `full-analysis.md`. This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 
@@ -115,18 +115,15 @@ When conflicting data is found, prioritize sources in this order:
 |-------|-------------|---------|
 | Revenue Model | Subscription, transactional, marketplace, advertising, licensing | Pricing page, product pages |
 | Pricing Tiers | Free, starter, pro, enterprise with prices | Pricing page |
-| Revenue Estimate | ARR or annual revenue range | Press releases, industry reports, employee-based estimation |
+| Size signals | Locations, staff count, review count, product count, monthly traffic | Google Maps, their site, LinkedIn page, store catalog |
 | Customer Count | Total customers or users | Homepage social proof, case studies, press |
 | Key Metrics | DAU, MAU, transactions, logos | Homepage, press releases, investor updates |
 | Unit Economics | ARPU, LTV signals, CAC signals | Pricing tiers, customer segments |
 | Monetization Signals | Upsell paths, premium features, add-ons | Pricing page, product pages |
 
-**Revenue estimation methodology:**
-When exact revenue is unavailable, estimate using:
-1. **Employee-based:** Median SaaS revenue per employee is $200K-$300K. Apply industry multiplier.
-2. **Funding-based:** Series A companies typically at $1-3M ARR. Series B at $5-15M. Series C at $15-50M.
-3. **Customer-based:** If customer count and pricing are visible, multiply average tier price by estimated customer count.
-4. **Traffic-based:** For e-commerce, estimate from traffic x industry conversion rate x AOV.
+**Size, not revenue:** never estimate a small business's revenue — no source will back it. Record what you can see
+(locations, staff on the team page, Google review count, products in the store, whether they run ads) with its source,
+and let the budget signal come from those facts or from what they stated in their post.
 
 Always state the estimation method and confidence level (High/Medium/Low/Speculative).
 
@@ -291,11 +288,11 @@ Adjust within ranges based on company trajectory (growing vs stable vs declining
 
 | Signal | Score Impact |
 |--------|-------------|
-| Enterprise pricing page or "Contact Sales" tier | +15 to +20 |
-| Recent funding (Series B+) | +12 to +18 |
-| Hiring for roles that use your product category | +10 to +15 |
-| Multiple paid tools visible in tech stack | +8 to +12 |
-| Bootstrap / early stage / price-sensitive signals | +2 to +6 |
+| A budget stated in their post or brief | +15 to +20 |
+| Running paid ads (Meta / Google ads library), several locations, premium prices | +12 to +18 |
+| A new location, launch, rebrand or funding announced (dated) | +10 to +15 |
+| Paid tools visible (Shopify plan, booking software, CRM, email platform) | +8 to +12 |
+| "Cheapest possible", "small budget", student or hobby signals | +2 to +6 |
 | Clear budget constraints (free tools only, tiny team) | 0 to +2 |
 
 ### 4.2 Strength and Risk Assessment

@@ -32,6 +32,8 @@ scope the buyer recognises as their own, and close without ever inventing a pric
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## Pick the stage
 
@@ -102,6 +104,8 @@ the upsell, and the review and referral asks — only after the client got a rea
 
 - **Self-check** every message with `../vintoria-sales/references/truth-rules.md`; delete or rewrite every unsourced sentence and fill or flag
   every `[PLACEHOLDER]`.
+- **Critic check** — the yes/no list in `../vintoria-sales/references/critic-check.md`, as a strict reviewer (another bot's `REVIEW` in a team).
+  One "no" = fix it; two failed rewrites = skip the lead.
 - **Score** it with `../vintoria-sales/references/quality-bar.md` (emails: 80 to show, 85+ premium) and say the score in one line.
 - **Compliance:** `../vintoria-sales/references/compliance.md` — opt-out line, postal address for US, consent rules (UK/EU/CA/AU/NZ/India),
   and check `DO-NOT-CONTACT.md` first.
@@ -111,7 +115,8 @@ the upsell, and the review and referral asks — only after the client got a rea
 - **Approval mode** (`SELLER-PROFILE.md` → Automation): `auto` — you post or send it yourself from the logged-in
   Reddit / LinkedIn account or `business@vintoria.org`, but only after it passes the self-check, scores 85+, fits that
   platform's rules (`../vintoria-sales/references/compliance.md`) and today's limits; `review` — show the exact text and wait for the user's OK.
-  A message that fails any check is never sent in either mode — fix it or skip the lead.
+  A message that fails any check is never sent in either mode — fix it or skip the lead. Count every post / send in
+  `RUN-LOG.md` first; at the hourly limit (all bots together), queue it for the next hour.
 - **Log every message that went out** — `THREAD.md` (exact text, link to it), `HISTORY.md`, `PIPELINE.md` — and give the
   user a summary of what was posted and sent.
 - **No booking link** in a first message — only after they show interest.

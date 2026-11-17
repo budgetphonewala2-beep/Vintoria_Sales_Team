@@ -170,7 +170,7 @@ Things to watch out for:
 ## 10. Next Steps to Propose
 
 Based on meeting outcome, propose one of:
-- **Strong Interest:** Schedule demo/POC with broader team by [DATE]
+- **Strong Interest:** Send the proposal and book the walkthrough with the decision maker by [DATE]
 - **Moderate Interest:** Send follow-up materials + schedule check-in in [TIMEFRAME]
 - **Needs More Info:** Provide requested details within 24 hours + schedule follow-up
 - **Not a Fit:** Thank them, ask for referrals, add to nurture
@@ -185,7 +185,7 @@ KEY CONTACT:  [PRIMARY_CONTACT] ([TITLE], [BUYING_ROLE])
 TOP PAIN:     [#1_PAIN_POINT]
 OUR EDGE:     [#1_DIFFERENTIATOR]
 PROOF POINT:  [SIMILAR_COMPANY] achieved [RESULT]
-GOAL:         [MEETING_OBJECTIVE — e.g., "Secure demo with full buying committee"]
+GOAL:         [MEETING_OBJECTIVE — e.g., "Agree the scope and get a yes to receive a proposal"]
 MUST ASK:     "[MOST_IMPORTANT_DISCOVERY_QUESTION]"
 LANDMINE:     [BIGGEST_RISK_IN_THIS_MEETING]
 NEXT STEP:    [PROPOSED_NEXT_ACTION]

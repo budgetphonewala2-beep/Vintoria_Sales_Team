@@ -32,13 +32,16 @@ most calls, pick the right skill for each job, and never let anything go out tha
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## The skills
 
 | Job | Skill | Main output |
 |---|---|---|
 | Set up Vintoria's profile, offer lanes and ideal customer (**first run**) | `vintoria-setup` | `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md` |
-| Find buyers on LinkedIn and Reddit (logged-in accounts) | `vintoria-lead-hunt` | judged buyers with exact quotes in `PIPELINE.md` |
+| **Every hour, 24/7:** up to 10 valuable LinkedIn + 10 Reddit leads under 24 h, contacted within the limits | `vintoria-hourly-run` | `RUN-LOG.md`, `HOURLY` line on the board |
+| A deeper or one-off hunt on LinkedIn and Reddit | `vintoria-lead-hunt` | judged buyers with exact quotes in `PIPELINE.md` |
 | Everything about one prospect: research, site audit, contacts + email, qualification, competitors, full score | `vintoria-prospect-research` | `prospects/<slug>/DOSSIER.md` and friends |
 | Reddit comment with the WhatsApp link, LinkedIn email from business@vintoria.org, sequences, follow-ups | `vintoria-outreach` | comments posted, emails sent, all logged |
 | A prospect replied; book the call | `vintoria-reply-book` | answer drafted, slots in both time zones, invite text |
@@ -60,7 +63,7 @@ setup → lead-hunt (LinkedIn + Reddit) → prospect-research → outreach (Redd
    | Priority | Item | Skill |
    |---|---|---|
    | 1 | A reply waiting | `vintoria-reply-book` — answer within the hour |
-   | 1 | Fresh buyer posts (< 48 h) | `vintoria-lead-hunt` — judge newest first, answer today |
+   | 1 | Fresh buyer posts (< 24 h) | `vintoria-hourly-run` — newest first, contacted within the hour |
    | 2 | A call in the next 24 h / a past call without notes | `vintoria-close` |
    | 3 | `next_due` today or earlier | `vintoria-outreach` / `vintoria-close` |
    | 4 | Stale rows (14+ days) | `vintoria-outreach` ghost recovery, or `nurture` / `lost` |
@@ -85,9 +88,12 @@ concerns, the skill to run next. Say it is an estimate from 1-2 pages.
 | 40-59 | C | Lukewarm — nurture |
 | 0-39 | D | Poor fit — deprioritise |
 
-## Working as a team
-One bot can run every step; several bots can split the roles (Manager, Hunter, Researcher, Writer, Closer) and hand off
-through `PIPELINE.md` — `references/team.md`.
+## Working as a team (24/7)
+Several bots run Vintoria like one professional sales team — Sales Manager, LinkedIn Hunter, Reddit Hunter, Researcher,
+Writer, Reviewer, Closer — talking on `TEAM-BOARD.md` with one message format (handoffs, claims, reviews, alerts, hourly
+lines, standups), owning each lead through `PIPELINE.md` and sharing the hourly limits in `RUN-LOG.md`
+(`references/team.md`). As **Sales Manager**: post the 09:30 and 18:30 standups from `RUN-LOG.md`, resolve conflicts with
+a `DECISION`, pause a platform at any removed comment or warning, and escalate to the owner only what `team.md` lists.
 
 ## Rules
 - Nothing goes out that fails the self-check, scores under 85, breaks a platform rule or exceeds a daily limit.
@@ -98,6 +104,8 @@ through `PIPELINE.md` — `references/team.md`.
 
 - **Self-check** every message with `../vintoria-sales/references/truth-rules.md`; delete or rewrite every unsourced sentence and fill or flag
   every `[PLACEHOLDER]`.
+- **Critic check** — the yes/no list in `../vintoria-sales/references/critic-check.md`, as a strict reviewer (another bot's `REVIEW` in a team).
+  One "no" = fix it; two failed rewrites = skip the lead.
 - **Score** it with `../vintoria-sales/references/quality-bar.md` (emails: 80 to show, 85+ premium) and say the score in one line.
 - **Compliance:** `../vintoria-sales/references/compliance.md` — opt-out line, postal address for US, consent rules (UK/EU/CA/AU/NZ/India),
   and check `DO-NOT-CONTACT.md` first.
@@ -107,7 +115,8 @@ through `PIPELINE.md` — `references/team.md`.
 - **Approval mode** (`SELLER-PROFILE.md` → Automation): `auto` — you post or send it yourself from the logged-in
   Reddit / LinkedIn account or `business@vintoria.org`, but only after it passes the self-check, scores 85+, fits that
   platform's rules (`../vintoria-sales/references/compliance.md`) and today's limits; `review` — show the exact text and wait for the user's OK.
-  A message that fails any check is never sent in either mode — fix it or skip the lead.
+  A message that fails any check is never sent in either mode — fix it or skip the lead. Count every post / send in
+  `RUN-LOG.md` first; at the hourly limit (all bots together), queue it for the next hour.
 - **Log every message that went out** — `THREAD.md` (exact text, link to it), `HISTORY.md`, `PIPELINE.md` — and give the
   user a summary of what was posted and sent.
 - **No booking link** in a first message — only after they show interest.
@@ -120,7 +129,9 @@ through `PIPELINE.md` — `references/team.md`.
 - `references/pricing-policy.md` — the catalog has no prices: what you may and may not say about money
 - `references/compliance.md` — legal and deliverability rules for every message, by market and channel
 - `references/vintoria-contact.md` — business@vintoria.org, WhatsApp +91 87660 33979, the wa.me link, sign-offs per channel, tone
-- `references/team.md` — roles, handoffs, daily and weekly rhythm, targets
+- `references/team.md` — the sales team: roles, the team board message format, claims, handoffs, reviews, alerts, standups, escalation
+- `references/lead-quality.md` — the exact 24-hour rule, what a valuable lead is, the value score, red flags
+- `references/critic-check.md` — the yes/no checks every message passes before it is posted or sent
 - `references/service-catalog.md` — the 12 disciplines and how to cite a service
 - `references/services-01-strategy.md` — discipline 01 Strategy & Consulting (001-015): every service, signals, who buys it, when not to sell it
 - `references/services-02-web.md` — discipline 02 Web Development (016-040): every service, signals, who buys it, when not to sell it

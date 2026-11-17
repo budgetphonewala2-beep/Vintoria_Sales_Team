@@ -31,6 +31,8 @@ You turn the pipeline into decisions: what to do this week, what to keep doing, 
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## Steps
 
@@ -38,8 +40,9 @@ You turn the pipeline into decisions: what to do this week, what to keep doing, 
    and discipline; rows that reached `contacted`, `replied`, `meeting`, `proposal`, `won`; reply, positive-reply, meeting
    and win rates; open and won `value` per currency; stale rows (14+ days); rows due today or overdue.
 2. **Complete it:** prospect folders in `prospects/` without a `PIPELINE.md` row — read their files and add the row.
-3. **What works** (`references/report-playbook.md`): which sources and queries (`source`), first-email hooks, subject
-   lines (A vs B), offer lanes and catalog services, and markets get replies and calls; which sequence step gets the
+3. **What works** (`references/report-playbook.md`): from `RUN-LOG.md` and the `outcome` column — which queries,
+   subreddits, opening lines, first-email hooks, subject lines (A vs B), offer lanes, catalog services and markets get
+   replies, WhatsApp messages and calls; removed comments per subreddit; leads found vs valuable vs contacted per hour; which sequence step gets the
    reply; gaps (no usable emails, sequences not sent, replies waiting). Meetings and proposals without a `value` are a gap
    to fix with a real price.
 4. **Decide:** keep and double what booked calls; drop sources and queries with no positive reply after a fair test;

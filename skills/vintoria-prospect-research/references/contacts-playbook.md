@@ -6,7 +6,7 @@
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `vintoria-prospect-research` (<url>). Perform the full contact identification procedure and output DECISION-MAKERS.md.
-- **Within `vintoria-prospect-research`:** this work is done by the contacts role (`vintoria-prospect-research/references/role-contacts.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
+- **Within `vintoria-prospect-research`:** a shorter version is the Contact Access role in `full-analysis.md`. This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 
@@ -68,39 +68,33 @@ Search 7: "[company name] [specific title from team page] LinkedIn"
 
 Build an organizational hierarchy from available data:
 
-**Step 1: Identify the CEO/Founder**
-- Usually listed first on team page or easily found via search
+Vintoria's buyers are mostly small and mid-sized businesses, so the "buying committee" is usually 1-3 people.
 
-**Step 2: Map direct reports (C-suite / VP level)**
-- CTO, CRO/VP Sales, CMO, CFO, COO, CPO
-- Titles vary by company size and stage
+**Step 1: Find the person who decides and pays** — owner, founder, managing director, practice owner, store owner.
+Usually the author of the post, the first name on the about / team page, or the LinkedIn page admin.
 
-**Step 3: Map next level (Directors / Heads of)**
-- Director of Engineering, Director of Sales, Director of Marketing
-- Head of Product, Head of Growth, Head of Customer Success
+**Step 2: Find who influences it** — a co-founder or partner, the marketing / growth person, an operations or office
+manager (clinics, restaurants), the person who runs the online store.
 
-**Step 4: Identify individual contributors of interest**
-- Technical leads who evaluate tools
-- Sales managers who feel the pain
-- Marketing managers who influence decisions
+**Step 3: Find who will use it day to day** — front desk, store staff, the in-house developer if any. Only for
+proposals and onboarding, never for the first message.
 
-**Org chart template:**
+**Who-decides template (by business size):**
 ```
-[CEO/Founder Name] — CEO/Co-founder
-├── [CTO Name] — CTO / VP Engineering
-│   ├── [Engineering Lead] — Director of Engineering
-│   ├── [DevOps Lead] — Head of DevOps/Infrastructure
-│   └── [Product Lead] — VP Product / Director of Product
-├── [CRO/Sales Lead] — CRO / VP Sales
-│   ├── [Sales Manager] — Director of Sales / Head of Sales
-│   ├── [SDR Lead] — SDR Manager / Head of Business Development
-│   └── [CS Lead] — VP Customer Success / Head of CS
-├── [CMO/Marketing Lead] — CMO / VP Marketing
-│   ├── [Demand Gen] — Director of Demand Generation
-│   ├── [Content Lead] — Head of Content / Content Marketing Manager
-│   └── [Growth Lead] — Head of Growth / Growth Marketing Manager
-├── [CFO/Finance Lead] — CFO / VP Finance
-└── [COO/Ops Lead] — COO / VP Operations
+1-10 people (most SMB leads)
+└── [Owner / Founder name] — decides, pays and usually wrote the post
+    └── [Partner / co-founder / manager] — influences (only if named somewhere)
+
+11-50 people
+├── [Founder / MD name] — signs and pays
+├── [Marketing / Growth lead] — owns the website, SEO, ads; often the champion
+└── [Operations / Office manager] — owns bookings, orders, internal tools
+
+51-200 people
+├── [Founder / CEO] — signs larger projects
+├── [Head of Marketing / Digital] — owns website, app, SEO, ads
+├── [Head of Product / Tech or the in-house developer] — checks the technical scope
+└── [Finance / Accounts] — invoices and payment terms
 ```
 
 Populate with real names where found. Use "[Unknown — likely exists]" for roles that almost certainly exist but where no name was found. Leave out roles that are unlikely to exist given the company size.
@@ -169,7 +163,7 @@ For each identified contact, classify them into one or more buying roles:
 - Technical role with evaluation authority
 - Responsible for the tech stack or infrastructure decisions
 - May have veto power on technical grounds (security, compliance, integration)
-- Often runs proof-of-concept or technical demo sessions
+- Often reviews the technical scope, the platform choice and the proposal
 
 **Why they matter for sales:**
 - Can kill a deal on technical grounds

@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/8_skills-instruction--only-8b5cf6?style=for-the-badge" alt="8 skills">
+  <img src="https://img.shields.io/badge/9_skills-instruction--only-8b5cf6?style=for-the-badge" alt="9 skills">
   <img src="https://img.shields.io/badge/no_code-any_bot-0ea5e9?style=for-the-badge" alt="No code">
   <img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License">
 </p>
 
 # Vintoria Sales — skills that find clients on LinkedIn and Reddit
 
-Eight instruction-only skills (no code, no installs) that run Vintoria's whole sales loop in any bot that can follow
+Nine instruction-only skills (no code, no installs) that run Vintoria's whole sales loop in any bot that can follow
 instructions — Grok, Claude, GPT, Gemini, Codex, Cursor — best with a browser already logged in to **LinkedIn** and
 **Reddit**:
 
@@ -18,6 +18,11 @@ instructions — Grok, Claude, GPT, Gemini, Codex, Cursor — best with a browse
   and leaves a **professional, genuinely helpful comment** ending with Vintoria's clickable WhatsApp link.
 - **LinkedIn:** the bot finds buyer posts, gets the **email** (post, contact info, company site) and writes a short
   personal email from **business@vintoria.org** — or a professional comment / connection note when there's no email.
+- **Every hour, 24/7:** up to 10 valuable LinkedIn leads and up to 10 valuable Reddit posts, all **under 24 hours old**,
+  found, scored, critic-checked and contacted within safe shared limits (`vintoria-hourly-run`).
+- **A real sales team of bots:** Sales Manager, LinkedIn Hunter, Reddit Hunter, Researcher, Writer, Reviewer and Closer
+  talk to each other on a shared team board — handoffs, claims, reviews, alerts, hourly lines and standups — so no lead
+  is handled twice and every reply reaches the Closer within 15 minutes.
 - Then it answers replies, books the call in both time zones, preps it, writes the proposal and closes — keeping
   everything in plain Markdown files.
 
@@ -28,12 +33,13 @@ catalog ID, never invent prices or results, and read English, Hindi and Hinglish
 **Contact used in every message:** business@vintoria.org · WhatsApp +91 87660 33979 ·
 [wa.me/918766033979](https://wa.me/918766033979)
 
-## The 8 skills
+## The 9 skills
 
 | Skill | Say… | Does |
 |---|---|---|
 | `vintoria-sales` | "aaj ka kaam batao", "run my sales" | The operator: today's agenda from `PIPELINE.md`, routes every request; holds the truth, pricing, quality, compliance and contact rules and the full catalog |
 | `vintoria-setup` | "set up Vintoria", "who should we target" | Profile interview (template pre-filled with the catalog, email and WhatsApp), offer lanes by catalog ID, ideal customer + search queries |
+| `vintoria-hourly-run` | "hourly run chalao", "har ghante leads nikalo" | The 24/7 engine: every hour up to 10 + 10 valuable leads under 24 h from LinkedIn and Reddit, scored, claimed, contacted within shared limits, logged in `RUN-LOG.md`, summary on the team board |
 | `vintoria-lead-hunt` | "LinkedIn pe clients dhundo", "Reddit pe website wale leads" | LinkedIn posts + Reddit buyer posts, judged with an exact quote, scored, contact path chosen |
 | `vintoria-prospect-research` | "research acme.com", "owner kaun hai" | Dossier, fact-only site audit, contacts + email status, BANT/MEDDIC, battle cards, full score — hooks mapped to catalog services |
 | `vintoria-outreach` | "is post pe comment karo", "isko email likho" | Reddit comment with WhatsApp link, LinkedIn email from business@vintoria.org + 5-step sequence, follow-ups |
@@ -42,8 +48,9 @@ catalog ID, never invent prices or results, and read English, Hindi and Hinglish
 | `vintoria-report` | "pipeline ka report do" | Funnel, rates, value, what works (sources, queries, hooks, services, markets), next week's plan |
 
 ```
-setup ─► lead-hunt (LinkedIn + Reddit) ─► prospect-research ─► outreach ─► reply-book ─► close ─► report
-profile     buyer posts + quotes            dossier + email     comment / email   answer + book   proposal → signed
+setup ─► hourly-run (every hour, 24/7) ─► prospect-research ─► outreach ─► reply-book ─► close ─► report
+profile   LinkedIn + Reddit, < 24 h          dossier + email     comment / email   answer + book   proposal → signed
+          (lead-hunt = deeper one-off hunt)        all bots talk on TEAM-BOARD.md
 ```
 
 ## Use it in your bot
@@ -60,28 +67,41 @@ to save (`skills/vintoria-sales/references/pipeline-format.md`).
 **First run:** say **"use vintoria-setup"** and answer the questions (sender name, postal address, time zone, active
 disciplines, prices, real case studies). Then **"aaj ka kaam batao"** every day.
 
-**Approval mode** (in `SELLER-PROFILE.md`): `auto` — the bot posts comments and sends emails that pass every check
-itself; `review` — you approve each message first. Daily limits: Reddit 8 comments, LinkedIn 10 comments /
-15 connection requests / 20 DMs, ~20 cold emails.
+**24/7 hourly run:** set your bot platform's scheduler to send **"run vintoria-hourly-run"** every hour (the skill
+defines what each run does; the timer itself comes from the platform). Each run: up to 10 valuable LinkedIn + 10 valuable
+Reddit leads under 24 hours old — a ceiling, never a quota, so weak posts are never contacted just to reach 10.
+
+**Several bots as one team:** give each bot its role from `skills/vintoria-sales/references/team.md` and one shared
+folder (or one shared Telegram / Slack / Discord group) for `TEAM-BOARD.md`, `PIPELINE.md`, `SEEN.md` and `RUN-LOG.md`.
+One bot alone plays every role.
+
+**Approval mode** (in `SELLER-PROFILE.md`): `auto` — the bots post comments and send emails that pass every check
+themselves; `review` — you approve each message first. Hourly limits for all bots together (edit them in the profile):
+Reddit 10 comments (≥ 4 minutes apart, 1 per subreddit per hour), LinkedIn 10 emails (prospect's working hours only),
+3 comments, 15 connection notes a day. **Be aware:** this pace is far above what Reddit and LinkedIn treat as normal for
+one account — expect a high risk of removed comments, shadowbans or restrictions. The circuit breakers pause a platform
+at the first removed comment or warning and escalate to you; lower the limits if that happens.
 
 ## Folders
 
 ```
 skills/
-  vintoria-sales/        SKILL.md + references/: truth-rules, quality-bar, pricing-policy, compliance,
-                         vintoria-contact, pipeline-format, team, service-catalog + services-01…12 (all 270 services)
+  vintoria-sales/        SKILL.md + references/: truth-rules, quality-bar, lead-quality, critic-check, team,
+                         pricing-policy, compliance, vintoria-contact, pipeline-format, service-catalog +
+                         services-01…12 (all 270 services)
+  vintoria-hourly-run/   SKILL.md — the hourly 24/7 cycle
   vintoria-setup/        + seller-profile-template, intake, offer-lanes, ICP playbook and format
   vintoria-lead-hunt/    + queries (LinkedIn boolean, subreddits), intent-rubric (30 labelled examples)
-  vintoria-prospect-research/  + research, contacts, qualify, competitors, analysis playbooks, 5 roles
-  vintoria-outreach/     + reddit-comment-playbook, linkedin-playbook, first-email guide, quality score, templates
+  vintoria-prospect-research/  + research, contacts, qualify, competitors playbooks, full-analysis (5 roles)
+  vintoria-outreach/     + reddit-comment-playbook, linkedin-playbook, first-email guide, sequence playbook, quality score
   vintoria-reply-book/
   vintoria-close/        + prep, discovery call, proposal, objections, negotiation & handoff, expand & referrals
   vintoria-report/       + report playbook and format
 docs/                    the Vintoria 270-service catalog (PDF)
 ```
 
-Your working files (created by the bot): `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`, `PIPELINE.md`,
-`DO-NOT-CONTACT.md` and `prospects/<slug>/`.
+Your working files (created by the bots): `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`, `PIPELINE.md`,
+`DO-NOT-CONTACT.md`, `TEAM-BOARD.md`, `SEEN.md`, `RUN-LOG.md` and `prospects/<slug>/`.
 
 ## Rules the skills enforce
 
@@ -89,8 +109,11 @@ Your working files (created by the bot): `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL
   self-check runs before anything goes out.
 - **No invented prices** — the catalog has none; prices come only from the profile, otherwise `[PRICE TO CONFIRM]`.
 - **Real services only**, cited by exact catalog ID.
+- **Only valuable, fresh leads** — under 24 hours by the age on the post, a real buyer with an exact quote, value score
+  65+, never a post already in `SEEN.md` or claimed by another bot.
+- **Critic check** — a strict yes/no review (by another bot in a team) before anything is posted or sent.
 - **Reddit:** only real buyer posts, only where the subreddit allows offers, one comment per post, open about being
-  Vintoria, helpful first, never the same text twice; a removed comment or warning stops Reddit activity.
+  Vintoria, helpful first, never the same text twice; a removed comment or warning pauses Reddit and alerts you.
 - **LinkedIn:** a person's pace (LinkedIn's terms don't allow automation), cold email only to emails they published.
 - **Compliance** per market: CAN-SPAM, UK PECR, EU GDPR, CASL, Australia Spam Act, India DPDP + TRAI; opt-outs honoured
   forever in `DO-NOT-CONTACT.md`.

@@ -177,16 +177,18 @@
 
 ---
 
-### 14. "We need to see a demo first."
+### 14. "Show me your past work first." / "Can you make a sample design for free?"
 
-**Category:** Process
-**Frequency:** Common
+**Category:** Trust / Process
+**Frequency:** Very common (SMB buyers, Reddit and LinkedIn leads)
 
 **Response Framework:**
-- **Acknowledge:** "Absolutely — I'd love to show you the product."
-- **Explore:** "To make the demo most valuable, what are the top 2-3 things you'd want to see? And who should be in the room?"
-- **Respond:** "I'll build a custom demo around [THEIR_REQUIREMENTS]. We can use [THEIR_DATA/SCENARIOS] to make it realistic."
-- **Redirect:** "How does [DATE] work? I'll need about [DURATION] and I'd recommend including [RELEVANT_STAKEHOLDERS]."
+- **Acknowledge:** "Fair — you should see how we work before you decide."
+- **Explore:** "Which matters most to you: the design, how fast it loads on mobile, or how bookings / orders come in?"
+- **Respond:** Share only the real portfolio links and results in `SELLER-PROFILE.md` closest to their niche or platform
+  (none yet → `[ADD REAL CUSTOMER RESULT]`, flag to the owner). No free spec designs; offer instead a short call where we
+  walk through their current site and the plan, or a small paid first phase (design only) if the profile lists one.
+- **Redirect:** "Want me to send two relevant examples on WhatsApp, and we can go through them on a 15-minute call?"
 
 ---
 

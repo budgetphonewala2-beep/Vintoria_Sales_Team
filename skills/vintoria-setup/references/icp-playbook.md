@@ -51,12 +51,14 @@ Analyze the business description across all 6 ICP dimensions. For each dimension
 
 Define the ideal company characteristics:
 
-- **Company Size by Revenue:** Specify exact revenue ranges (e.g., "$5M-$50M ARR" not "mid-market"). Explain WHY this range is ideal (budget capacity, complexity needs, decision speed).
-- **Company Size by Employees:** Specify headcount ranges (e.g., "50-500 employees"). Correlate with revenue range. Explain the sweet spot.
+- **Business size:** use what can be seen, not revenue — staff count ("1-50 people"), locations ("1-5 clinics"),
+  Google reviews, products in the store, whether they run ads. Explain WHY this size is ideal (budget, decision speed:
+  the owner decides alone).
 - **Industry Verticals:** List 3-5 PRIMARY verticals ranked by fit. For each, explain why it's a fit. List 2-3 SECONDARY verticals worth exploring.
 - **Geography:** Specify target regions. Consider language, regulatory environment, time zones, market maturity.
-- **Company Stage:** Define ideal stage (seed, Series A-D, growth, public). Explain why this stage aligns with the product.
-- **Growth Rate:** Specify ideal growth indicators (YoY revenue growth %, headcount growth %, funding recency).
+- **Business stage:** new business (needs a first site / brand), growing (new location, launch, hiring, more orders than
+  the current setup handles), established (old site, rebrand, replatform). Say which stages fit which offer lane.
+- **Growth signals:** dated, visible ones — a new branch, a launch, hiring, new products, fresh reviews, funding news.
 
 Present firmographic criteria as a structured table with columns: Criteria, Ideal Range, Why It Matters, Red Flag If Missing.
 

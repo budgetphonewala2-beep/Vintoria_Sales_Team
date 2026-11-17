@@ -63,13 +63,20 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
 - Tools they leave (signals.tools_they_leave): [ASK — Wix, Squarespace, spreadsheets…]
 
 ## Channels and automation
-- Lead sources: LinkedIn and Reddit only (accounts logged in on the bot's machine)
+- Lead sources: LinkedIn and Reddit only (accounts logged in on the bots' machine)
 - Reddit: public comments on buyer posts with the WhatsApp link — yes
 - LinkedIn: email from business@vintoria.org when an email is found; otherwise comment / connection note — yes
-- WhatsApp: buyers message +91 87660 33979 first (click-to-chat); Vintoria replies from the business phone
+- WhatsApp: buyers message +91 87660 33979 first (click-to-chat); the Closer replies from the business phone
 - Cold calls / SMS: no
-- Approval mode: auto   ← `auto` = the bot posts and sends messages that pass every check; `review` = the user approves each one
-- Daily limits: Reddit 8 comments · LinkedIn 10 comments, 15 connection requests, 20 DMs · cold emails 20
+- Approval mode: auto   ← `auto` = bots post and send messages that pass every check; `review` = the owner approves each one
+- Hourly run: on, 24/7 (`vintoria-hourly-run`, triggered by the bot platform's scheduler every hour)
+- Per-hour targets: up to 10 valuable LinkedIn leads · up to 10 valuable Reddit leads (a ceiling, never a quota)
+- Per-hour limits, all bots together: Reddit comments 10 (≥ 4 minutes apart, ≤ 1 per subreddit per hour) ·
+  LinkedIn emails 10 (only 08:00-19:00 on weekdays in the prospect's time zone; otherwise queued) ·
+  LinkedIn comments 3 · LinkedIn connection notes 15 per day (LinkedIn's own weekly invitation limit applies)
+- Circuit breakers: a removed comment, a Reddit or LinkedIn warning, or a temporary ban → pause that platform and
+  escalate to the owner · email bounces over 2 % in 14 days → pause email
+- Team: one bot per role, or fewer bots with combined roles (`../../vintoria-sales/references/team.md`); owner = the human (escalations)
 ```
 
 **Ready** = every required field in `intake.md` is filled. Until then, keep working but mark gaps `[ASK]` in anything

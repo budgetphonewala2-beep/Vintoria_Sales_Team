@@ -403,7 +403,7 @@ For each case study, use the Challenge-Solution-Results format:
 Rules:
 - Every case study must include at least 3 specific, measurable results
 - The challenge section should parallel the prospect's situation closely enough that they think "that's exactly our problem"
-- If client names cannot be shared, use descriptive labels ("Leading Series B Fintech" or "Fortune 500 Retailer")
+- If a real client's name cannot be shared, use a descriptive label for that real client ("a physiotherapy clinic in Pune", "a UK Shopify store") — never a label for a client that does not exist
 - Always include timeline — when results were achieved matters
 
 ---

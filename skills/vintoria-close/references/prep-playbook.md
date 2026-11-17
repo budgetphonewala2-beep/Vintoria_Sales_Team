@@ -51,7 +51,7 @@ For each attendee, build a profile that includes:
 
 If no attendee names are provided, attempt to identify likely meeting participants based on:
 - The company's leadership page
-- The deal stage and meeting purpose (discovery call = VP/Director level, technical demo = engineering leads, contract negotiation = procurement/finance)
+- The deal stage and meeting purpose (discovery call = the owner / founder, proposal walkthrough = owner + partner or manager, contract = owner / accounts (finance)
 
 ### 1.3 Competitive Landscape
 

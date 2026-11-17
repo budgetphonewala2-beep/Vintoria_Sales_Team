@@ -17,3 +17,7 @@
 # Secrets
 .env
 *.env
+/TEAM-BOARD.md
+/SEEN.md
+/SEEN-ARCHIVE.md
+/RUN-LOG.md

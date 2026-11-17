@@ -8,7 +8,7 @@ account banned. Contact details: `../../vintoria-sales/references/vintoria-conta
 
 1. **It's a real buyer** (intent rubric, confidence ≥ 0.7): they want to hire or are asking who can build/fix something.
    Not a seller, not a job seeker, not a discussion, not already solved ("found someone, thanks").
-2. **The post is open and fresh**: not locked, archived or removed; ideally under 48 hours, never older than 7 days.
+2. **The post is open and fresh**: not locked, archived or removed; under 24 hours by the age shown on the post (`../../vintoria-sales/references/lead-quality.md`).
 3. **The subreddit allows it.** Read the sidebar rules (and wiki for r/forhire-style subs) once and note them in
    `IDEAL-CUSTOMER-PROFILE.md`:
    - Offers allowed in comments (r/forhire `[Hiring]` posts, most "looking for a developer" posts) → comment with the link.
@@ -16,8 +16,8 @@ account banned. Contact details: `../../vintoria-sales/references/vintoria-conta
      DM is fine.
    - Commercial offers banned altogether → skip the post.
 4. **Not already contacted**: no row for this author in `PIPELINE.md` in the last 30 days, and not in `DO-NOT-CONTACT.md`.
-5. **Within today's limits**: at most **8 comments a day**, at least 20 minutes apart, never two in the same subreddit
-   within an hour.
+5. **Within the limits** in `SELLER-PROFILE.md` → Automation, counted for all bots together in `RUN-LOG.md` (default:
+   up to 10 comments an hour, at least 4 minutes apart, never two in the same subreddit within an hour).
 
 ## Write the comment (60-110 words)
 

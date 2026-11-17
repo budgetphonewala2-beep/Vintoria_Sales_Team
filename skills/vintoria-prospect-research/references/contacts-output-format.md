@@ -111,7 +111,7 @@ Include channel, messaging angle, and expected response.]
 | Role | Primary Message | Content to Share | CTA |
 |------|----------------|-----------------|-----|
 | Economic Buyer | ROI and strategic impact | ROI calculator, executive summary | 15-min strategic call |
-| Champion | Solve their daily pain | Product demo video, how-to guide | Quick demo or trial |
+| Champion | Solve their daily pain | A relevant past project, a short plan | A 15-minute call or WhatsApp chat |
 | Technical Evaluator | Integration and security | API docs, security whitepaper, case study | Technical deep dive |
 | End User | Make their job easier | Product tour, quick start guide | Self-serve trial |
 

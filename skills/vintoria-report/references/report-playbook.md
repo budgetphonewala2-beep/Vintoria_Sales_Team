@@ -133,8 +133,8 @@ Create a comprehensive table sorted by score (highest first):
 ```markdown
 | # | Company | Score | Grade | Stage | Key Pain Point | Next Action | Est. Value |
 |---|---------|-------|-------|-------|----------------|-------------|------------|
-| 1 | Acme Corp | 85 | A | Qualified | Manual processes | Send intro email | $24K ARR |
-| 2 | Beta Inc | 72 | B | Researched | Scaling issues | Identify champion | $18K ARR |
+| 1 | Acme Dental (Pune) | 85 | A | Qualified | Bookings only by phone | Send proposal (028) | from profile, or `[PRICE TO CONFIRM]` |
+| 2 | Brightleaf Store (UK) | 72 | B | Contacted | Slow Shopify mobile pages | Email 2 (day 3) | `[PRICE TO CONFIRM]` |
 ```
 
 Include ALL prospects. Use color-coded grade indicators:

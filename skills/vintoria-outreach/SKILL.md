@@ -32,6 +32,8 @@ it's Vintoria, and one tap away from a conversation.
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
 6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
    and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
+   hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
 ## Pick the channel
 
@@ -50,15 +52,15 @@ service fits), the `PIPELINE.md` row and `DO-NOT-CONTACT.md`. Contact details an
 Follow `references/reddit-comment-playbook.md`: their exact need in line 1 → one or two real, useful tips → "We're
 Vintoria, a digital product studio — we do exactly this (<catalog service>)" → the sign-off with a pre-filled
 `https://wa.me/918766033979?text=…` link. 60-110 words, no price, no emojis, no copy-paste, only where the subreddit
-allows offers, at most 8 a day. One comment per post; after that the conversation moves to the thread, WhatsApp or email.
+allows offers, within the hourly limits in `RUN-LOG.md`. One comment per post; after that the conversation moves to the thread, WhatsApp or email.
 
 ## LinkedIn email — the first email and the sequence
 1. **Email 1** (`references/first-email-guide.md`): plain text, under 120 words, their post in their words in the first line,
    ONE sourced observation (their post or a site-audit fact), one sentence on what Vintoria does about it (one catalog
    service — never a list), one soft question as the CTA ("worth a quick look?"), the email sign-off (with WhatsApp link,
    postal address and opt-out). No booking link.
-2. **The sequence**, each email adding something new (`references/outreach-playbook.md`; templates
-   `references/template-outreach-cold.md`, `references/template-outreach-warm.md`, `references/template-outreach-referral.md`):
+2. **The sequence**, each email adding something new (`references/sequence-playbook.md` — frameworks, the 5 emails,
+   examples, A/B, timing):
    | Email | Day | Content | Words |
    |---|---|---|---|
    | 1 | 0 | Their post / top hook + one fact + soft question | ≤ 120 |
@@ -73,7 +75,7 @@ allows offers, at most 8 a day. One comment per post; after that the conversatio
 ## Check everything, then send
 Self-check every sentence; score with `references/quality.md` (first two lines only this prospect could receive — the
 deletion test; no sentence over 28 words; each follow-up brings something new) and fix until 85+. Write
-`OUTREACH-SEQUENCE.md` (`references/outreach-output-format.md`) with every message, its channel, send day and score. Then
+`OUTREACH-SEQUENCE.md` (format in `references/sequence-playbook.md`) with every message, its channel, send day and score. Then
 post or send per the approval mode, log it (`THREAD.md` with the comment or email link, `HISTORY.md`, the `PIPELINE.md` row →
 `contacted`, `last_touch`, `next_action` + `next_due`), and check for replies the next day. Any reply stops the sequence →
 `vintoria-reply-book`.
@@ -91,6 +93,8 @@ post or send per the approval mode, log it (`THREAD.md` with the comment or emai
 
 - **Self-check** every message with `../vintoria-sales/references/truth-rules.md`; delete or rewrite every unsourced sentence and fill or flag
   every `[PLACEHOLDER]`.
+- **Critic check** — the yes/no list in `../vintoria-sales/references/critic-check.md`, as a strict reviewer (another bot's `REVIEW` in a team).
+  One "no" = fix it; two failed rewrites = skip the lead.
 - **Score** it with `../vintoria-sales/references/quality-bar.md` (emails: 80 to show, 85+ premium) and say the score in one line.
 - **Compliance:** `../vintoria-sales/references/compliance.md` — opt-out line, postal address for US, consent rules (UK/EU/CA/AU/NZ/India),
   and check `DO-NOT-CONTACT.md` first.
@@ -100,7 +104,8 @@ post or send per the approval mode, log it (`THREAD.md` with the comment or emai
 - **Approval mode** (`SELLER-PROFILE.md` → Automation): `auto` — you post or send it yourself from the logged-in
   Reddit / LinkedIn account or `business@vintoria.org`, but only after it passes the self-check, scores 85+, fits that
   platform's rules (`../vintoria-sales/references/compliance.md`) and today's limits; `review` — show the exact text and wait for the user's OK.
-  A message that fails any check is never sent in either mode — fix it or skip the lead.
+  A message that fails any check is never sent in either mode — fix it or skip the lead. Count every post / send in
+  `RUN-LOG.md` first; at the hourly limit (all bots together), queue it for the next hour.
 - **Log every message that went out** — `THREAD.md` (exact text, link to it), `HISTORY.md`, `PIPELINE.md` — and give the
   user a summary of what was posted and sent.
 - **No booking link** in a first message — only after they show interest.
@@ -111,11 +116,7 @@ post or send per the approval mode, log it (`THREAD.md` with the comment or emai
 - `references/linkedin-playbook.md` — finding the email on LinkedIn, the email, comment and connection-note fallbacks, limits
 - `references/first-email-guide.md` — style rules + 10 good/bad first-email examples
 - `references/quality.md` — the 0-100 score, banned and AI phrases, personalization levels, deletion test, panel review
-- `references/outreach-playbook.md` — personalization research, 4 frameworks, the 5-email sequence, A/B
-- `references/outreach-output-format.md` — OUTREACH-SEQUENCE.md template
-- `references/template-outreach-cold.md` — cold template
-- `references/template-outreach-warm.md` — warm intro template
-- `references/template-outreach-referral.md` — referral template
+- `references/sequence-playbook.md` — the 4 frameworks, the 5 emails with examples, A/B tests, timing, OUTREACH-SEQUENCE.md format
 - `references/followup-playbook.md` — the 5 follow-up scenarios, multi-channel touches, cadence, breakup emails
 - `references/followup-output-format.md` — FOLLOWUP-SEQUENCE.md template
 - `references/rules.md` — terminal output, errors, cross-skill use

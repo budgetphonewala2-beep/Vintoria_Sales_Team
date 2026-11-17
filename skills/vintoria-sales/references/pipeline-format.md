@@ -11,6 +11,9 @@ OFFER.md                     offer lanes by catalog service ID + the proof map
 IDEAL-CUSTOMER-PROFILE.md    segments, signals, disqualifiers, scoring, the search queries that work
 PIPELINE.md                  one row per prospect (format below) — the agenda is built from it
 DO-NOT-CONTACT.md            opt-outs and bounces, one per line, append-only, never removed
+TEAM-BOARD.md                the bots' shared message board (team.md) — handoffs, claims, reviews, alerts, standups
+SEEN.md                      every post URL already judged or claimed, so no post is handled twice
+RUN-LOG.md                   per-hour counters and results of the hourly run (shared limits)
 prospects/<slug>/
   DOSSIER.md                 sourced research, hooks, fit to catalog services, contact
   SITE-AUDIT.md              fact-only website audit
@@ -33,10 +36,10 @@ asking the user to paste `SELLER-PROFILE.md` and `PIPELINE.md` if you don't have
 ## `PIPELINE.md`
 
 ```markdown
-| slug | company | contact | title | email | email_status | country | services | channel | stage | score | source | post_url | last_touch | next_action | next_due | value |
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| acme.com | Acme Dental | Priya Shah | Owner | priya@acme.com | published | IN | 033,214 | linkedin-email | contacted | 78 | li:need-website-clinic | https://www.linkedin.com/posts/… | 2026-11-17 | Email 2 (day 3) | 2026-11-20 | |
-| neha_physio@reddit | Neha's Physio | u/neha_physio | Owner | | | IN | 028 | reddit-comment | contacted | 71 | rd:smallbusiness-website | https://www.reddit.com/r/… | 2026-11-17 | Check replies | 2026-11-18 | |
+| slug | company | contact | title | email | email_status | country | services | channel | stage | score | source | post_url | owner | last_touch | next_action | next_due | outcome | value |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| acme.com | Acme Dental | Priya Shah | Owner | priya@acme.com | published | IN | 033,214 | linkedin-email | contacted | 78 | li:need-website-clinic | https://www.linkedin.com/posts/… | Writer | 2026-11-17 | Email 2 (day 3) | 2026-11-20 | | |
+| neha_physio@reddit | Neha's Physio | u/neha_physio | Owner | | | IN | 028 | reddit-comment | contacted | 71 | rd:smallbusiness-website | https://www.reddit.com/r/… | Closer | 2026-11-17 | Check replies | 2026-11-18 | whatsapp-reply | |
 ```
 
 - `services` — catalog IDs, comma-separated (`033,214`); names live in the catalog.
@@ -45,6 +48,28 @@ asking the user to paste `SELLER-PROFILE.md` and `PIPELINE.md` if you don't have
   `unverified` (found elsewhere) · `pattern-guessed` · `invalid`. Cold email only to `verified` or `published`.
 - `score` — 0-100 from the scoring tables; `value` — only a real price from the profile, with currency.
 - `next_due` — always a real date. A row without `next_action` + `next_due` is not in the pipeline.
+- `owner` — the role working it now (plus `claimed_at` time in `HISTORY.md`); change it at every handoff.
+- `outcome` — what the first touch produced: `no-reply` · `reddit-reply` · `whatsapp-reply` · `email-reply` ·
+  `linkedin-reply` · `call-booked` · `removed` (comment removed) · `opt-out`. The weekly report ranks queries, subreddits
+  and openings by it.
+
+## `SEEN.md`
+
+One line per post, added the moment it is judged or claimed: `2026-11-17 14:05 · RH · reddit · https://… · kept 82`
+or `… · dropped: seller`. Check it before judging any post; keep 30 days, then move old lines to `SEEN-ARCHIVE.md`.
+
+## `RUN-LOG.md`
+
+One block per hour; every bot adds to the same block before it posts or sends (that is how the shared limits hold):
+
+```markdown
+## 2026-11-17 14:00-15:00 IST
+- LinkedIn: found 31 · valuable 10 · emailed 6 · commented 2 · notes 1 · queued 1
+- Reddit: found 27 · valuable 9 · commented 9 · help-only 0 · queued 0
+- Replies: 1 (WhatsApp) · Alerts: 0 · Removed: 0 · Skipped by critic: 3
+- Limits this hour: Reddit 9/10 · LinkedIn emails 6/10 · LinkedIn comments+notes 3/5
+- Openings used: "For a clinic site the two things…", "Shopify speed usually comes down to…"
+```
 
 ## Stages
 
@@ -72,7 +97,7 @@ After every message that went out, write it into `THREAD.md` (with its link), up
 ## Today's agenda (read `PIPELINE.md`, in this order)
 
 1. Rows at `replied` whose last message is theirs — answer within the hour.
-2. Fresh buyer posts (under 48 h) not yet judged.
+2. Fresh buyer posts (under 24 h) not yet in `SEEN.md`.
 3. `meeting` rows with a call in the next 24 h (prep) or a past call without notes (outcome).
 4. Rows with `next_due` today or earlier.
 5. Stale rows (no touch for 14+ days) — next step, `nurture` or `lost`.

@@ -6,7 +6,7 @@
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `vintoria-prospect-research` (<url>). Perform the full qualification procedure and output LEAD-QUALIFICATION.md.
-- **Within `vintoria-prospect-research`:** this work is done by the opportunity role (`vintoria-prospect-research/references/role-opportunity.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
+- **Within `vintoria-prospect-research`:** a shorter version is the Opportunity role in `full-analysis.md`. This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 
@@ -48,7 +48,7 @@ For each data source, extract signals using this approach:
 | **High** | Directly stated or clearly observable fact | Pricing page shows $499/mo enterprise tier |
 | **Medium** | Reasonable inference from available data | 5 open engineering roles suggests growing tech team |
 | **Low** | Indirect signal requiring interpretation | Blog post about "scaling challenges" suggests growing pains |
-| **Inferred** | Educated guess based on company profile | Series B company likely has $500K+ annual software budget |
+| **Inferred** | Educated guess based on visible facts | A clinic with 3 locations and Google ads likely has a marketing budget |
 
 ---
 
@@ -62,10 +62,10 @@ For each data source, extract signals using this approach:
 
 | Signal | Points | Confidence | Where to Find |
 |--------|--------|-----------|---------------|
-| Explicit budget mentioned (rare for public data) | 20-25 | High | RFPs, procurement portals |
-| Recent funding round (Series A: +12, B: +16, C+: +20) | 12-20 | High | Crunchbase, press releases |
-| Enterprise pricing tier on their own product | 10-15 | Medium | Their pricing page |
-| Multiple paid SaaS tools visible in tech stack | 8-12 | Medium | Job posts, integration pages |
+| Budget stated in their post, comment or brief | 20-25 | High | The post, their reply, a requirement doc |
+| Funding, new location or launch announced (dated) | 12-20 | High | LinkedIn, local news, their site |
+| Paid ads running, several locations, premium pricing | 10-15 | Medium | Meta / Google ads library, Google Maps, their site |
+| Paid tools in use (Shopify plan, booking software, CRM) | 8-12 | Medium | Site source, footer, integrations |
 | Hiring for roles that use your product category | 10-15 | Medium | Job postings |
 | Employee count suggests adequate budget (50+ employees) | 5-10 | Low | LinkedIn, About page |
 | Cost-conscious signals (all free tools, tiny team) | 0-3 | Medium | Tech stack, team size |

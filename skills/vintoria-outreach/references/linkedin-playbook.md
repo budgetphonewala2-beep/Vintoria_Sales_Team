@@ -33,8 +33,9 @@ Vintoria does about it with one catalog service, a soft question, and the email 
 
 ## Limits (keep it human)
 
-LinkedIn's terms don't allow automated activity on accounts, so the bot works at a person's pace: at most **10 comments,
-15 connection requests and 20 DMs a day**, spread across the day, never the same text twice. If LinkedIn shows a warning
+LinkedIn's terms don't allow automated activity on accounts, so the bots keep a person's pace and the limits in
+`SELLER-PROFILE.md` → Automation (default: up to 10 emails an hour within the prospect's working hours, 3 comments an
+hour, 15 connection notes a day), spread out, never the same text twice. If LinkedIn shows a warning
 or a "you're sending too many invitations" limit, stop LinkedIn actions for the day and tell the user.
 
 ## Log it

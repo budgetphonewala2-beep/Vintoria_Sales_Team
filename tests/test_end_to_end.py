@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "sales" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "vintoria-sales" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import meeting  # noqa: E402
@@ -340,7 +340,7 @@ def test_today_agenda_priorities(conn):
     reply_triage.apply(conn, "acme.com", reply_triage.classify("Tell me more, what would it cost?"))
     agenda = pipeline.today_agenda(conn, datetime(2026, 11, 2, 6, 0, tzinfo=timezone.utc))
     kinds = [i["kind"] for i in agenda["items"]]
-    assert kinds[0] == "reply" and agenda["items"][0]["skill"] == "sales-reply"
+    assert kinds[0] == "reply" and agenda["items"][0]["skill"] == "vintoria-reply-book"
     assert "new-lead" in kinds and agenda["items"][-1]["prospect"] == "fresh.in"
     assert agenda["tip"] and agenda["open_leads"] == 2
 

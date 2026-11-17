@@ -4,7 +4,14 @@
 - AI_SALES_TRUST_VERIFIED=1 lets fixtures save 'verified' contacts directly; tests/test_hallucination_guards.py turns it
   off to prove that, in real use, only a verifier can mark an address verified."""
 
+import sys
+from pathlib import Path
+
 import pytest
+
+# The engine lives in skills/vintoria-sales/scripts/<group>/; _vpath puts every group on sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "skills" / "vintoria-sales" / "scripts"))
+import _vpath  # noqa: E402,F401
 
 
 @pytest.fixture(autouse=True)

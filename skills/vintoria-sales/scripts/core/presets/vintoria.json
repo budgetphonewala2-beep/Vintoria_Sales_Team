@@ -1,0 +1,26 @@
+{
+  "_about": "Vintoria preset: the facts we know from the Vintoria 270-service catalog. Everything left empty is asked in the vintoria-setup interview — never filled by guessing.",
+  "seller": {"company": "Vintoria", "website": "", "name": "", "email": "", "country": "", "timezone": "",
+             "postal_address": "", "booking_url": "", "meeting_link": "", "linkedin": ""},
+  "offer": {
+    "services": ["web", "app", "seo", "marketing", "design", "software", "ecommerce", "ai", "automation"],
+    "service_details": "Digital product studio: strategy, web and SaaS development, mobile apps, UI/UX and branding, AI development, business automation, backend and cloud, e-commerce, digital marketing and SEO, and growth — 270 named services across 12 disciplines.",
+    "niches": [],
+    "platforms": [],
+    "outcomes": [],
+    "deal_size": {"min": null, "typical": null, "currency": ""},
+    "pricing_model": "",
+    "delivery_time": "",
+    "capacity_per_month": null
+  },
+  "targets": {"countries": ["IN", "US", "UK", "AU"], "cities": [], "company_size": "",
+              "buyer_titles": ["Founder", "Owner", "CEO", "Managing Director", "Head of Marketing", "CTO"],
+              "exclude_countries": [], "exclude": ["agencies", "freelancers", "job seekers"], "languages": ["en", "hi"],
+              "remote_ok": true},
+  "proof": {"case_studies": [], "testimonials": [], "portfolio_url": "", "years_in_business": null, "projects_done": null,
+            "team_size": null, "notable_clients": []},
+  "positioning": {"differentiators": ["270 named services across 12 disciplines, so strategy, design, build, AI, automation and growth stay with one studio"],
+                  "guarantees": [], "why_us": ""},
+  "signals": {"pains": [], "triggers": [], "tools_they_leave": [], "competitor_agencies": [], "niche_terms": []},
+  "channels": {"email": true, "linkedin_manual": true, "public_replies_manual": true, "whatsapp": true, "calls": false}
+}

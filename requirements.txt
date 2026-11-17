@@ -1,4 +1,4 @@
-# PDF reports (sales-report-pdf)
+# PDF reports (vintoria-report)
 reportlab>=4.0
 # trusted CA bundle for TLS on some Windows/macOS Pythons
 certifi>=2024.2.2

@@ -42,3 +42,7 @@ SITE-AUDIT*.json
 *.db
 prospects/
 eval-review/
+
+# eval fixtures are test data, not real prospects
+!skills/*/evals/*/files/prospects/
+!skills/*/evals/*/files/prospects/**

@@ -1,4 +1,4 @@
-"""Tests for the helper scripts in skills/sales/scripts (no network: fetch and API calls are faked)."""
+"""Tests for the helper scripts in skills/vintoria-sales/scripts (no network: fetch and API calls are faked)."""
 
 import json
 import subprocess
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "sales" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "vintoria-sales" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import claim_check  # noqa: E402
@@ -31,7 +31,7 @@ def home(tmp_path, monkeypatch):
 
 
 def run(script, *args, stdin=None):
-    r = subprocess.run([sys.executable, str(SCRIPTS / script), *args], capture_output=True, text=True,
+    r = subprocess.run([sys.executable, str(next(SCRIPTS.rglob(script))), *args], capture_output=True, text=True,
                        encoding="utf-8", input=stdin)
     return r.returncode, (json.loads(r.stdout) if r.stdout.strip().startswith(("{", "[")) else r.stdout)
 
@@ -277,6 +277,6 @@ def test_pdf_from_pipeline(tmp_path, home):
     inp = tmp_path / "in.json"
     run("pipeline.py", "report", "--pdf-input", str(inp))
     out = tmp_path / "r.pdf"
-    r = subprocess.run([sys.executable, str(SCRIPTS / "generate_pdf_report.py"), str(inp), str(out)], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, str(next(SCRIPTS.rglob("generate_pdf_report.py"))), str(inp), str(out)], capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     assert out.read_bytes()[:4] == b"%PDF"

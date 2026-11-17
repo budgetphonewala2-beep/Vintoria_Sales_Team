@@ -9,18 +9,18 @@
 - Source: https://github.com/yangyixxxx/lead-signal-listener (revision `983fd7b`)
 - Author: Yangyi — License: MIT (Copyright (c) 2026 Yangyi)
 - Used for (adapted, not copied verbatim): the transparent weighted phrase-scoring approach in
-  `skills/sales/scripts/intent_scan.py` (new EN/HI/Hinglish phrase set for service buyers).
+  `skills/vintoria-sales/scripts/leads/intent_scan.py` (new EN/HI/Hinglish phrase set for service buyers).
 
 ## autonomous-sdr
 - Source: https://github.com/RodricDib06/autonomous-sdr (revision `8c7c98d`)
 - Author: Rodric Dib — License: MIT (Copyright (c) 2026 Rodric Dib)
 - Used for (adapted, not copied verbatim): the deterministic claim-extraction and claim/source matching in
-  `skills/sales/scripts/claim_check.py` (unicode tokens, stemming, verbatim-quote gate and placeholder check added).
+  `skills/vintoria-sales/scripts/outreach/claim_check.py` (unicode tokens, stemming, verbatim-quote gate and placeholder check added).
 
 ## marketingskills (cold-email)
 - Source: https://github.com/coreyhaines31/marketingskills (revision `88c79f6`)
 - Author: Corey Haines — License: MIT (Copyright (c) 2025 Corey Haines)
-- Used for (adapted, not copied verbatim): the AI-tell / banned-phrase categories in `skills/sales/scripts/email_lint.py`,
+- Used for (adapted, not copied verbatim): the AI-tell / banned-phrase categories in `skills/vintoria-sales/scripts/outreach/email_lint.py`,
   the deliverability stop-loss thresholds (bounce > 2 %, reply rate < 1 % after 300 sends) and warm-up ramp in
   `outreach.py`, the extra reply types (how-did-you-get-my-email, wrong person, send info) and the no-show policy.
 
@@ -37,6 +37,6 @@ Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRES
 - License: Apache License 2.0
 - Used for (adapted, not copied verbatim): the 0-100 cold-email scoring dimensions (situation recognition, value
   clarity, personalization, CTA effort, punchiness, subject) and the recipient-to-sender sentence ratio, re-weighted
-  and made step-aware in `skills/sales/scripts/email_lint.py`. No files were copied; Apache-2.0 terms apply to the
+  and made step-aware in `skills/vintoria-sales/scripts/outreach/email_lint.py`. No files were copied; Apache-2.0 terms apply to the
   original work: https://www.apache.org/licenses/LICENSE-2.0
 

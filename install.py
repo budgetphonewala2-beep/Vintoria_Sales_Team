@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cross-platform installer for the AI Sales Team skills (Windows, macOS, Linux). Standard library only.
+Cross-platform installer for the Vintoria sales skills (Windows, macOS, Linux). Standard library only.
 
     python install.py                      # default: ~/.agents/skills + ~/.claude/skills
     python install.py --agent codex        # one agent (see table below); repeatable
@@ -18,8 +18,9 @@ User-level skill folders (checked against each agent's official docs, 2026-11):
     opencode     ~/.config/opencode/skills   (opencode.ai/docs/skills — also reads ~/.claude/skills, ~/.agents/skills)
     agents       ~/.agents/skills            (shared folder read by Codex, Cursor, Gemini CLI and OpenCode)
 
-Existing copies of these skills are moved to ~/.ai-sales-team/backups/<timestamp>/ before installing, so an
-upgrade never leaves stale files behind and never loses anything.
+Existing copies of these skills, and the skills and subagents of earlier versions (sales, sales-*), are moved to
+~/.ai-sales-team/backups/<timestamp>/ before installing, so an upgrade never leaves stale or duplicate skills
+behind and never loses anything.
 """
 
 import argparse
@@ -41,6 +42,13 @@ TARGETS = {
     "agents": HOME / ".agents" / "skills",
 }
 CLAUDE_AGENTS = HOME / ".claude" / "agents"
+# v3 and earlier shipped these skills / subagents; v4 merged them into the 8 vintoria-* skills.
+LEGACY_SKILLS = ["sales", "sales-setup", "sales-icp", "sales-hunt", "sales-audit", "sales-prospect", "sales-research",
+                 "sales-qualify", "sales-contacts", "sales-competitors", "sales-outreach", "sales-followup", "sales-reply",
+                 "sales-book", "sales-prep", "sales-proposal", "sales-objections", "sales-autopilot", "sales-report",
+                 "sales-report-pdf"]
+LEGACY_AGENTS = ["sales-company", "sales-contacts", "sales-opportunity", "sales-competitive", "sales-strategy",
+                 "sales-hunter", "sales-researcher", "sales-writer", "sales-closer"]
 
 
 def skills():
@@ -68,13 +76,29 @@ def link_or_copy(src, dst, link):
                 r = subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], capture_output=True, text=True)
                 if r.returncode == 0:
                     return "junction"
-            print(f"    (could not link, copying instead)")
+            print("    (could not link, copying instead)")
     shutil.copytree(src, dst, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "evals"))   # test cases stay in the repo
     return "copied"
 
 
+def retire_legacy(target, dry, backups):
+    """Move the skills of earlier versions out of the way (backed up, never deleted)."""
+    for name in LEGACY_SKILLS:
+        old = target / name
+        if old.exists() or old.is_symlink():
+            print(f"  {'would retire' if dry else 'retired'} old skill {name} (backed up)")
+            if dry:
+                continue
+            if old.is_symlink():
+                old.unlink()
+            else:
+                backups.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(old), str(backups / f"{target.parent.name}-{name}"))
+
+
 def install(target, link, dry, backups):
     print(f"\n-> {target}")
+    retire_legacy(target, dry, backups)
     for s in skills():
         dst = target / s.name
         if dst.exists() or dst.is_symlink():
@@ -94,8 +118,7 @@ def install(target, link, dry, backups):
 
 
 def uninstall(target, dry):
-    for s in skills():
-        dst = target / s.name
+    for dst in [target / s.name for s in skills()] + [target / n for n in LEGACY_SKILLS]:
         if dst.exists() or dst.is_symlink():
             print(f"  {'would remove' if dry else 'removed'} {dst}")
             if not dry:
@@ -106,7 +129,7 @@ def check_python():
     ok = sys.version_info >= (3, 9)
     print(f"Python {sys.version.split()[0]} {'ok' if ok else '— needs 3.9+'}")
     try:
-        import reportlab  # noqa: F401
+        import reportlab  # noqa: F401  (only checking it is installed)
         print("reportlab installed (PDF reports work)")
     except ImportError:
         print("reportlab not installed — only needed for PDF reports: python -m pip install reportlab")
@@ -114,7 +137,7 @@ def check_python():
 
 
 def main(argv=None):
-    ap = argparse.ArgumentParser(description="Install the AI Sales Team skills into your coding agents.")
+    ap = argparse.ArgumentParser(description="Install the Vintoria sales skills into your coding agents.")
     ap.add_argument("--agent", action="append", choices=[*TARGETS, "all"], help="target agent (repeatable; default: agents + claude-code)")
     ap.add_argument("--project", help="install into <project>/.agents/skills instead of your home folder")
     ap.add_argument("--link", action="store_true", help="symlink/junction instead of copying")
@@ -138,6 +161,13 @@ def main(argv=None):
             uninstall(t, a.dry_run)
         else:
             install(t, a.link, a.dry_run, backups)
+    for name in LEGACY_AGENTS:
+        old = CLAUDE_AGENTS / f"{name}.md"
+        if old.exists() and not a.project:
+            print(f"  {'would retire' if a.dry_run else 'retired'} old subagent {name}")
+            if not a.dry_run:
+                backups.mkdir(parents=True, exist_ok=True)
+                shutil.move(str(old), str(backups / f"agent-{name}.md"))
     if a.with_claude_agents or a.uninstall:
         src = ROOT / "adapters" / "claude-code" / "agents"
         for f in sorted(src.glob("*.md")):
@@ -157,7 +187,7 @@ def main(argv=None):
     if not a.uninstall and not a.dry_run:
         if backups.exists():
             print(f"\nPrevious copies backed up to {backups}")
-        print("\nDone. Restart your agent, then try:  \"use the sales skill\"  or  /sales icp  (Claude Code).")
+        print("\nDone. Restart your agent, then say:  \"use vintoria-setup\" (first run)  or  \"aaj ka kaam batao\".")
         print("Optional API keys go in ~/.ai-sales-team/.env  (BRIGHTDATA_API_KEY, BRIGHTDATA_ZONE, HUNTER_API_KEY).")
 
 

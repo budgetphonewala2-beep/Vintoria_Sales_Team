@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "sales" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "vintoria-sales" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import email_lint  # noqa: E402
@@ -154,7 +154,7 @@ def test_second_no_show_goes_to_nurture_and_two_slots_by_default():
 def test_status_is_the_single_starting_point():
     c = pipeline.connect()
     s = pipeline.status(c)
-    assert s["profile"]["ready"] is False and "sales-setup" in s["next_action"]
+    assert s["profile"]["ready"] is False and "vintoria-setup" in s["next_action"]
     Path("SELLER-PROFILE.json").write_text(json.dumps({
         "seller": {"name": "R", "company": "P", "email": "r@p.io", "postal_address": "x", "timezone": "UTC"},
         "offer": {"services": ["web"], "service_details": "x", "niches": ["dental"], "outcomes": ["x"], "deal_size": {"min": 1}},

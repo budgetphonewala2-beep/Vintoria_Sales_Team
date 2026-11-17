@@ -2,8 +2,8 @@
 """Validate every skill: the official `skills-ref validate` (if installed) plus stricter portability checks.
 
 Checks: name format == folder, description <= 1024 chars, only standard frontmatter fields, SKILL.md body
-< 300 lines, every `references/...` and `<SCRIPTS>/...` file mentioned exists, no agent-specific tools or
-paths, and every `python <SCRIPTS>/x.py <subcommand> --flag` written in a skill or reference really exists
+< 300 lines, every `references/...`, `../vintoria-sales/references/...` and `<SCRIPTS>/<group>/x.py` mentioned
+exists, every reference file is linked from somewhere (no orphans), no agent-specific tools or paths, and every `python <SCRIPTS>/x.py <subcommand> --flag` written in a skill or reference really exists
 (checked against each script's --help), so an agent never runs a command that fails.
 Exit 1 on any problem.   Usage: python tools/validate_skills.py
 """
@@ -15,7 +15,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILLS = ROOT / "skills"
-SCRIPTS = SKILLS / "sales" / "scripts"
+SCRIPTS = SKILLS / "vintoria-sales" / "scripts"
+SCRIPT_RE = r"<SCRIPTS>/((?:[\w-]+/)?[\w-]+\.py)"
 ALLOWED = {"name", "description", "license", "compatibility", "metadata", "allowed-tools"}
 FORBIDDEN = [r"\bWebFetch\b", r"\bWebSearch\b", r"Task tool", r"Skill tool", r"subagent_type", r"\$\{CLAUDE_", r"~/\.claude",
              r"\$HOME/\.claude", r"python3 scripts/"]
@@ -57,9 +58,22 @@ def check(skill_dir):
     for ref in set(re.findall(r"`references/([\w.-]+\.md)`", text)):
         if not (skill_dir / "references" / ref).exists():
             problems.append(f"missing references/{ref}")
-    for script in set(re.findall(r"<SCRIPTS>/([\w-]+\.py)", text)):
-        if not (SCRIPTS / script).exists():
-            problems.append(f"missing script {script}")
+    refs_dir = skill_dir / "references"
+    texts = [text] + ([f.read_text(encoding="utf-8") for f in sorted(refs_dir.glob("*.md"))] if refs_dir.exists() else [])
+    for t in texts:
+        for script in set(re.findall(SCRIPT_RE, t)):
+            if "/" not in script:
+                problems.append(f"script path without its group: <SCRIPTS>/{script} (write <SCRIPTS>/<group>/{script})")
+            elif not (SCRIPTS / script).exists():
+                problems.append(f"missing script <SCRIPTS>/{script}")
+        for shared in set(re.findall(r"\.\./vintoria-sales/references/([\w.-]+\.md)", t)):
+            if not (SKILLS / "vintoria-sales" / "references" / shared).exists():
+                problems.append(f"missing shared reference ../vintoria-sales/references/{shared}")
+    if refs_dir.exists():
+        linked = set(re.findall(r"references/([\w.-]+\.md)", "\n".join(texts)))
+        for f in sorted(refs_dir.glob("*.md")):
+            if f.name not in linked:
+                problems.append(f"orphan reference: references/{f.name} is not linked from SKILL.md or another reference")
     for f in [skill_dir / "SKILL.md", *sorted((skill_dir / "references").glob("*.md"))] if (skill_dir / "references").exists() else [skill_dir / "SKILL.md"]:
         t = f.read_text(encoding="utf-8")
         for pat in FORBIDDEN:
@@ -91,7 +105,7 @@ def check_commands(skill_dir):
     files = [skill_dir / "SKILL.md", *sorted((skill_dir / "references").glob("*.md"))] if (skill_dir / "references").exists() \
         else [skill_dir / "SKILL.md"]
     for f in files:
-        for m in re.finditer(r"python <SCRIPTS>/([\w-]+\.py)([^`\n]*)", f.read_text(encoding="utf-8")):
+        for m in re.finditer(r"python " + SCRIPT_RE + r"([^`\n]*)", f.read_text(encoding="utf-8")):
             script, rest = m.group(1), m.group(2)
             if not (SCRIPTS / script).exists():
                 continue                       # reported by check()

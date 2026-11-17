@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "sales" / "scripts"
+SCRIPTS = Path(__file__).resolve().parents[1] / "skills" / "vintoria-sales" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import claim_check  # noqa: E402
@@ -192,8 +192,8 @@ def test_agenda_tells_each_lead_its_exact_next_step():
     pipeline.add_contact(c, "c.com", "Tom", email="tom@c.com", email_status="verified")
     items = {i["prospect"]: i for i in pipeline.today_agenda(c)["items"] if i["kind"] == "new-lead"}
     assert "Deep scan" in items["a.com"]["action"]
-    assert items["b.com"]["skill"] == "sales-contacts"
-    assert items["c.com"]["skill"] == "sales-outreach" and "tom@c.com" in items["c.com"]["action"]
+    assert items["b.com"]["skill"] == "vintoria-prospect-research"
+    assert items["c.com"]["skill"] == "vintoria-outreach" and "tom@c.com" in items["c.com"]["action"]
     c.close()
 
 
@@ -244,8 +244,8 @@ def test_command_checker_catches_wrong_flags(tmp_path):
     spec = importlib.util.spec_from_file_location("vs", Path(__file__).resolve().parents[1] / "tools" / "validate_skills.py")
     vs = importlib.util.module_from_spec(spec); spec.loader.exec_module(vs)
     d = tmp_path / "fake-skill"; d.mkdir()
-    (d / "SKILL.md").write_text("Run `python <SCRIPTS>/pipeline.py add --url x --colour red` then "
-                                "`python <SCRIPTS>/outreach.py teleport acme.com`.", encoding="utf-8")
+    (d / "SKILL.md").write_text("Run `python <SCRIPTS>/core/pipeline.py add --url x --colour red` then "
+                                "`python <SCRIPTS>/outreach/outreach.py teleport acme.com`.", encoding="utf-8")
     probs = vs.check_commands(d)
     assert any("--colour" in p for p in probs) and any("teleport" in p for p in probs)
 

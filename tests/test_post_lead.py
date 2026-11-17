@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "skills" / "sales" / "scripts"))
+sys.path.insert(0, str(ROOT / "skills" / "vintoria-sales" / "scripts"))
 
 import email_lint  # noqa: E402
 import post_lead  # noqa: E402

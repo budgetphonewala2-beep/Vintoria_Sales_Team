@@ -1,0 +1,214 @@
+{
+  "slug": "glowskin.com",
+  "url": "https://glowskin.com",
+  "scanned_at": "2026-11-02T09:00:00+00:00",
+  "post": {
+    "text": "We're relaunching the Glow Skin store before Black Friday and looking for a Shopify developer to rebuild our DTC setup and make it faster on mobile. Recommendations?",
+    "url": "https://www.linkedin.com/posts/jane-doe_activity-7390000000000000000",
+    "contacts": {}
+  },
+  "company": {
+    "name": "Glow Skin",
+    "description": "Glow Skin makes clean, plant-based skincare.",
+    "tech_stack": [
+      "Shopify"
+    ]
+  },
+  "people": [
+    {
+      "name": "Jane Doe",
+      "title": "Founder",
+      "source": "https://glowskin.com/pages/about",
+      "seniority": "C-Suite"
+    }
+  ],
+  "decision_maker": {
+    "name": "Jane Doe",
+    "title": "Founder"
+  },
+  "email": {
+    "best": {
+      "email": "jane@glowskin.com",
+      "status": "verified",
+      "source": "website"
+    },
+    "label": "verified",
+    "phone": null,
+    "finders_skipped": null,
+    "candidates": []
+  },
+  "audit_facts": [
+    {
+      "key": "http_status",
+      "value": 200,
+      "statement": "The homepage returned HTTP 200.",
+      "evidence": "GET https://glowskin.com -> 200"
+    },
+    {
+      "key": "https",
+      "value": true,
+      "statement": "The site loads over HTTPS.",
+      "evidence": "final URL https://glowskin.com/"
+    },
+    {
+      "key": "response_time_ms",
+      "value": 4200,
+      "statement": "The homepage HTML took 4.2 seconds to download in our test.",
+      "evidence": "4200 ms"
+    },
+    {
+      "key": "title",
+      "value": "Glow Skin | Clean skincare",
+      "statement": "The homepage title is \"Glow Skin | Clean skincare\".",
+      "evidence": "<title>Glow Skin | Clean skincare</title>"
+    },
+    {
+      "key": "viewport",
+      "value": false,
+      "statement": "The homepage has no mobile viewport meta tag.",
+      "evidence": "no <meta name=viewport>"
+    },
+    {
+      "key": "h1_count",
+      "value": 1,
+      "statement": "The homepage has 1 H1 heading.",
+      "evidence": "<h1>Clean skin, every day</h1>"
+    },
+    {
+      "key": "cta",
+      "value": true,
+      "statement": "The homepage has a call-to-action button (\"Shop now\").",
+      "evidence": "Shop now"
+    },
+    {
+      "key": "tech",
+      "value": [
+        "Shopify"
+      ],
+      "statement": "The site appears to be built with Shopify.",
+      "evidence": "markers: Shopify"
+    },
+    {
+      "key": "images_missing_alt",
+      "value": 9,
+      "statement": "9 of 14 images on the homepage have no alt attribute.",
+      "evidence": "/cdn/shop/files/hero.jpg"
+    }
+  ],
+  "web": null,
+  "errors": [],
+  "steps": {},
+  "hooks": [
+    {
+      "weight": 10,
+      "key": "their_post",
+      "observation": "They posted: \"We're relaunching the Glow Skin store before Black Friday and looking for a Shopify developer to rebuild our DTC setup and make it faster on mobile. Recommendations?\"",
+      "angle": "Answer exactly what they asked for — this is the strongest opener",
+      "evidence": "their post"
+    },
+    {
+      "weight": 4,
+      "key": "viewport",
+      "observation": "The homepage has no mobile viewport meta tag.",
+      "angle": "Not mobile-friendly — most visitors are on phones; offer a mobile fix",
+      "evidence": "no <meta name=viewport>"
+    },
+    {
+      "weight": 2,
+      "key": "response_time_ms",
+      "observation": "The homepage HTML took 4.2 seconds to download in our test.",
+      "angle": "Slow first load — offer speed optimisation",
+      "evidence": "4200 ms"
+    },
+    {
+      "weight": 1,
+      "key": "images_missing_alt",
+      "observation": "9 of 14 images on the homepage have no alt attribute.",
+      "angle": "Images without alt text — SEO + accessibility gap",
+      "evidence": "/cdn/shop/files/hero.jpg"
+    }
+  ],
+  "facts": [
+    {
+      "key": "http_status",
+      "value": 200,
+      "statement": "The homepage returned HTTP 200.",
+      "evidence": "GET https://glowskin.com -> 200"
+    },
+    {
+      "key": "https",
+      "value": true,
+      "statement": "The site loads over HTTPS.",
+      "evidence": "final URL https://glowskin.com/"
+    },
+    {
+      "key": "response_time_ms",
+      "value": 4200,
+      "statement": "The homepage HTML took 4.2 seconds to download in our test.",
+      "evidence": "4200 ms"
+    },
+    {
+      "key": "title",
+      "value": "Glow Skin | Clean skincare",
+      "statement": "The homepage title is \"Glow Skin | Clean skincare\".",
+      "evidence": "<title>Glow Skin | Clean skincare</title>"
+    },
+    {
+      "key": "viewport",
+      "value": false,
+      "statement": "The homepage has no mobile viewport meta tag.",
+      "evidence": "no <meta name=viewport>"
+    },
+    {
+      "key": "h1_count",
+      "value": 1,
+      "statement": "The homepage has 1 H1 heading.",
+      "evidence": "<h1>Clean skin, every day</h1>"
+    },
+    {
+      "key": "cta",
+      "value": true,
+      "statement": "The homepage has a call-to-action button (\"Shop now\").",
+      "evidence": "Shop now"
+    },
+    {
+      "key": "tech",
+      "value": [
+        "Shopify"
+      ],
+      "statement": "The site appears to be built with Shopify.",
+      "evidence": "markers: Shopify"
+    },
+    {
+      "key": "images_missing_alt",
+      "value": 9,
+      "statement": "9 of 14 images on the homepage have no alt attribute.",
+      "evidence": "/cdn/shop/files/hero.jpg"
+    },
+    {
+      "key": "their_post",
+      "value": true,
+      "statement": "We're relaunching the Glow Skin store before Black Friday and looking for a Shopify developer to rebuild our DTC setup and make it faster on mobile. Recommendations?",
+      "evidence": "https://www.linkedin.com/posts/jane-doe_activity-7390000000000000000"
+    },
+    {
+      "key": "site_description",
+      "value": true,
+      "statement": "Glow Skin makes clean, plant-based skincare.",
+      "evidence": "https://glowskin.com"
+    },
+    {
+      "key": "person",
+      "value": "Jane Doe",
+      "statement": "Jane Doe — Founder",
+      "evidence": "https://glowskin.com/pages/about"
+    }
+  ],
+  "readiness": {
+    "verified_email": true,
+    "hooks": 4,
+    "has_post": true,
+    "web_research": false,
+    "next": "Write the first email from the top hook (vintoria-outreach)"
+  }
+}

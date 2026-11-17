@@ -1,5 +1,38 @@
 # Changelog
 
+## 4.0.0 — 2026-11-17 (Vintoria: 8 skills, organised engine, 270-service catalog)
+
+### Changed
+- **20 skills → 8 Vintoria skills** that each do a whole job: `vintoria-sales` (operator + router, was sales + autopilot),
+  `vintoria-setup` (setup + ICP + offer lanes), `vintoria-lead-hunt`, `vintoria-prospect-research` (deep scan, audit,
+  research, contacts, qualify, competitors, full analysis), `vintoria-outreach` (outreach + follow-ups),
+  `vintoria-reply-book` (reply + book), `vintoria-close` (prep, discovery, proposal, objections, negotiation, expansion),
+  `vintoria-report` (report + PDF). Every old playbook, template and output format moved into the merged skill's
+  `references/`, renamed by topic (`research-playbook.md`, `proposal-output-format.md`, …).
+- **The engine is organised by job**: `skills/vintoria-sales/scripts/{core,leads,research,outreach,replies,ops}/`, with a
+  small `_vpath.py` bootstrap so modules still import each other. Skills call `<SCRIPTS>/<group>/<script>.py`.
+- The two competing skill sets (the engine-backed `sales-*` and the instruction-only `vintoria-*`) are merged: the
+  Vintoria set's catalog, pricing policy, quality bar, offer lanes, discovery call, negotiation and expansion playbooks
+  now sit on top of the engine. The instruction-only set is kept in `archive/` for reference (not installed).
+- Claude Code subagents renamed `vintoria-*`; the installer retires (backs up) the old `sales-*` skills and subagents.
+
+### Added
+- The **Vintoria service catalog** (270 services, 12 disciplines) as references the skills cite by exact ID, plus
+  `docs/vintoria/` (PDF, JSON, list). A test checks every service ID quoted in a skill against the catalog.
+- `seller_profile.py init --preset vintoria`: starts the profile from the catalog facts (services, India/US/UK/AU,
+  English + Hindi, buyer titles) and leaves identity, prices and proof to the interview.
+- **India as a target market** (`IN`: Google country, time zone, cities) — the engine could only target overseas markets.
+- **`ai` and `automation` service codes** with their own buyer phrases, Hinglish asks, subreddits, HN queries and Maps
+  categories, so Vintoria's AI Development and Business Automation lanes can be hunted directly.
+- Compliance: India DPDP + TRAI guidance for Indian prospects; language rule (US/UK/Indian English, Hinglish when the
+  prospect wrote in it).
+- `validate_skills.py`: grouped script paths, shared-reference links and orphan references are checked.
+
+### Fixed
+- 38 test errors: the glowskin eval dossier was ignored by `.gitignore` (`prospects/`) and never committed — rebuilt
+  with the scanner's own renderer and un-ignored for eval fixtures.
+- `generate_pdf_report.py --help` treated `--help` as the input file.
+
 ## 3.10.0 — 2026-11-02 (every post → deep research → premium emails)
 
 ### Added

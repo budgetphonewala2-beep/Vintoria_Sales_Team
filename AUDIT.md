@@ -96,3 +96,16 @@ from both the demo data and the schema the skills document. Status column = stat
   the actors' public docs (2026-11) and outputs are read defensively, but run a small test (`--max 5`) after
   switching actors. Provider APIs (Prospeo, Findymail, Apollo, verifiers) were implemented from their public docs
   and tested with mocked responses only.
+
+## E. v4 review (2026-11-17) — what was still wrong in v3.10, and the fix
+
+| # | Problem | Fix |
+|---|---|---|
+| 31 | 20 overlapping skills (`sales-research`, `-contacts`, `-qualify`, `-competitors`, `-audit`, `-prospect` all researched one prospect) — agents had to pick between near-duplicates | Merged into 8 skills, one per job, with modes inside |
+| 32 | Two competing skill sets: the engine-backed `sales-*` and an instruction-only `vintoria-*` set with its own CSV pipeline and workspace layout | One set on the engine; the Vintoria catalog, pricing policy, quality bar and closing playbooks merged in |
+| 33 | 27 scripts in one flat folder | Grouped into core / leads / research / outreach / replies / ops |
+| 34 | The engine could not target India (no `IN` market) although Vintoria sells to Indian SMBs | `IN` added with Google country, time zone and cities; Vintoria preset targets IN, US, UK, AU |
+| 35 | No way to hunt AI or automation buyers specifically (only a broad `software` code) | `ai` and `automation` codes with their own queries |
+| 36 | 38 tests errored: an eval fixture was swallowed by `.gitignore` | Fixture rebuilt and un-ignored; CI green again |
+| 37 | Upgrading left the old skills installed next to the new ones (duplicate triggers) | Installer retires legacy skills/subagents into a backup |
+| 38 | Skills could name services loosely ("AI chatbot") or quote a price | Catalog IDs only (tested); pricing policy: profile prices or `[PRICE TO CONFIRM]` |

@@ -1,4 +1,4 @@
-"""Every place an agent could invent facts, and the guard that stops it (see skills/sales/references/truth-rules.md).
+"""Every place an agent could invent facts, and the guard that stops it (see skills/vintoria-sales/references/truth-rules.md).
 Each adversarial sentence below passed the v3.8 claim checker; each must now be blocked, while true sentences pass."""
 
 import json
@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "skills" / "sales" / "scripts"
+SCRIPTS = ROOT / "skills" / "vintoria-sales" / "scripts"
 sys.path.insert(0, str(SCRIPTS))
 
 import claim_check  # noqa: E402
@@ -18,7 +18,7 @@ import lead_sources  # noqa: E402
 import outreach  # noqa: E402
 import pipeline  # noqa: E402
 
-FIX = ROOT / "skills" / "sales-outreach" / "evals" / "glowskin-sequence-from-dossier" / "files"
+FIX = ROOT / "skills" / "vintoria-outreach" / "evals" / "glowskin-sequence-from-dossier" / "files"
 
 
 @pytest.fixture(autouse=True)

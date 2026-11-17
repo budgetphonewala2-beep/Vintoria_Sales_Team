@@ -12,6 +12,8 @@ script to catch you, so the self-check below is the guard. It applies to every e
 | Facts you observed on their site yourself (no viewport tag, copyright 2019, no contact form) | audit | A guess about traffic, revenue, team size or tools |
 | The Vintoria catalog (`service-catalog.md`, `services-*.md`): service names, IDs, scope | catalog | A service, price, package, SLA or timeline the catalog doesn't contain — it has no prices at all |
 | `SELLER-PROFILE.md`: case studies, clients, years, prices, delivery, guarantees | profile | Results, clients or guarantees that aren't in the profile |
+| `radian-profile.md`: Radian's identity, services and published proof (radianmarketing.com, 2026-11-17) — Radian messages only | profile | Anything marked `[TO CONFIRM]`; Radian proof in a Vintoria message |
+| `PROOF-BANK.md`: a client's own result, quote, review — within the permission recorded | profile | Using a name, quote or number the client didn't allow |
 | Today's date | calendar | Holidays or deadlines you didn't check |
 
 Documents you wrote yourself (`DOSSIER.md`, research, drafts, proposals, meeting notes) are **never** evidence for a new

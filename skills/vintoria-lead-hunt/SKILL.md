@@ -1,11 +1,11 @@
 ---
 name: vintoria-lead-hunt
-description: "Finds people on LinkedIn and Reddit — through the accounts already logged in — who are publicly asking to hire something Vintoria sells: a website, app, SaaS or MVP, UI/UX or branding, an AI chatbot or agent, automation or a CRM, a Shopify store, SEO, ads or social media, in English, Hindi and Hinglish. Searches LinkedIn posts (Latest, past week) and Reddit (r/forhire, small-business, startup, Indian and niche subreddits), filters out agencies, freelancers, job seekers and job ads, judges every candidate with an exact quote, scores them, grabs the email from LinkedIn (post, contact info, company site) and hands each buyer to outreach — a professional Reddit comment with Vintoria's WhatsApp link, or an email from business@vintoria.org. Use it whenever the user wants leads or clients: 'find leads', 'find people looking for a web developer on Reddit', 'LinkedIn pe clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'hunt for clients this week'."
+description: "Finds people on LinkedIn and Reddit — through the accounts already logged in — who are publicly asking to hire something Vintoria sells: a website, app, SaaS or MVP, UI/UX or branding, an AI chatbot or agent, automation or a CRM, a Shopify store, SEO, ads or social media, in English, Hindi and Hinglish. Searches LinkedIn posts (Latest, past 24 hours) and Reddit (r/forhire, small-business, startup, Indian and niche subreddits), filters out agencies, freelancers, job seekers and job ads, judges every candidate with an exact quote, scores them, grabs the email from LinkedIn (post, contact info, company site) and hands each buyer to outreach — a professional Reddit comment with Vintoria's WhatsApp link, or an email from business@vintoria.org. Use it whenever the user wants leads or clients: 'find leads', 'find people looking for a web developer on Reddit', 'LinkedIn pe clients dhundo', 'leads chahiye', 'kaun website banwana chahta hai', 'hunt for clients this week'."
 license: MIT
 compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
-  version: "5.0.0"
+  version: "7.0.0"
 ---
 
 # Vintoria Lead Hunt — LinkedIn and Reddit buyers
@@ -19,7 +19,8 @@ answers.
 1. **Your files.** Everything lives in plain files — `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`,
    `PIPELINE.md`, `DO-NOT-CONTACT.md` and `prospects/<slug>/` (format: `../vintoria-sales/references/pipeline-format.md`). If you can't read or
    write files (a chat bot such as Grok), ask the user to paste `SELLER-PROFILE.md` and the relevant `PIPELINE.md` rows,
-   and finish by printing every changed row and file in code blocks for them to save.
+   and finish by printing every changed row and file in code blocks for them to save. Mirror every change to the
+   connected Google Sheet (`../vintoria-sales/references/sheet-sync.md`) — update by key, never duplicate, never delete.
 2. **Vintoria's profile.** Read `SELLER-PROFILE.md`. This skill builds queries, emails or prices from it — if it is
    missing or still full of `[ASK]`, run `vintoria-setup` first (in a hurry: ask only the missing answers in one message).
 3. **What Vintoria sells.** 270 services in 12 disciplines — `../vintoria-sales/references/service-catalog.md`. Name a service exactly as the
@@ -31,8 +32,9 @@ answers.
 5. **Facts only.** Every sentence traces to a page you opened, the prospect's own words, a fact you observed on their site,
    the catalog or the profile — never to memory. Never say something was sent, posted, booked or verified unless it
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
-6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
-   and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+6. **Contact details** — Vintoria: `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`);
+   Radian Marketing: `amar@radianmarketing.site` — and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`. Each
+   brand's emails carry that brand's real identity (`../vintoria-sales/references/brands.md`).
 7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
    hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
@@ -51,16 +53,16 @@ answers.
    | 11 Marketing & SEO, 12 Growth | "SEO agency", "rank on Google", "run ads", "more leads", "social media manager" |
    | Hinglish | "website banwana hai", "app banwana hai", "developer chahiye", "koi SEO wala batao", "chatbot banwana hai" |
 2. **Search, newest first** (`references/queries.md` has every query and subreddit):
-   - **LinkedIn** — Posts, sort **Latest**, date posted **past 24 hours** (daily) or **past week**, the boolean queries
+   - **LinkedIn** — Posts, sort **Latest**, date posted **past 24 hours**, the boolean queries
      (max 5 operators). For each hit note: author, headline, profile URL, post URL, post date.
    - **Reddit** — r/forhire (`flair:Hiring`), r/smallbusiness, r/Entrepreneur, r/startups, r/indianstartups and Indian city
-     subs, r/shopify, r/ChatGPT / r/automation, niche owner subs; sort **New**, past week. For each hit note: username,
+     subs, r/shopify, r/ChatGPT / r/automation, niche owner subs; sort **New**, past day (24 hours). For each hit note: username,
      post URL, age, comment count, and the subreddit's rule on self-promotion.
    **Freshness wins the client:** under 24 hours only, by the age shown on the post (`1d` = too old) —
    `../vintoria-sales/references/lead-quality.md`. Skip every URL already in `SEEN.md`; add each one you judge.
 3. **Judge every candidate** with `references/intent-rubric.md`: buyer / seller / job_seeker / other, what they want (as a
    catalog service where clear — "AI chatbot for my clinic" → `123 AI Chatbot Development`), urgency, budget (only if
-   stated), location, and an **exact quote** that proves intent. Drop anything under confidence 0.6 (0.7 for a Reddit comment).
+   stated), location, and an **exact quote** that proves intent. Drop anything under confidence 0.7.
 4. **Score** with the value score in `../vintoria-sales/references/lead-quality.md` (must-haves first, then 0-100);
    valuable = 65+. Hourly 24/7 hunting runs through `vintoria-hourly-run`; this skill is the deeper one-off hunt.
 5. **Contact path:**

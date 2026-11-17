@@ -337,7 +337,7 @@ This is the same scale used by `vintoria-prospect-research`, `vintoria-report` a
 | Grade | Score Range | Label | Recommended Action |
 |-------|-----------|-------|-------------------|
 | **A+** | 90-100 | Hot — Sales Qualified | Assign senior rep. Multi-thread to the buying committee within 24 hours. Prepare a custom proposal. |
-| **A** | 75-89 | Sales Qualified Lead | Personalized outreach within 48 hours. Schedule discovery. Confirm budget and timeline early. |
+| **A** | 75-89 | Sales Qualified Lead | Personalized outreach within the hour (hot leads: ~15 minutes). Schedule discovery. Confirm budget and timeline early. |
 | **B** | 60-74 | Marketing Qualified Lead | Standard outreach sequence. Gather missing MEDDIC data. Nurture with relevant content. |
 | **C** | 40-59 | Nurture | Long-term nurture. Share thought leadership. Monitor for trigger events. Re-qualify in 60-90 days. |
 | **D** | 0-39 | Unqualified | Do not pursue actively. Awareness campaigns only. Re-evaluate on major changes (funding, leadership, growth). |

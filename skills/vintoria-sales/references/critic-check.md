@@ -12,6 +12,7 @@ reviewer who wants to reject it, and answer every line with **yes** or **no**. O
 - [ ] Deletion test: remove their name and details — it no longer fits anyone else's post.
 - [ ] Every fact traces to their post, their page, the catalog or the profile (`truth-rules.md`). No invented client,
       number, result, price or date.
+- [ ] Signed by the right person: Vintoria = **Pratik Patil, Co-founder** (no other name anywhere); Radian = Amar.
 - [ ] Exactly one Vintoria service, named as the catalog does; no list of services.
 - [ ] Says openly that it's Vintoria.
 - [ ] Contact details exactly as `vintoria-contact.md`: `business@vintoria.org`, `https://wa.me/918766033979…`.
@@ -38,6 +39,15 @@ reviewer who wants to reject it, and answer every line with **yes** or **no**. O
 - [ ] Under 120 words (follow-ups shorter), one soft question as the CTA, no link except the WhatsApp line in the signature.
 - [ ] Signature with postal address and the opt-out line (`vintoria-contact.md`).
 - [ ] It's between 08:00 and 19:00 on a weekday in **their** time zone — otherwise queue it for their morning.
+- [ ] The right brand: sender, signature, address and contact line all belong to the same brand (`brands.md`); it doesn't
+      mention the other brand; no other email to this person today; at most 4 in the last 7 days across both brands;
+      the other brand hasn't received a reply or opt-out from them.
+- [ ] Radian email: a marketing fact not used in Vintoria's email to this person; Radian's own service names
+      (`radian-profile.md`), not Vintoria catalog IDs.
+- [ ] Proof stays in its brand: no Radian client, testimonial or case study in a Vintoria message, and the reverse; no
+      `[TO CONFIRM]` item from `radian-profile.md`.
+- [ ] Vintoria email 1 with a Radian email planned goes out Monday-Thursday in their time zone (so Radian lands the next
+      working day).
 
 ## LinkedIn comment / connection note, also
 

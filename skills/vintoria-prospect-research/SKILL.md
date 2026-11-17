@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
-  version: "5.0.0"
+  version: "7.0.0"
 ---
 
 # Vintoria Prospect Research — everything about one prospect
@@ -18,7 +18,8 @@ reach the decision maker, and the 1-3 Vintoria services the evidence actually ju
 1. **Your files.** Everything lives in plain files — `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`,
    `PIPELINE.md`, `DO-NOT-CONTACT.md` and `prospects/<slug>/` (format: `../vintoria-sales/references/pipeline-format.md`). If you can't read or
    write files (a chat bot such as Grok), ask the user to paste `SELLER-PROFILE.md` and the relevant `PIPELINE.md` rows,
-   and finish by printing every changed row and file in code blocks for them to save.
+   and finish by printing every changed row and file in code blocks for them to save. Mirror every change to the
+   connected Google Sheet (`../vintoria-sales/references/sheet-sync.md`) — update by key, never duplicate, never delete.
 2. **Vintoria's profile.** Read `SELLER-PROFILE.md`. This skill builds queries, emails or prices from it — if it is
    missing or still full of `[ASK]`, run `vintoria-setup` first (in a hurry: ask only the missing answers in one message).
 3. **What Vintoria sells.** 270 services in 12 disciplines — `../vintoria-sales/references/service-catalog.md`. Name a service exactly as the
@@ -30,8 +31,9 @@ reach the decision maker, and the 1-3 Vintoria services the evidence actually ju
 5. **Facts only.** Every sentence traces to a page you opened, the prospect's own words, a fact you observed on their site,
    the catalog or the profile — never to memory. Never say something was sent, posted, booked or verified unless it
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
-6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
-   and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+6. **Contact details** — Vintoria: `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`);
+   Radian Marketing: `amar@radianmarketing.site` — and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`. Each
+   brand's emails carry that brand's real identity (`../vintoria-sales/references/brands.md`).
 7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
    hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 

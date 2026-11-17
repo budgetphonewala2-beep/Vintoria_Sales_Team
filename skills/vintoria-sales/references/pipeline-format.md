@@ -14,6 +14,12 @@ DO-NOT-CONTACT.md            opt-outs and bounces, one per line, append-only, ne
 TEAM-BOARD.md                the bots' shared message board (team.md) — handoffs, claims, reviews, alerts, standups
 SEEN.md                      every post URL already judged or claimed, so no post is handled twice
 RUN-LOG.md                   per-hour counters and results of the hourly run (shared limits)
+HEALTH.md                    account health levels (GREEN / YELLOW / RED) per platform, every 6 hours
+PROOF-BANK.md                real results, quotes, reviews and referrals, with the client's permission
+CONTENT-LOG.md               LinkedIn posts and their results (vintoria-authority)
+SHEET-QUEUE.md               rows waiting for the Google Sheet when it couldn't be reached (sheet-sync.md)
+SEEN-ARCHIVE.md              SEEN.md lines older than 30 days
+SALES-REPORT.md              the weekly report (vintoria-report)
 prospects/<slug>/
   DOSSIER.md                 sourced research, hooks, fit to catalog services, contact
   SITE-AUDIT.md              fact-only website audit
@@ -23,6 +29,15 @@ prospects/<slug>/
   MEETING-NOTES.md           discovery notes + qualification score
   CLIENT-PROPOSAL.md         the proposal
   HISTORY.md                 append-only log: date — what happened — who
+  COMPANY-RESEARCH.md        company research (vintoria-prospect-research)
+  DECISION-MAKERS.md         who decides, contacts, email status
+  LEAD-QUALIFICATION.md      BANT / MEDDIC qualification
+  COMPETITIVE-INTEL.md       what they use today, battle cards
+  PROSPECT-ANALYSIS.md       the five-role full analysis
+  FOLLOWUP-SEQUENCE.md       follow-ups after a call or proposal
+  OBJECTION-PLAYBOOK.md      objection answers prepared for this deal
+  CLOSE-PLAN.md              negotiation and signature plan
+  EXPANSION-MAP.md           upsell and referral plan after the win
 ```
 
 `<slug>` = their domain without `www` (`acme.com`), or `name@platform` for someone without a website
@@ -47,6 +62,8 @@ asking the user to paste `SELLER-PROFILE.md` and `PIPELINE.md` if you don't have
 - `email_status` — `verified` (a verifier tool said so) · `published` (on their own site or post) · `catch_all` ·
   `unverified` (found elsewhere) · `pattern-guessed` · `invalid`. Cold email only to `verified` or `published`.
 - `score` — 0-100 from the scoring tables; `value` — only a real price from the profile, with currency.
+- `channel` for email leads is `linkedin-email`; which brand sent which step lives in `OUTREACH-SEQUENCE.md` and the
+  sheet's **Emails** tab (`brand` = Vintoria / Radian).
 - `next_due` — always a real date. A row without `next_action` + `next_due` is not in the pipeline.
 - `owner` — the role working it now (plus `claimed_at` time in `HISTORY.md`); change it at every handoff.
 - `outcome` — what the first touch produced: `no-reply` · `reddit-reply` · `whatsapp-reply` · `email-reply` ·
@@ -77,18 +94,19 @@ One block per hour; every bot adds to the same block before it posts or sends (t
 |---|---|---|
 | `new` | found, not researched | dossier written → `researched` |
 | `researched` | dossier (+ audit) done | first message sent → `contacted` |
-| `contacted` | in the sequence | any human reply → `replied`; day 28 with no reply → `nurture` |
+| `contacted` | in the sequence | any human reply → `replied`; no reply after the last email of both brands (day 29) or 7 days after a single comment / note → `nurture` |
 | `replied` | they answered | call booked → `meeting`; no → `lost` |
 | `meeting` | call booked or held | qualified → `proposal`; not a fit → `lost` / `nurture` |
 | `proposal` | proposal sent | verbal yes → `negotiation` |
 | `negotiation` | terms being agreed | signed → `won`; no → `lost` |
 | `won` → `delivery` → `expand` | signed, being delivered, upsell found | |
-| `nurture` | not now, revisit on a trigger | trigger → `researched` |
-| `lost` / `disqualified` | closed, reason in `HISTORY.md` | may re-enter after 90 days |
+| `nurture` | not now, revisit on a trigger | nurture touch sent → `contacted`; 3 nurture touches with no answer → `lost` (`no-response`) |
+| `lost` / `disqualified` | closed, reason in `HISTORY.md` (`timing`, `budget`, `no-fit`, `chose-other`, `no-response`, `not-interested`, `opt-out`) | only `timing` / `budget` may re-enter via the nurture engine after 90 days; `no-response`, `not-interested` and `opt-out` never |
 
 ## The cadence
 
-- **LinkedIn email:** email 1 on day 0, then day 3, 7, 14 and 28.
+- **LinkedIn email:** Vintoria email 1 on day 0, then day 3, 7, 14 and 28; Radian Marketing (only with a real marketing
+  hook) on day 1, then day 4, 8, 15 and 29 (`brands.md`). Never two emails on one day.
 - **Reddit comment / LinkedIn comment or note:** one touch only; check for a reply the next day; no answer in 7 days →
   `nurture` (LinkedIn: one short message after they accept a connection).
 After every message that went out, write it into `THREAD.md` (with its link), update `last_touch`, and set
@@ -100,7 +118,7 @@ After every message that went out, write it into `THREAD.md` (with its link), up
 2. Fresh buyer posts (under 24 h) not yet in `SEEN.md`.
 3. `meeting` rows with a call in the next 24 h (prep) or a past call without notes (outcome).
 4. Rows with `next_due` today or earlier.
-5. Stale rows (no touch for 14+ days) — next step, `nurture` or `lost`.
+5. Stale rows (no touch for 14+ days and no email scheduled) — next step, `nurture` or `lost`.
 6. The best `new` rows — research them.
 If fewer than 20 rows are open (not won / lost / disqualified / nurture), the funnel is low: hunt.
 

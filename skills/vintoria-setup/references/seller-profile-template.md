@@ -11,7 +11,7 @@ Last updated: YYYY-MM-DD · Status: Incomplete | Ready
 ## Seller
 - Company (seller.company): Vintoria — digital product studio
 - Website (seller.website): [ASK]
-- Sender name (seller.name): [ASK]
+- Sender name (seller.name): Pratik Patil — title: Co-founder (the only name that signs for Vintoria)
 - Sender email (seller.email): business@vintoria.org
 - WhatsApp (seller.whatsapp): +91 87660 33979 — https://wa.me/918766033979
 - Postal address (seller.postal_address): [ASK]   ← required in US commercial email
@@ -46,7 +46,7 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
 - Never target: agencies, freelancers, job seekers
 - Languages: English; Hindi / Hinglish when the prospect writes in it
 
-## Proof (the only proof emails and proposals may cite)
+## Proof (with `PROOF-BANK.md`, the only proof any message may cite)
 - Case studies (proof.case_studies): [ASK — 2-3: client or type, what we did, the result, a link]
 - Portfolio (proof.portfolio_url): [ASK]
 - Years / projects / team (proof.years_in_business, projects_done, team_size): [ASK]
@@ -62,7 +62,22 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
 - Buying triggers (signals.triggers): [ASK — launch, funding, rebrand, festive season, migration…]
 - Tools they leave (signals.tools_they_leave): [ASK — Wix, Squarespace, spreadsheets…]
 
-## Channels and automation
+## Brands & sheet
+- Brand 1: Vintoria — business@vintoria.org — build services (disciplines 02-10)
+- Brand 2: Radian Marketing — amar@radianmarketing.site — sender: Amar, Tech & Development Head — angle: marketing and
+  growth (SEO, local SEO / GMB, ads, social, CRO, content, Amazon) — all facts in
+  `../../vintoria-sales/references/radian-profile.md` (from radianmarketing.com, 2026-11-17)
+- Radian website: https://radianmarketing.com · phone / WhatsApp: +91 93106 42998 · public email: hi@radianmarketing.com
+- Radian postal address: 55, 3rd Floor, Saidulajab, Near Westend Marg Lane-2, New Delhi, India
+- radianmarketing.site redirects to radianmarketing.com: [ASK: yes / no]
+- Radian prices: Shopify Development from ₹35,000 · Woocommerce Development from ₹25,000 · Wordpress Sites from ₹15,000 ·
+  Custom website from ₹45,000 (all "starts from", INR) — every other Radian service: [ASK]
+- Radian case-study numbers to confirm (the site contradicts itself): [ASK]
+- Radian domain set up (SPF, DKIM, DMARC) and warming up: [ASK: yes / no, start date]
+- Daily email cap per inbox (warm-up): business@vintoria.org [ASK, e.g. 30] · amar@radianmarketing.site [ASK: start 10-15, +5 a week]
+- Google Sheet: [ASK: name + link] — tabs Leads, Emails, Social, Replies, Deals, Daily, Health, Dashboard
+
+## Automation (channels and limits)
 - Lead sources: LinkedIn and Reddit only (accounts logged in on the bots' machine)
 - Reddit: public comments on buyer posts with the WhatsApp link — yes
 - LinkedIn: email from business@vintoria.org when an email is found; otherwise comment / connection note — yes
@@ -74,8 +89,12 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
 - Per-hour limits, all bots together: Reddit comments 10 (≥ 4 minutes apart, ≤ 1 per subreddit per hour) ·
   LinkedIn emails 10 (only 08:00-19:00 on weekdays in the prospect's time zone; otherwise queued) ·
   LinkedIn comments 3 · LinkedIn connection notes 15 per day (LinkedIn's own weekly invitation limit applies)
-- Circuit breakers: a removed comment, a Reddit or LinkedIn warning, or a temporary ban → pause that platform and
-  escalate to the owner · email bounces over 2 % in 14 days → pause email
+- Circuit breakers: `vintoria-account-health` every 6 hours → GREEN (full limits) / YELLOW (half) / RED (pause + escalate);
+  a removed comment, warning or temporary ban triggers the check at once · email bounces over 2 % in 14 days → YELLOW
+- Hot leads (value 85+, under 2 h, ≤ 3 replies): fast track, contacted within ~15 minutes
+- Authority: one LinkedIn post a weekday from Pratik Patil's profile + 5-10 comments on buyers' posts — yes / no
+- Google Business Profile review link (for the proof bank): [ASK]
+- Owner digest: 21:00 IST to the owner (WhatsApp-ready)
 - Team: one bot per role, or fewer bots with combined roles (`../../vintoria-sales/references/team.md`); owner = the human (escalations)
 ```
 

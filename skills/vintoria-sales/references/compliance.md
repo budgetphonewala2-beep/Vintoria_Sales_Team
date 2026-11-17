@@ -27,9 +27,13 @@ Every message must be legal to send. When a market's rule is unclear, ask the us
 
 ## Channels
 
-- **Email** — one person at a time, never a bulk blast. Plain text, at most one link (none in email 1), no tracking
-  pixels, no attachments in the first email, only to `verified` or `published` addresses, from a warmed-up domain with
-  SPF/DKIM/DMARC. Start around 5 cold emails a day per inbox and grow slowly.
+- **Email** — one person at a time, never a bulk blast. Plain text, no link in the body of email 1 (the brand's
+  signature line is the only link), no tracking pixels, no attachments in the first email, only to `verified` or
+  `published` addresses, from a domain with SPF/DKIM/DMARC. **Daily cap per inbox** = the warm-up cap in
+  `SELLER-PROFILE.md` → Brands & sheet (new inbox: 10-15 a day, about +5 a week while bounces stay under 2 %); the hourly
+  email limit never overrides it. Over the cap → queue for tomorrow.
+- **Two brands** (`brands.md`): each email identifies its real sender, brand and postal address; one suppression list
+  (`DO-NOT-CONTACT.md`) covers both brands; a reply or opt-out to either stops both.
 - **Reddit** (bot comments from Vintoria's logged-in account): only on real buyer posts, only where the subreddit's rules
   allow offers, one comment per post, said openly to be from Vintoria, helpful first, no identical text, within the
   limits in `SELLER-PROFILE.md` → Automation (counted for all bots in `RUN-LOG.md`); no vote manipulation, no second accounts. A removed comment or a warning stops Reddit activity

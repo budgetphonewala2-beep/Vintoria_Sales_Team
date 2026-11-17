@@ -20,7 +20,7 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
 5. **Urgency**: high = deadline or "asap/urgent/this week/before Diwali"; medium = clear plan, no date; low =
    "thinking about", "maybe next year".
 6. **Confidence**: 0.9+ explicit request with details; 0.7 clear request, few details; 0.5 ambiguous → **not**
-   a buyer (threshold 0.6). If unsure whether it's a job or a project, it's not a buyer.
+   a buyer (threshold 0.7). If unsure whether it's a job or a project, it's not a buyer.
 7. The quote must be copied verbatim. If you can't quote the intent, it isn't there.
 
 ## 30 labelled examples

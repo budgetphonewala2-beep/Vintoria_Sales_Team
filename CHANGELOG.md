@@ -1,5 +1,118 @@
 # Changelog
 
+## 7.5.0 — 2026-11-17 (Pratik Patil signs for Vintoria, premium emails)
+
+### Added
+- `premium-email.md` — premium plain-text anatomy (subject + preview, hook, insight, offer, soft CTA, P.S.), five touches
+  in five formats with full examples, Radian's version, what makes an email boring, a branded HTML template for warm
+  emails only, and a premium checklist.
+
+### Changed
+- Vintoria is signed only by **Pratik Patil, Co-founder** — in every signature, example, the profile template, the critic
+  check, the bot prompts and a new self-test scenario (12b → 29 scenarios). New premium email signature.
+
+## 7.4.1 — 2026-11-17 (final readiness audit)
+
+### Fixed
+- Replaced a foreign example profile (another studio, an invented case study, "Shopify Partner", India excluded) with
+  Vintoria's own profile shape and `[ASK]` placeholders, so no bot can copy foreign facts into Vintoria's profile.
+- Removed invented statistics a bot could repeat to buyers ("3-5x more expensive to build", "[similar company] found",
+  "2-3x more likely to close", "90% of the time").
+
+### Verified
+- 11 / 11 skills valid (`skills-ref`); links, catalog IDs and WhatsApp links clean; 87 files with no broken tables,
+  unclosed code blocks, encoding damage or stale numbers; all 28 self-test rules traced to the files bots read.
+
+## 7.4.0 — 2026-11-17 (Radian's official services, 6-hour inbox sweep, 24/7 autopilot)
+
+### Added
+- `autopilot.md` — the 24/7 loop; a full inbox sweep of both brands every 6 hours (spam folders included); a watchdog with
+  hourly heartbeats and role failover after 2 silent hours; a default safe action for every situation; the short list of
+  what still needs a human. New board types `SWEEP` and `HEARTBEAT`; weekly automatic self-test.
+- Self-test scenarios 25-27 (role failover, reply rescued from spam, Radian "starts from" price) → 28 scenarios.
+
+### Changed
+- `radian-profile.md` services replaced with the owner's official list (11 lanes, the growth metrics ROAS / CAC / AOV /
+  LTV) and Radian's website prices ("starts from" ₹15,000-₹45,000) with rules for when they may be quoted.
+- Two-brand rule: Vintoria pitches the build, Radian pitches growth to the same person; Radian may sell any of its
+  services when it is the only brand in the conversation. Prices never cross brands (`pricing-policy.md`).
+
+## 7.3.0 — 2026-11-17 (Radian Marketing brand facts from radianmarketing.com)
+
+### Added
+- `radian-profile.md` — Radian Marketing's identity, team, contact (hi@radianmarketing.com, +91 93106 42998, New Delhi
+  address, Calendly), 40+ services by its own names grouped into 9 lanes with the hook to look for, industries, published
+  clients and testimonials, offers, sign-off; contradictory or unverified numbers marked `[TO CONFIRM]`.
+
+### Changed
+- Radian emails use Radian's real details and service names; proof never crosses brands (critic check, truth rules,
+  self-test scenario 18b → 25 scenarios); Radian sequence stays in `review` until radianmarketing.site redirects to
+  radianmarketing.com; profile template pre-filled.
+
+## 7.2.0 — 2026-11-17 (one-day brand gap, full consistency audit, self-test)
+
+### Changed
+- Radian Marketing's email 1 now goes **one day** after Vintoria's (day 1); follow-ups 3/7/14/28 after each brand's own
+  first email (Vintoria 0/3/7/14/28, Radian 1/4/8/15/29) — never two on one day. Vintoria's email 1 goes out
+  Monday-Thursday so Radian lands the next working day; weekend clashes move Radian one more working day.
+- The hourly run is now the single place that sends every due email of both brands, each in the prospect's own working
+  hours (before, follow-ups were sent once a day at 08:00 IST — night time for US prospects).
+
+### Fixed (audit)
+- Email volume conflict (5 a day vs 10-15 a day vs 10 an hour): one daily warm-up cap per inbox that the hourly limit
+  never overrides.
+- "No link in email 1" vs the WhatsApp link in the signature; "4 touches a week" vs "4 emails in any 7 days".
+- Old freshness and confidence rules (past week, 0.6) left in lead-hunt, the query guide and the intent rubric → 24 h, 0.7.
+- Stage rules: the last email is day 29 with two brands; nurture → contacted → replied / lost; which lost reasons may
+  ever re-enter.
+- Profile section names now match every reference (`Automation (channels and limits)`, `Brands & sheet`); the Proof
+  heading includes `PROOF-BANK.md`; 11 working files added to the file list.
+
+### Added
+- `self-test.md` — 24 scenarios with the expected behaviour; bots go live only at 24 / 24.
+
+## 7.1.0 — 2026-11-17 (two email brands, live Google Sheet)
+
+### Added
+- `brands.md` — Vintoria (day 0) and Radian Marketing (day 1) email sequences, each with 3/7/14/28 follow-ups; honest
+  sender identity; shared suppression; a reply or opt-out to either brand stops both; no two emails on one day, at most
+  4 in any 7 days; deeper marketing research for Radian; domain warm-up.
+- `sheet-sync.md` — Google Sheet tabs (Leads, Emails, Social, Replies, Deals, Daily, Health, Dashboard), when each row is
+  written, keys, hourly reconciliation, offline queue, dashboard formulas.
+
+### Changed
+- Every skill mirrors changes to the sheet; outreach, reply-book, hourly run, critic check, compliance, contact details,
+  sequence format, profile template and bot prompts handle both brands.
+
+## 7.0.0 — 2026-11-17 (account health, inbound authority, hot leads, nurture, proof bank, owner digest)
+
+### Added
+- `vintoria-account-health` — logged-out shadowban and removal checks, karma and promo/help ratio, LinkedIn restriction
+  and email bounce signals → GREEN / YELLOW / RED in `HEALTH.md`, obeyed by every skill; help-only comments.
+- `vintoria-authority` + `content-playbook.md` — weekly plan, one LinkedIn post a weekday in 5 formats, 5-10 comments
+  on buyers' posts, engagers handed off as warm leads, results in `CONTENT-LOG.md`.
+- Hot-lead fast track in `vintoria-hourly-run` (85+, under 2 h, ≤ 3 replies → `HOT`, handled within ~15 minutes).
+- `vintoria-outreach/references/nurture-engine.md` — weekly trigger watch on "not now" leads, 1 touch / 30 days, 3 max.
+- `vintoria-close/references/proof-bank.md` — results, testimonials, reviews and referrals collected after launch with
+  permission; `PROOF-BANK.md` counts as profile proof in the truth rules.
+- Owner `DIGEST` at 21:00 and `HOT` / `HEALTH` message types in `team.md`; new scheduler rows in `bot-prompts.md`.
+
+## 6.1.0 — 2026-11-17 (WhatsApp closing, smarter search, comment variety, Grok setup)
+
+### Added
+- `vintoria-reply-book/references/whatsapp-playbook.md` — 5-15 minute response, recognising the lead, 5 qualifying
+  questions in English and Hinglish, real examples only, the 15-minute call, "kitna lagega?", follow-ups, a full example.
+- `vintoria-outreach/references/comment-angles.md` — 8 rotating opening shapes and a tip bank per lane with verified
+  catalog IDs, so comments stay useful and never repeat.
+- `vintoria-sales/references/bot-prompts.md` — paste-ready core prompt, 8 role lines, knowledge files per role, scheduler
+  messages and a first-day checklist for Grok and other chat bots.
+- `queries.md` — hour-by-hour market rotation by time zone (AU → India → UK → US), lane rotation, direct LinkedIn and
+  Reddit search URLs, India / Hinglish / UK-AU / hidden-intent queries, more hiring subreddits, subreddits to skip.
+
+### Changed
+- `vintoria-hourly-run` aims at the market where it is daytime and uses the tip bank; `vintoria-reply-book` gets a
+  WhatsApp section; `vintoria-outreach` and `vintoria-sales` link the new files.
+
 ## 6.0.0 — 2026-11-17 (24/7 hourly run, bots as one sales team, accuracy)
 
 ### Added

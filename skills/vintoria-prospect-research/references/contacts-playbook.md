@@ -390,7 +390,7 @@ Calculate across 4 sub-dimensions, each scored 0-25:
 
 ### 5.1 What is Multi-Threading?
 
-Multi-threading means engaging multiple stakeholders within the prospect organization simultaneously or in sequence. Deals with 3+ contacts engaged are 2-3x more likely to close than single-threaded deals.
+Multi-threading means engaging multiple stakeholders within the prospect organization simultaneously or in sequence. With more than one person engaged, a deal survives when one contact goes quiet or leaves — for SMBs, the owner plus one influencer is usually enough.
 
 ### 5.2 Multi-Threading Approach by Company Size
 

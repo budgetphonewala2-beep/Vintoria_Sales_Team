@@ -126,7 +126,7 @@ Generate complete handling scripts for each of the following objections. For EAC
 
 ### Objection 4: "Send me more information"
 
-**What it really means**: This is the polite brush-off. 90% of the time it means "I want to end this conversation." Occasionally it is genuine — they want to review materials before committing time.
+**What it really means**: This is the polite brush-off. Usually it means "I want to end this conversation." Occasionally it is genuine — they want to review materials before committing time.
 
 **FFR Response**:
 "Happy to send something over. [Prospect at similar company] asked for the same thing. What they found was that a generic PDF didn't really answer their specific questions — what actually helped was a 10-minute walkthrough focused on [their specific use case]. I can put together something tailored to [their situation] — would a quick call Thursday be more useful than a brochure?"
@@ -222,7 +222,7 @@ Generate complete handling scripts for each of the following objections. For EAC
 "You definitely could — your team is clearly capable. [Tech company in their space] said the same thing. They had a strong engineering team and figured it would take about [X months] to build internally. What they found was that by the time they accounted for building, testing, maintenance, and iteration, it took [2-3x longer] and pulled their engineers off [core product work]. They calculated the opportunity cost at [dollar amount] — that's what their engineers WOULD have built if they weren't maintaining an internal tool. They ended up switching to us and redeployed those engineers to [revenue-generating work]."
 
 **ABC Response**:
-"Your team could absolutely build this — I have no doubt about that. The question isn't whether you CAN build it, it's whether you SHOULD. (Acknowledge) Every week your engineers spend building and maintaining [this tool category] is a week they're not building [their core product / revenue-generating features]. (Bridge) Let me share what [similar company] found when they calculated the true cost of build vs. buy — it's usually 3-5x more expensive to build when you factor in maintenance, iteration, and opportunity cost. Would it help to walk through that math together? (Close)"
+"Your team could absolutely build this — I have no doubt about that. The question isn't whether you CAN build it, it's whether you SHOULD. (Acknowledge) Every week your engineers spend building and maintaining [this tool category] is a week they're not building [their core product / revenue-generating features]. (Bridge) It's worth putting real numbers side by side: your team's time for the build, plus maintenance and updates after launch, against a fixed scope from us. Would it help if I sent a short comparison with our scope and timeline, so you can check it against your own estimate? (Close) — never cite another company's numbers or an industry ratio; only figures from `SELLER-PROFILE.md` or their own estimate."
 
 **Follow-up question**: "What's your engineering team's current backlog look like? If they built this, what would get deprioritized?"
 

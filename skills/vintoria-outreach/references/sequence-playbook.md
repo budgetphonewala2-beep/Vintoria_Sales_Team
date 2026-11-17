@@ -15,6 +15,9 @@ For LinkedIn leads with an email (sent from `business@vintoria.org`). Reddit lea
 No framework may cite a result, client or number that isn't in `SELLER-PROFILE.md`. With no proof, the email leans on
 the observation and the help, never on invented case studies.
 
+**Write them premium:** the anatomy, the five formats with full examples and the HTML template for warm emails are in
+`premium-email.md`. Vintoria emails are signed Pratik Patil, Co-founder.
+
 ## 2. Rules for every email
 
 - **Subject:** 2-5 words, lower case, about them ("your clinic booking site", "acme homepage on mobile"); a B version for
@@ -63,10 +66,18 @@ Test one thing at a time across at least 20 sends: the subject (A vs B), the fir
 the CTA ("quick look?" vs "send the fixes?"). Log which version each prospect got in `OUTREACH-SEQUENCE.md`; the weekly
 report compares reply rates and keeps the winner.
 
+## 4b. The second brand
+
+LinkedIn leads with a real marketing hook also get Radian Marketing's sequence from `amar@radianmarketing.site`, starting
+on day 1 (one day after Vintoria's) with its own 3/7/14/28 follow-ups — calendar, honest-identity rules and an example in
+`../../vintoria-sales/references/brands.md`. `OUTREACH-SEQUENCE.md` lists both brands' emails in one table with a `Brand`
+column.
+
 ## 5. Timing
 
 Emails go out 08:00-19:00 on weekdays in the **prospect's** time zone (best: 08:00-10:00 and 13:00-14:00). India ↔ US:
-queue for their morning. Never more than one email per prospect per day, and at most 4 touches a week across channels.
+queue for their morning. Never more than one email per prospect per day, and at most 4 emails in any 7 days across both brands
+(`../../vintoria-sales/references/brands.md`). Each inbox stays under its daily warm-up cap.
 
 ## 6. `OUTREACH-SEQUENCE.md` (one per prospect)
 
@@ -76,9 +87,10 @@ Source: <post URL> (posted <age> ago) · Quote: "<exact words>"
 Contact: <name>, <title> · <email> (<status, where found>) · Country / time zone: <…>
 Framework: <name> · Service: <ID name> · Top hooks: <1>; <2>; <3>
 
-| # | Send on (their time) | Subject (A / B) | Words | Score | Critic | Status |
-|---|---|---|---|---|---|---|
-| 1 | 2026-11-18 09:00 IST | your clinic booking site / clinic bookings | 96 | 88 | pass | sent 09:02 |
+| # | Brand | Send on (their time) | Subject (A / B) | Words | Score | Critic | Status |
+|---|---|---|---|---|---|---|---|
+| 1 | Vintoria | 2026-11-18 09:00 IST | your clinic booking site / clinic bookings | 96 | 88 | pass | sent 09:02 |
+| 1 | Radian | 2026-11-19 09:00 IST | your google reviews | 84 | 90 | pass | scheduled |
 
 ## Email 1
 <body>

@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
-  version: "5.0.0"
+  version: "7.0.0"
 ---
 
 # Vintoria Setup — profile, offer lanes and ideal customer

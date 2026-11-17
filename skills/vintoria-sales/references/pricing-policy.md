@@ -13,6 +13,10 @@ Agents must never fill that gap with a guess.
 4. **Never promise a timeline.** Durations may be expressed as phases and dependencies. Dates require the seller.
 5. **Never discount to win.** If price is the objection, change scope, not price.
 
+**Two brands:** Vintoria prices come only from `SELLER-PROFILE.md` → Pricing. Radian prices come only from the price
+table in `radian-profile.md` (website development "starts from" prices in INR) and are used only in Radian messages.
+A price is never carried from one brand to the other.
+
 ## What an agent may say about money
 
 | Situation | Say |

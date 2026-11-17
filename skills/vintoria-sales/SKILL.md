@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
-  version: "5.0.0"
+  version: "7.0.0"
 ---
 
 # Vintoria Sales — the operator
@@ -18,7 +18,8 @@ most calls, pick the right skill for each job, and never let anything go out tha
 1. **Your files.** Everything lives in plain files — `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`,
    `PIPELINE.md`, `DO-NOT-CONTACT.md` and `prospects/<slug>/` (format: `../vintoria-sales/references/pipeline-format.md`). If you can't read or
    write files (a chat bot such as Grok), ask the user to paste `SELLER-PROFILE.md` and the relevant `PIPELINE.md` rows,
-   and finish by printing every changed row and file in code blocks for them to save.
+   and finish by printing every changed row and file in code blocks for them to save. Mirror every change to the
+   connected Google Sheet (`../vintoria-sales/references/sheet-sync.md`) — update by key, never duplicate, never delete.
 2. **Vintoria's profile.** Read `SELLER-PROFILE.md` if it exists. If not, carry on with what the user told you and
    suggest `vintoria-setup` at the end — never block urgent work on it.
 3. **What Vintoria sells.** 270 services in 12 disciplines — `../vintoria-sales/references/service-catalog.md`. Name a service exactly as the
@@ -30,8 +31,9 @@ most calls, pick the right skill for each job, and never let anything go out tha
 5. **Facts only.** Every sentence traces to a page you opened, the prospect's own words, a fact you observed on their site,
    the catalog or the profile — never to memory. Never say something was sent, posted, booked or verified unless it
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
-6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
-   and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+6. **Contact details** — Vintoria: `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`);
+   Radian Marketing: `amar@radianmarketing.site` — and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`. Each
+   brand's emails carry that brand's real identity (`../vintoria-sales/references/brands.md`).
 7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
    hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
@@ -40,6 +42,8 @@ most calls, pick the right skill for each job, and never let anything go out tha
 | Job | Skill | Main output |
 |---|---|---|
 | Set up Vintoria's profile, offer lanes and ideal customer (**first run**) | `vintoria-setup` | `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md` |
+| **Keep the accounts alive:** shadowban / removal checks, GREEN-YELLOW-RED limits | `vintoria-account-health` | `HEALTH.md`, `HEALTH` line on the board |
+| **Inbound:** a LinkedIn post a day, comments on buyers' posts, engagers → warm leads | `vintoria-authority` | `CONTENT-LOG.md`, warm-lead handoffs |
 | **Every hour, 24/7:** up to 10 valuable LinkedIn + 10 Reddit leads under 24 h, contacted within the limits | `vintoria-hourly-run` | `RUN-LOG.md`, `HOURLY` line on the board |
 | A deeper or one-off hunt on LinkedIn and Reddit | `vintoria-lead-hunt` | judged buyers with exact quotes in `PIPELINE.md` |
 | Everything about one prospect: research, site audit, contacts + email, qualification, competitors, full score | `vintoria-prospect-research` | `prospects/<slug>/DOSSIER.md` and friends |
@@ -94,6 +98,9 @@ Writer, Reviewer, Closer — talking on `TEAM-BOARD.md` with one message format 
 lines, standups), owning each lead through `PIPELINE.md` and sharing the hourly limits in `RUN-LOG.md`
 (`references/team.md`). As **Sales Manager**: post the 09:30 and 18:30 standups from `RUN-LOG.md`, resolve conflicts with
 a `DECISION`, pause a platform at any removed comment or warning, and escalate to the owner only what `team.md` lists.
+**Autopilot (24/7, no waiting for a human):** `references/autopilot.md` — the 6-hour inbox sweep, the watchdog that hands a
+silent bot's role to another, and a default safe action for every situation.
+Setting the bots up in Grok or another chat bot: `references/bot-prompts.md` (prompts, files, scheduler messages).
 
 ## Rules
 - Nothing goes out that fails the self-check, scores under 85, breaks a platform rule or exceeds a daily limit.
@@ -132,6 +139,12 @@ a `DECISION`, pause a platform at any removed comment or warning, and escalate t
 - `references/team.md` — the sales team: roles, the team board message format, claims, handoffs, reviews, alerts, standups, escalation
 - `references/lead-quality.md` — the exact 24-hour rule, what a valuable lead is, the value score, red flags
 - `references/critic-check.md` — the yes/no checks every message passes before it is posted or sent
+- `references/radian-profile.md` — Radian Marketing's sourced facts: identity, contact, services by its own names, usable and to-confirm proof, offers, sign-off
+- `references/brands.md` — the two email brands (Vintoria, Radian Marketing): angles, honest identity, shared stop rules, the day 0/2 + 3/7/14/28 calendar, deliverability
+- `references/sheet-sync.md` — the Google Sheet: tabs and columns, when each row is written, keys, reconciliation, dashboard formulas
+- `references/autopilot.md` — 24/7 without waiting for a human: the loop, the 6-hour full inbox sweep, the watchdog and role failover, default actions, what still needs a human
+- `references/self-test.md` — 29 scenarios with the expected behaviour: run before going live, after any change, monthly
+- `references/bot-prompts.md` — paste-ready prompts for Grok and other chat bots: core prompt, role lines, knowledge files, scheduled messages, first-day checklist
 - `references/service-catalog.md` — the 12 disciplines and how to cite a service
 - `references/services-01-strategy.md` — discipline 01 Strategy & Consulting (001-015): every service, signals, who buys it, when not to sell it
 - `references/services-02-web.md` — discipline 02 Web Development (016-040): every service, signals, who buys it, when not to sell it

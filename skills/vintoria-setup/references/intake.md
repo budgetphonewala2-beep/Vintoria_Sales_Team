@@ -37,7 +37,7 @@ optional fields. Never invent answers; above all, never invent proof.
 |---|---|---|
 | 2-3 real results: client (or type), what you did, the result, a link | `proof.case_studies` | The **only** proof emails may cite; truth self-check enforces it |
 | Portfolio link; years in business, projects done, team size | `proof.*` | Credibility line, follow-up email 3 |
-| Why you over other agencies (2-3 concrete reasons)? | `positioning.differentiators` | Objections, proposals ("US-hours overlap", "fixed price", "Shopify Partner") |
+| Why you over other agencies (2-3 concrete reasons)? | `positioning.differentiators` | Objections, proposals (only real ones the owner confirms — e.g. "works in US hours", "fixed price per milestone", a certification actually held) |
 | Any guarantee you really offer? | `positioning.guarantees` | Risk reversal, only if true |
 | Booking link? | `seller.booking_url` | Sent only after a prospect says yes |
 
@@ -57,18 +57,19 @@ Write the resulting queries into `IDEAL-CUSTOMER-PROFILE.md` and show the user a
 
 ## Example: a complete profile (abridged)
 
+Vintoria's own profile in this shape — real values where known, `[ASK]` where only the owner can answer. Never copy a
+value from any other example; never fill an `[ASK]` with a guess.
+
 ```json
-{"seller": {"name": "Ravi Sharma", "company": "Pixelcraft Studio", "website": "pixelcraft.io", "email": "ravi@pixelcraft.io",
-            "country": "India", "timezone": "Asia/Kolkata", "postal_address": "12 MG Road, Pune 411001, India",
-            "booking_url": "https://cal.com/ravi/20min"},
- "offer": {"services": ["ecommerce", "web"], "service_details": "Shopify stores and redesigns for DTC brands, 4-6 weeks",
-           "niches": ["DTC skincare", "specialty coffee", "supplements"], "platforms": ["Shopify", "Klaviyo"],
-           "outcomes": ["faster store", "higher conversion"], "deal_size": {"min": 2000, "typical": 6000, "currency": "USD"}},
- "targets": {"countries": ["US", "UK", "CA", "AU"], "exclude_countries": ["India"], "buyer_titles": ["Founder", "CEO", "Head of E-commerce"],
-             "company_size": "1-50"},
- "proof": {"case_studies": [{"client": "Brew Co (US coffee brand)", "result": "store rebuilt in 4 weeks; checkout conversion 1.8% → 2.6%",
-                             "link": "pixelcraft.io/work/brew"}], "years_in_business": 6, "projects_done": 120},
- "positioning": {"differentiators": ["Shopify Partner", "4-hour overlap with US Eastern", "fixed price per milestone"]},
- "signals": {"pains": ["store is slow", "low conversion", "theme looks dated"], "triggers": ["product launch", "rebrand"],
-             "tools_they_leave": ["Wix", "Squarespace", "WooCommerce"]}}
+{"seller": {"name": "Pratik Patil", "title": "Co-founder", "company": "Vintoria", "email": "business@vintoria.org",
+            "whatsapp": "+91 87660 33979", "country": "India", "timezone": "Asia/Kolkata",
+            "postal_address": "[ASK]", "booking_url": "[ASK]"},
+ "offer": {"services": "the 270-service catalog, active lanes in OFFER.md",
+           "deal_size": "[ASK — or leave empty: prices stay [PRICE TO CONFIRM]]"},
+ "targets": {"countries": ["IN", "US", "UK", "AU"], "buyer_titles": ["Founder", "Owner", "Director", "Head of Marketing"],
+             "company_size": "1-200"},
+ "proof": {"case_studies": "[ASK — only real ones; empty is fine]", "years_in_business": "[ASK]"},
+ "brands": {"second": "Radian Marketing — see radian-profile.md"},
+ "signals": {"pains": ["no online booking", "slow or outdated site", "store loads slowly on mobile", "manual work"],
+             "triggers": ["new location", "launch", "rebrand", "agency or developer stopped responding"]}}
 ```

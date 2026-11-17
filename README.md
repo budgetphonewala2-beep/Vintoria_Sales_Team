@@ -3,14 +3,14 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/9_skills-instruction--only-8b5cf6?style=for-the-badge" alt="9 skills">
+  <img src="https://img.shields.io/badge/11_skills-instruction--only-8b5cf6?style=for-the-badge" alt="11 skills">
   <img src="https://img.shields.io/badge/no_code-any_bot-0ea5e9?style=for-the-badge" alt="No code">
   <img src="https://img.shields.io/badge/license-MIT-gray?style=for-the-badge" alt="MIT License">
 </p>
 
 # Vintoria Sales — skills that find clients on LinkedIn and Reddit
 
-Nine instruction-only skills (no code, no installs) that run Vintoria's whole sales loop in any bot that can follow
+Eleven instruction-only skills (no code, no installs) that run Vintoria's whole sales loop in any bot that can follow
 instructions — Grok, Claude, GPT, Gemini, Codex, Cursor — best with a browser already logged in to **LinkedIn** and
 **Reddit**:
 
@@ -23,6 +23,20 @@ instructions — Grok, Claude, GPT, Gemini, Codex, Cursor — best with a browse
 - **A real sales team of bots:** Sales Manager, LinkedIn Hunter, Reddit Hunter, Researcher, Writer, Reviewer and Closer
   talk to each other on a shared team board — handoffs, claims, reviews, alerts, hourly lines and standups — so no lead
   is handled twice and every reply reaches the Closer within 15 minutes.
+- **Account health autopilot:** shadowban and removal checks every 6 hours, GREEN / YELLOW / RED limits that every bot
+  obeys, help-only comments to keep Reddit accounts healthy (`vintoria-account-health`).
+- **Inbound authority:** a LinkedIn post every weekday and comments under buyers' posts; people who engage become warm
+  leads (`vintoria-authority`).
+- **Two email brands:** Vintoria (business@vintoria.org) on day 0, Radian Marketing (amar@radianmarketing.site) on day 1
+  with a different, deeper marketing angle — each with 3/7/14/28-day follow-ups, honest sender identity, and one shared
+  stop rule (a reply or opt-out to either brand stops both).
+- **24/7 autopilot:** a full inbox sweep of both brands every 6 hours (spam included), a watchdog that hands a silent
+  bot's role to another, and a default safe action for every situation — the owner is notified, never waited for
+  (`skills/vintoria-sales/references/autopilot.md`).
+- **Live Google Sheet:** every lead, email, comment, reply, deal, daily total and health check synced to tabs with a
+  ready dashboard (`skills/vintoria-sales/references/sheet-sync.md`).
+- **Hot-lead fast track, nurture engine, proof bank and a nightly owner digest** — the fastest answer to the best
+  buyers, "not now" leads won back on real triggers, real results and referrals collected after every launch.
 - Then it answers replies, books the call in both time zones, preps it, writes the proposal and closes — keeping
   everything in plain Markdown files.
 
@@ -33,12 +47,14 @@ catalog ID, never invent prices or results, and read English, Hindi and Hinglish
 **Contact used in every message:** business@vintoria.org · WhatsApp +91 87660 33979 ·
 [wa.me/918766033979](https://wa.me/918766033979)
 
-## The 9 skills
+## The 11 skills
 
 | Skill | Say… | Does |
 |---|---|---|
 | `vintoria-sales` | "aaj ka kaam batao", "run my sales" | The operator: today's agenda from `PIPELINE.md`, routes every request; holds the truth, pricing, quality, compliance and contact rules and the full catalog |
 | `vintoria-setup` | "set up Vintoria", "who should we target" | Profile interview (template pre-filled with the catalog, email and WhatsApp), offer lanes by catalog ID, ideal customer + search queries |
+| `vintoria-account-health` | "account safe hai?", "check shadowban" | Logged-out shadowban / removal checks, karma, warnings, LinkedIn restrictions → GREEN / YELLOW / RED in `HEALTH.md` |
+| `vintoria-authority` | "LinkedIn post likho", "inbound leads" | Weekly content plan, one post a day in 5 formats, comments on buyers' posts, engagers → warm leads |
 | `vintoria-hourly-run` | "hourly run chalao", "har ghante leads nikalo" | The 24/7 engine: every hour up to 10 + 10 valuable leads under 24 h from LinkedIn and Reddit, scored, claimed, contacted within shared limits, logged in `RUN-LOG.md`, summary on the team board |
 | `vintoria-lead-hunt` | "LinkedIn pe clients dhundo", "Reddit pe website wale leads" | LinkedIn posts + Reddit buyer posts, judged with an exact quote, scored, contact path chosen |
 | `vintoria-prospect-research` | "research acme.com", "owner kaun hai" | Dossier, fact-only site audit, contacts + email status, BANT/MEDDIC, battle cards, full score — hooks mapped to catalog services |
@@ -59,10 +75,15 @@ profile   LinkedIn + Reddit, < 24 h          dossier + email     comment / email
 into the agent's skills folder — `~/.claude/skills`, `~/.agents/skills` (Codex, Cursor, Gemini, OpenCode),
 `~/.cursor/skills`, `~/.gemini/skills` or `~/.config/opencode/skills`.
 
-**Grok and other chat bots / custom assistants:** give the bot `skills/vintoria-sales/SKILL.md` as its main
+**Grok and other chat bots / custom assistants:** the fastest setup is
+`skills/vintoria-sales/references/bot-prompts.md` — a paste-ready core prompt, one role line per bot, the knowledge
+files to attach and the scheduler messages. Or by hand: give the bot `skills/vintoria-sales/SKILL.md` as its main
 instructions, and add the other `SKILL.md` files plus their `references/` folders as knowledge files. Tell it to read the
 matching skill before each job. Without file access it keeps the pipeline in the chat and prints the updated rows for you
 to save (`skills/vintoria-sales/references/pipeline-format.md`).
+
+**Before going live:** run `skills/vintoria-sales/references/self-test.md` with every bot — 29 scenarios, go live only at
+29 / 29.
 
 **First run:** say **"use vintoria-setup"** and answer the questions (sender name, postal address, time zone, active
 disciplines, prices, real case studies). Then **"aaj ka kaam batao"** every day.
@@ -86,22 +107,27 @@ at the first removed comment or warning and escalate to you; lower the limits if
 
 ```
 skills/
-  vintoria-sales/        SKILL.md + references/: truth-rules, quality-bar, lead-quality, critic-check, team,
+  vintoria-sales/        SKILL.md + references/: bot-prompts, truth-rules, quality-bar, lead-quality, critic-check, team,
                          pricing-policy, compliance, vintoria-contact, pipeline-format, service-catalog +
                          services-01…12 (all 270 services)
-  vintoria-hourly-run/   SKILL.md — the hourly 24/7 cycle
+  vintoria-hourly-run/   SKILL.md — the hourly 24/7 cycle (with hot-lead fast track)
+  vintoria-account-health/  SKILL.md — GREEN / YELLOW / RED account levels
+  vintoria-authority/    + content-playbook (5 post formats, hooks, 4-week rotation)
   vintoria-setup/        + seller-profile-template, intake, offer-lanes, ICP playbook and format
-  vintoria-lead-hunt/    + queries (LinkedIn boolean, subreddits), intent-rubric (30 labelled examples)
+  vintoria-lead-hunt/    + queries (24/7 market rotation, direct search URLs, LinkedIn boolean, subreddits),
+                         intent-rubric (30 labelled examples)
   vintoria-prospect-research/  + research, contacts, qualify, competitors playbooks, full-analysis (5 roles)
-  vintoria-outreach/     + reddit-comment-playbook, linkedin-playbook, first-email guide, sequence playbook, quality score
-  vintoria-reply-book/
+  vintoria-outreach/     + reddit-comment-playbook, comment-angles (tip bank), linkedin-playbook, first-email guide,
+                         sequence playbook, quality score
+  vintoria-reply-book/   + whatsapp-playbook (where deals close)
   vintoria-close/        + prep, discovery call, proposal, objections, negotiation & handoff, expand & referrals
   vintoria-report/       + report playbook and format
 docs/                    the Vintoria 270-service catalog (PDF)
 ```
 
 Your working files (created by the bots): `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`, `PIPELINE.md`,
-`DO-NOT-CONTACT.md`, `TEAM-BOARD.md`, `SEEN.md`, `RUN-LOG.md` and `prospects/<slug>/`.
+`DO-NOT-CONTACT.md`, `TEAM-BOARD.md`, `SEEN.md`, `RUN-LOG.md`, `HEALTH.md`, `PROOF-BANK.md`, `CONTENT-LOG.md` and
+`prospects/<slug>/`.
 
 ## Rules the skills enforce
 

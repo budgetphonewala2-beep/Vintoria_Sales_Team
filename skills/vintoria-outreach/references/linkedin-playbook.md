@@ -27,7 +27,7 @@ Vintoria does about it with one catalog service, a soft question, and the email 
   point → "We're Vintoria — we build <service>." → "— <name>, Vintoria · business@vintoria.org". LinkedIn comments with
   links get less reach, so put the email, not the WhatsApp link, in a comment.
 - **Connection request with a note** (≤ 300 characters, no link): "Hi <name>, saw your post about <their need>. We build
-  exactly this at Vintoria — happy to share a quick plan if useful. — <sender name>". Once they accept, a 2-3 line message
+  exactly this at Vintoria — happy to share a quick plan if useful. — Pratik Patil". Once they accept, a 2-3 line message
   can carry the WhatsApp link.
 - **DM** only to people who invited it ("DM me", "send me your portfolio") or who accepted the connection.
 

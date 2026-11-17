@@ -5,7 +5,7 @@ license: MIT
 compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
-  version: "5.0.0"
+  version: "7.0.0"
 ---
 
 # Vintoria Replies & Booking — answer fast, book the call
@@ -17,7 +17,8 @@ A reply is the most valuable moment in the pipeline. Answer what they asked, fas
 1. **Your files.** Everything lives in plain files — `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`,
    `PIPELINE.md`, `DO-NOT-CONTACT.md` and `prospects/<slug>/` (format: `../vintoria-sales/references/pipeline-format.md`). If you can't read or
    write files (a chat bot such as Grok), ask the user to paste `SELLER-PROFILE.md` and the relevant `PIPELINE.md` rows,
-   and finish by printing every changed row and file in code blocks for them to save.
+   and finish by printing every changed row and file in code blocks for them to save. Mirror every change to the
+   connected Google Sheet (`../vintoria-sales/references/sheet-sync.md`) — update by key, never duplicate, never delete.
 2. **Vintoria's profile.** Read `SELLER-PROFILE.md` if it exists. If not, carry on with what the user told you and
    suggest `vintoria-setup` at the end — never block urgent work on it.
 3. **What Vintoria sells.** 270 services in 12 disciplines — `../vintoria-sales/references/service-catalog.md`. Name a service exactly as the
@@ -29,8 +30,9 @@ A reply is the most valuable moment in the pipeline. Answer what they asked, fas
 5. **Facts only.** Every sentence traces to a page you opened, the prospect's own words, a fact you observed on their site,
    the catalog or the profile — never to memory. Never say something was sent, posted, booked or verified unless it
    really happened. Run the self-check in `../vintoria-sales/references/truth-rules.md` before anything goes out.
-6. **Vintoria's contact details** — `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`) —
-   and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`.
+6. **Contact details** — Vintoria: `business@vintoria.org`, WhatsApp +91 87660 33979 (`https://wa.me/918766033979`);
+   Radian Marketing: `amar@radianmarketing.site` — and every sign-off come only from `../vintoria-sales/references/vintoria-contact.md`. Each
+   brand's emails carry that brand's real identity (`../vintoria-sales/references/brands.md`).
 7. **The team.** Read `TEAM-BOARD.md` before you start and handle messages to your role; `CLAIM` a lead before working it,
    hand off with full context, post `ALERT`s at once (`../vintoria-sales/references/team.md`). Alone, you play every role with the same files.
 
@@ -58,13 +60,26 @@ A reply is the most valuable moment in the pipeline. Answer what they asked, fas
    | `bounce` | Mark the email `invalid`; find another contact with `vintoria-prospect-research` |
    **"How much?"** — `../vintoria-sales/references/pricing-policy.md`: a price only if the profile has it; otherwise
    "Depends on scope — two quick questions and I'll send a written scope with options."
-3. **Stop the sequence** for this prospect, add their message to `THREAD.md`, and move the row to `replied` (or the stage
-   above).
+3. **Stop the sequence** for this prospect — **both brands' sequences** (Vintoria and Radian Marketing) — add their
+   message to `THREAD.md`, and move the row to `replied` (or the stage above). Answer from the brand they replied to; the
+   other brand never writes to them again. An opt-out on either brand goes into `DO-NOT-CONTACT.md` for both.
 4. **Short and matched:** at most ~100 words before the slots and signature, not much longer than their message, their
    questions answered in the first two sentences, at most one `[TO CONFIRM]`.
 5. **Answer on the channel they used** (Reddit thread or chat, LinkedIn, email, WhatsApp — the user sends WhatsApp
    messages from the business phone; you draft them). Post or send per the approval mode, log it, and tell the user the new
    stage and the next step with its date. Moving to WhatsApp or email is welcome once they're interested.
+
+## Full inbox sweep — every 6 hours (00:00, 06:00, 12:00, 18:00 IST)
+On top of the fast checks, the Closer sweeps **both** inboxes — `business@vintoria.org` and `amar@radianmarketing.site` —
+including Spam, Promotions and Updates, back to the last sweep, plus Reddit, LinkedIn and missed WhatsApp chats: match
+every message to a lead, classify it, stop both brands' sequences on any human reply, rescue replies from Spam, handle
+bounces, out-of-office and opt-outs, update the sheet and post the `SWEEP` line (`../vintoria-sales/references/autopilot.md`).
+
+## WhatsApp — where deals close
+Everyone who taps Vintoria's link lands here, hot for minutes. Follow `references/whatsapp-playbook.md`: answer within
+5-15 minutes in their daytime, recognise them from the pre-filled text, qualify one short question at a time (what,
+what exists, when, budget, who decides — English or Hinglish to match them), show one or two real examples, then offer a
+15-minute call with two slots. "Kitna lagega?" → the pricing policy, never a number from memory. At most 3 follow-ups.
 
 ## Book
 
@@ -108,3 +123,7 @@ A reply is the most valuable moment in the pipeline. Answer what they asked, fas
 - **Log every message that went out** — `THREAD.md` (exact text, link to it), `HISTORY.md`, `PIPELINE.md` — and give the
   user a summary of what was posted and sent.
 - **No booking link** in a first message — only after they show interest.
+
+## References (read when you reach that step)
+
+- `references/whatsapp-playbook.md` — speed, first message, 5 qualifying questions in English and Hinglish, examples, the call, pricing questions, follow-ups, a full example

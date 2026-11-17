@@ -1,8 +1,7 @@
 # vintoria-close — Playbook
 
-> Web access: use your agent's web tools if it has them; otherwise run the scripts in the `vintoria-sales` skill's
-> `scripts/` folder (`<SCRIPTS>` = `../vintoria-sales/scripts/` next to this skill): `fetch_page.py <url>` and
-> `web_search.py "<query>"`. Never invent what you could not fetch — write "Not found".
+> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## Invocation
 

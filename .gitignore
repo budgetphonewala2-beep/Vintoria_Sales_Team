@@ -1,48 +1,19 @@
-# Generated reports (output files created in working directory)
-/PROSPECT-ANALYSIS*.md
-/COMPANY-RESEARCH*.md
-/LEAD-QUALIFICATION*.md
-/DECISION-MAKERS*.md
-/OUTREACH-SEQUENCE*.md
-/FOLLOWUP-SEQUENCE*.md
-/MEETING-PREP*.md
-/CLIENT-PROPOSAL*.md
-/OBJECTION-PLAYBOOK*.md
-/IDEAL-CUSTOMER-PROFILE*.md
-/COMPETITIVE-INTEL*.md
+# Working files the bot creates while selling — your private pipeline, never committed
+/SELLER-PROFILE.md
+/OFFER.md
+/IDEAL-CUSTOMER-PROFILE.md
+/PIPELINE.md
+/DO-NOT-CONTACT.md
 /SALES-REPORT*.md
-/SALES-REPORT*.pdf
+/OBJECTION-PLAYBOOK*.md
+/prospects/
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-venv/
-.venv/
-*.egg-info/
-
-# IDE
+# Editors and OS
 .vscode/
 .idea/
 *.swp
-*.swo
 .DS_Store
 
-# Per-prospect output folders and temp files created by the skills
-/prospects/
-/_pdf_input.json
-_bant_signals.json
-.pytest_cache/
-hunt.json
-_pdf_input.json
-SITE-AUDIT*.json
-
-# secrets and local data
+# Secrets
 .env
-*.db
-prospects/
-eval-review/
-
-# eval fixtures are test data, not real prospects
-!skills/*/evals/*/files/prospects/
-!skills/*/evals/*/files/prospects/**
+*.env

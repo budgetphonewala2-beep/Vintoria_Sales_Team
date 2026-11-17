@@ -26,9 +26,9 @@ Turn a verbal yes into a signed, well-scoped contract and a delivery team that c
 |---|---|---|
 | Proposal with options | `CLIENT-PROPOSAL.md` | Stop. Write the proposal first. Do not negotiate air. |
 | Discovery notes and qualification score | `MEETING-NOTES.md` | Ask the seller for the call notes; otherwise mark criteria `Not found` and ask the buyer directly. |
-| Buyer's stated decision criteria | `MEETING-NOTES.md`, their replies in the pipeline (`python <SCRIPTS>/core/pipeline.py show`) | Ask one question: "What has to be true for you to sign?" Record verbatim. |
+| Buyer's stated decision criteria | `MEETING-NOTES.md`, their replies in `THREAD.md` | Ask one question: "What has to be true for you to sign?" Record verbatim. |
 | Authority and signatory | `DOSSIER.md`, call notes | Ask the buyer in writing who signs and who pays. |
-| Price and payment terms | `SELLER-PROFILE.json` (`python <SCRIPTS>/core/seller_profile.py show`) | Use `[PRICE TO CONFIRM]`. Never fill the gap. |
+| Price and payment terms | `SELLER-PROFILE.md` | Use `[PRICE TO CONFIRM]`. Never fill the gap. |
 | Contract template or standard terms | Seller | Ask for the file. If none, list what must be agreed and mark `[TO CONFIRM: legal review]`. |
 | Deal value and dates | Seller or `CLIENT-PROPOSAL.md` | Leave blank and name the gap in one line to the seller. |
 
@@ -36,7 +36,7 @@ Read `../vintoria-sales/references/truth-rules.md` before writing a single term.
 
 ## Workflow
 
-1. **Confirm the stage.** Check the pipeline (`python <SCRIPTS>/core/pipeline.py`) says `proposal` or `negotiation`. If not, move the stage first and append the change to the pipeline history (`python <SCRIPTS>/core/pipeline.py note`). Do not close a row that still reads `discovery`.
+1. **Confirm the stage.** Check `PIPELINE.md` says `proposal` or `negotiation`. If not, move the stage first and append the change to the prospect's `HISTORY.md`. Do not close a row that still reads `discovery`.
 
 2. **Score the proposal internally.** Apply the proposal rubric in `../vintoria-sales/references/quality-bar.md`. Below 80, fix the scope, exclusions, acceptance criteria and change-request path before any negotiation. A weak proposal negotiates into a weak contract.
 
@@ -91,8 +91,8 @@ Read `../vintoria-sales/references/truth-rules.md` before writing a single term.
    3. Send the final document with scope IDs, payment schedule and MAP dates attached.
    4. If the buyer signs first, countersign within one business day.
    5. Return the fully executed copy to the buyer and file it in the prospect folder.
-   6. Update the pipeline (`python <SCRIPTS>/core/pipeline.py`) to `won`, set `next_action` to the handoff step, set `next_due`, set `updated`.
-   7. Append the signature date, signatory and next stage to the pipeline history (`python <SCRIPTS>/core/pipeline.py note`).
+   6. Update `PIPELINE.md` to `won`, set `next_action` to the handoff step, set `next_due`, set `updated`.
+   7. Append the signature date, signatory and next stage to the prospect's `HISTORY.md`.
 
 9. **Handle silence after a yes.** A verbal yes is not a signature. Run this protocol and do not re-pitch:
    - Within 24 hours: written recap of what was agreed, the MAP, the scope IDs, and one question: "Shall I send the paperwork to you or to procurement?"
@@ -124,11 +124,11 @@ Read `../vintoria-sales/references/truth-rules.md` before writing a single term.
     | `compliance` | Legal, security or data block | The specific requirement that failed |
     | `unresponsive` | No reply after a full cadence | Touch dates and channels |
 
-12. **Close the loop.** Update the pipeline (`python <SCRIPTS>/core/pipeline.py`) to `won` or `lost`, append the pipeline history (`python <SCRIPTS>/core/pipeline.py note`), move the row to `delivery`, `nurture` or `expand` as appropriate, and tell the seller the one next action with a date.
+12. **Close the loop.** Update `PIPELINE.md` to `won` or `lost`, append the prospect's `HISTORY.md`, move the row to `delivery`, `nurture` or `expand` as appropriate, and tell the seller the one next action with a date.
 
 ## Output format
 
-Write `prospects/<slug>/CLOSE-PLAN.md` using exactly this shape, then update the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) and the pipeline (`python <SCRIPTS>/core/pipeline.py`).
+Write `prospects/<slug>/CLOSE-PLAN.md` using exactly this shape, then update the prospect's `HISTORY.md` and `PIPELINE.md`.
 
 ```md
 # Close plan — <company>
@@ -193,8 +193,8 @@ Do not show the plan until all of these pass.
 - Concession ladder: at least 3 rungs, ordered by cost to VINTORIA, zero rungs that alter price, discount, payment terms or a guarantee.
 - Question bank: all five groups answered or explicitly marked `Not found`, with the owner of the gap.
 - Contract checklist: 7 of 7 items carry a status. Items 1 and 6 must be `Confirmed` before signature is requested.
-- Price integrity: 100% of figures trace to `SELLER-PROFILE.json`. Any unverified figure is `[PRICE TO CONFIRM]`, and no figure is ever derived from a market average.
-- Stage truth: the pipeline (`python <SCRIPTS>/core/pipeline.py`) stage matches the evidence in the pipeline history (`python <SCRIPTS>/core/pipeline.py note`). No row is marked `won` without an executed copy.
+- Price integrity: 100% of figures trace to `SELLER-PROFILE.md`. Any unverified figure is `[PRICE TO CONFIRM]`, and no figure is ever derived from a market average.
+- Stage truth: `PIPELINE.md` stage matches the evidence in the prospect's `HISTORY.md`. No row is marked `won` without an executed copy.
 - Handoff: all five sections present, kickoff agenda has at least five items with owners.
 - Reading level: no sentence over 28 words in buyer-facing text, no em dash, no exclamation mark.
 
@@ -221,4 +221,4 @@ Do not show the plan until all of these pass.
 - [ ] Signature path clear with entity, signatory, authority and countersign order.
 - [ ] Silence protocol scheduled with dates.
 - [ ] Handoff package complete, kickoff agenda ready.
-- [ ] the pipeline (`python <SCRIPTS>/core/pipeline.py`) and the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) updated, stage truthful, one next action with a date.
+- [ ] `PIPELINE.md` and the prospect's `HISTORY.md` updated, stage truthful, one next action with a date.

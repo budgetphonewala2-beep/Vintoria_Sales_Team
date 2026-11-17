@@ -6,7 +6,7 @@ Agents must never fill that gap with a guess.
 ## Hard rules
 
 1. **Never quote a number** for a service, project, retainer, hour, discount or timeline unless it is written
-   verbatim in `SELLER-PROFILE.json` (`python <SCRIPTS>/core/seller_profile.py show`) under `pricing`.
+   verbatim in `SELLER-PROFILE.md` under `pricing`.
 2. **Never invent a package.** "Starter / Growth / Enterprise" tiers may be used as *options* with different scope;
    their prices stay `[PRICE TO CONFIRM]` until the seller fills them.
 3. **Never anchor with market rates.** "Agencies usually charge…" is an invented claim.
@@ -26,7 +26,7 @@ Agents must never fill that gap with a guess.
 ## Where prices live
 
 ```
-SELLER-PROFILE.json
+SELLER-PROFILE.md
   ## Pricing
   - Currency: USD
   - Model: fixed-scope project / monthly retainer / hybrid

@@ -1,8 +1,7 @@
 # vintoria-prospect-research — Playbook
 
-> Web access: use your agent's web tools if it has them; otherwise run the scripts in the `vintoria-sales` skill's
-> `scripts/` folder (`<SCRIPTS>` = `../vintoria-sales/scripts/` next to this skill): `fetch_page.py <url>` and
-> `web_search.py "<query>"`. Never invent what you could not fetch — write "Not found".
+> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## When This Skill Is Invoked
 
@@ -32,15 +31,13 @@ Use `web fetch` to fetch these pages (skip any already provided in the discovery
 4. Note email patterns (e.g., firstname@company.com vs f.lastname@company.com)
 5. Record profile photos presence (helps confirm identity on LinkedIn)
 
-### 1.1b Automated First Pass (optional, fast)
+### 1.1b Fast first pass
 
-Run the contact finder to pull names/titles from the team, about and leadership pages in one go:
+Open the team, about, leadership and contact pages yourself and list every named person with their title and
+the page URL. Then search `site:linkedin.com/in "<company>" founder OR owner OR director` for the rest.
 
-```bash
-python "<SCRIPTS>/research/contact_finder.py" --url <url>
-```
-
-(`python3` on macOS/Linux.) Each contact comes back with `seniority`, `department`, a title-based `buying_role` guess and a LinkedIn URL when one is in that person's own card. Use it as a starting list: confirm current roles via LinkedIn/web search before putting anyone in the buying committee (team pages go stale), and don't treat `buying_role` as fact.
+Use it as a starting list: confirm current roles via LinkedIn/web search before putting anyone in the buying committee
+(team pages go stale), and treat a buying role guessed from a title as a guess.
 
 ### 1.2 LinkedIn Research
 

@@ -18,20 +18,20 @@ Turns a booked call into a scored, evidence-backed qualification with one writte
 | What we sell | `OFFER.md` and the matching file under `../vintoria-sales/references/services-` | Fall back to `../vintoria-sales/references/service-catalog.md`; never cite an unlisted service. |
 | Who we target | `IDEAL-CUSTOMER-PROFILE.md` | Score service fit from the catalogue; run `vintoria-setup` after the call. |
 | Prospect research and proof | `prospects/<slug>/DOSSIER.md`, `SITE-AUDIT.md` | Use whichever exists; if both are missing, run `vintoria-prospect-research` or triage live first. Never claim an audit that does not exist. |
-| Prior contact | `OUTREACH-SEQUENCE.md`, their replies in the pipeline (`python <SCRIPTS>/core/pipeline.py show`), `MEETING-PREP.md` | Start from zero and ask what prompted the meeting. |
-| Seller identity and price position | `SELLER-PROFILE.json` (`python <SCRIPTS>/core/seller_profile.py show`) and `../vintoria-sales/references/pricing-policy.md` | Keep working; never claim proof, clients or prices; score budget signal on the buyer's words only. |
+| Prior contact | `OUTREACH-SEQUENCE.md`, their replies in `THREAD.md`, `MEETING-PREP.md` | Start from zero and ask what prompted the meeting. |
+| Seller identity and price position | `SELLER-PROFILE.md` and `../vintoria-sales/references/pricing-policy.md` | Keep working; never claim proof, clients or prices; score budget signal on the buyer's words only. |
 
 ## Workflow
 
 1. Read `../vintoria-sales/references/truth-rules.md`, `../vintoria-sales/references/quality-bar.md` and `../vintoria-sales/references/team.md` before drafting anything.
-2. Build the pre-call brief from saved files only, in this order: `MEETING-PREP.md`, `DOSSIER.md`, `SITE-AUDIT.md`, `OUTREACH-SEQUENCE.md`, their replies in the pipeline (`python <SCRIPTS>/core/pipeline.py show`), the pipeline history (`python <SCRIPTS>/core/pipeline.py note`), then the discipline file. Write five lines only: who they are, why now, the problem, the service IDs, the one thing to confirm. Every line carries a source or `Not found`.
+2. Build the pre-call brief from saved files only, in this order: `MEETING-PREP.md`, `DOSSIER.md`, `SITE-AUDIT.md`, `OUTREACH-SEQUENCE.md`, their replies in `THREAD.md`, the prospect's `HISTORY.md`, then the discipline file. Write five lines only: who they are, why now, the problem, the service IDs, the one thing to confirm. Every line carries a source or `Not found`.
 3. Confirm the call length. Use 30 minutes by default; use 45 when the work spans two disciplines or the buyer brings more than two people.
 4. Run the agenda below and do not skip playback.
 5. Ask from the banks. Core first, service banks only after the problem is named. Never ask more than one question per turn.
 6. Record verbatim quotes where possible; if the buyer did not answer, write `Not found`. Never fill a gap with an assumption.
 7. Score after the call, not during it: all seven parts, then the bands and the hard no-go rules. Test each red flag and record the test and the observation.
 8. Choose exactly one next step from the scripts, with the exact words, the owner and the date.
-9. Write `MEETING-NOTES.md` within 2 hours, update the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) and the pipeline (`python <SCRIPTS>/core/pipeline.py`) (`stage`, `score`, `next_action`, `next_due`, `owner`, `updated`), then send the 24-hour follow-up at a score of 80 or above.
+9. Write `MEETING-NOTES.md` within 2 hours, update the prospect's `HISTORY.md` and `PIPELINE.md` (`stage`, `score`, `next_action`, `next_due`, `owner`, `updated`), then send the 24-hour follow-up at a score of 80 or above.
 
 ### Pre-call research checklist
 
@@ -123,7 +123,7 @@ Ask 8 to 12 questions in total. Core first, then the service bank that matches t
 ### No-show policy
 
 - Wait 10 minutes, then send one short message confirming you are present. No more than two calls and one message per no-show.
-- Log the no-show in the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) with the date, channel and attempt, and offer two specific slots in the same message.
+- Log the no-show in the prospect's `HISTORY.md` with the date, channel and attempt, and offer two specific slots in the same message.
 - After two no-shows, move to nurture with a trigger date. Never mark a call as held, booked or completed unless it happened.
 
 ### 24-hour follow-up
@@ -131,7 +131,7 @@ Ask 8 to 12 questions in total. Core first, then the service bank that matches t
 - Send within 24 hours on the same channel, 50 to 120 words: their problem in their words, the one next step, one date.
 - Make no new claims and attach nothing that was not promised.
 - Score it against `../vintoria-sales/references/quality-bar.md`; the floor to send is 80.
-- Log it in `OUTREACH-SEQUENCE.md` and update the pipeline (`python <SCRIPTS>/core/pipeline.py`).
+- Log it in `OUTREACH-SEQUENCE.md` and update `PIPELINE.md`.
 
 ## Output format
 
@@ -199,11 +199,11 @@ Sent: <date or not sent> | Channel: <channel> | Score: <0 to 100>
 - Every buyer fact carries a source or `Not found`; zero invented answers.
 - The next step has one action, one owner and one real date.
 - The follow-up is written within 24 hours and scores at least 80 before sending.
-- the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) and the pipeline (`python <SCRIPTS>/core/pipeline.py`) are updated in the same session; no price appears anywhere.
+- the prospect's `HISTORY.md` and `PIPELINE.md` are updated in the same session; no price appears anywhere.
 
 ## Failure handling
 
-- **No web access:** work from saved `DOSSIER.md`, `SITE-AUDIT.md` and their replies in the pipeline (`python <SCRIPTS>/core/pipeline.py show`) only; mark each with its save date as possibly stale; never guess a fact.
+- **No web access:** work from saved `DOSSIER.md`, `SITE-AUDIT.md` and their replies in `THREAD.md` only; mark each with its save date as possibly stale; never guess a fact.
 - **Missing profile:** keep the call and the score; omit proof claims; use `[PRICE TO CONFIRM]` if money arises; tell the seller to run `vintoria-setup` afterwards.
 - **Missing dossier and audit:** run a 20-minute live triage from public pages before the call, or ask the seller to postpone rather than walk in blind.
 - **Ambiguous request:** ask which prospect, which call date, and whether the call is booked or held; never score a call that has not happened.
@@ -219,5 +219,5 @@ Sent: <date or not sent> | Channel: <channel> | Score: <0 to 100>
 - [ ] Hard no-go rules applied and recorded.
 - [ ] One next step with exact words, owner and date.
 - [ ] `MEETING-NOTES.md` written within 2 hours.
-- [ ] the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) and the pipeline (`python <SCRIPTS>/core/pipeline.py`) updated.
+- [ ] the prospect's `HISTORY.md` and `PIPELINE.md` updated.
 - [ ] 24-hour follow-up sent and scored at 80 or above.

@@ -1,8 +1,0 @@
-schema_version: "1.1"
-name: linkedin-posts-to-pipeline
-expected_outcome: |
-  Maria Lopez (Bean There Coffee) and Tom Baker (Tidal Skincare) are judged buyers with exact quotes; Pixel Gurus is rejected as a seller.
-  Two separate prospects are added (not merged into one 'linkedin.com' prospect), Maria's email from her post is saved as a contact, no paid finder
-  or API is used, and the user gets a short table with the next step for each buyer.
-context:
-  scaffold_script: place-files.sh

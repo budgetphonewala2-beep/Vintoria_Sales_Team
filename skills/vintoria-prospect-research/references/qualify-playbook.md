@@ -1,8 +1,7 @@
 # vintoria-prospect-research — Playbook
 
-> Web access: use your agent's web tools if it has them; otherwise run the scripts in the `vintoria-sales` skill's
-> `scripts/` folder (`<SCRIPTS>` = `../vintoria-sales/scripts/` next to this skill): `fetch_page.py <url>` and
-> `web_search.py "<query>"`. Never invent what you could not fetch — write "Not found".
+> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## When This Skill Is Invoked
 
@@ -171,13 +170,20 @@ BANT Score = Budget + Authority + Need + Timeline
 Range: 0-100
 ```
 
-**Deterministic cross-check (recommended):** write the raw signals you found to `prospects/<slug>/_bant_signals.json` and run:
+**Agency-buyer cross-check** (for someone who asked publicly for a service — score each part, unknown = the neutral value):
 
-```bash
-python "<SCRIPTS>/leads/lead_scorer.py" "prospects/<slug>/_bant_signals.json"
-```
+| Part | Max | Score |
+|---|---|---|
+| Intent | 25 | 25 × your confidence they are a real buyer (0-1) |
+| Urgency | 15 | high 15 · medium 9 · unknown 6 · low 4 |
+| Freshness | 15 | posted ≤ 1 day 15 · ≤ 3 days 12 · ≤ 7 days 8 · ≤ 14 days 4 · older 1 · unknown 7 |
+| Low competition | 10 | comments 0-2 → 10 · 3-10 → 7 · 11-30 → 3 · more → 0 · unknown 5 |
+| Budget stated | 8 | 8 if they named a budget, else 0 |
+| Service fit | 10 | 10 × share of what they asked for that Vintoria sells (unknown 3) |
+| Contactability | 12 | verified email 12 · published on their site/post 10 · catch-all 6 · unverified 2 · pattern-guessed 1 · none 0 |
+| Multi-source | 5 | 5 if two separate sources show the same need |
 
-(`python3` on macOS/Linux; run `lead_scorer.py --example` to see the input format.) Omit fields you could not research instead of guessing — the script's `data_coverage_pct` shows how complete the evidence was. If your judgment-based BANT differs from the script by more than 15 points, explain why in the report. Delete the JSON file afterwards.
+If your BANT score and this score differ by more than 15 points, explain why in the report.
 
 ---
 

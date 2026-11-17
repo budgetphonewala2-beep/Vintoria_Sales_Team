@@ -1,6 +1,6 @@
 # Seller intake interview
 
-Goal: a `SELLER-PROFILE.json` complete enough that every query, filter, email and proposal is specific to this
+Goal: a `SELLER-PROFILE.md` complete enough that every query, filter, email and proposal is specific to this
 seller. Ask in at most three short rounds. Give an example answer under each question. Accept "skip" for
 optional fields. Never invent answers; above all, never invent proof.
 
@@ -35,7 +35,7 @@ optional fields. Never invent answers; above all, never invent proof.
 
 | Ask | Field | Why it matters |
 |---|---|---|
-| 2-3 real results: client (or type), what you did, the result, a link | `proof.case_studies` | The **only** proof emails may cite; claim check enforces it |
+| 2-3 real results: client (or type), what you did, the result, a link | `proof.case_studies` | The **only** proof emails may cite; truth self-check enforces it |
 | Portfolio link; years in business, projects done, team size | `proof.*` | Credibility line, follow-up email 3 |
 | Why you over other agencies (2-3 concrete reasons)? | `positioning.differentiators` | Objections, proposals ("US-hours overlap", "fixed price", "Shopify Partner") |
 | Any guarantee you really offer? | `positioning.guarantees` | Risk reversal, only if true |
@@ -53,7 +53,7 @@ optional fields. Never invent answers; above all, never invent proof.
 - `targets.exclude_countries` → `NOT India` / `-India` in queries, and leads mentioning that market are dropped
 - `targets.countries` → Google country code, and each prospect's send window in their own time zone
 
-Check the result with `python <SCRIPTS>/leads/query_library.py` and show the user a sample before hunting.
+Write the resulting queries into `IDEAL-CUSTOMER-PROFILE.md` and show the user a sample before hunting.
 
 ## Example: a complete profile (abridged)
 

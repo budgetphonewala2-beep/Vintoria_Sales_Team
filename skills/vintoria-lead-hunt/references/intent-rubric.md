@@ -60,6 +60,6 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
 
 ## After judging
 
-- Buyers → pipeline (`pipeline.py add ... --source hunt:<query-id>`), with the quote saved as a note.
+- Buyers → a row in `PIPELINE.md` (`source` = the query that found them), with the exact quote in their `HISTORY.md`.
 - Low-urgency "thinking about it" posts → optional `nurture` stage, never cold-emailed as if they asked.
 - Track which queries produced real buyers; drop queries that only return sellers or job ads.

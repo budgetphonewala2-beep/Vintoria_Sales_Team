@@ -19,18 +19,18 @@ Produces one file, `OFFER.md`: the lanes we sell, the disciplines we can staff, 
 | Input | Source | If missing |
 |---|---|---|
 | Service catalog | `../vintoria-sales/references/service-catalog.md` and `services/*.md` | Stop. Never work without the catalog. |
-| Seller identity, markets, currency | `SELLER-PROFILE.json` (`python <SCRIPTS>/core/seller_profile.py show`) | Create a skeleton with `Not found` fields and continue. |
+| Seller identity, markets, currency | `SELLER-PROFILE.md` | Create a skeleton with `Not found` fields and continue. |
 | Staffing truth (what can be delivered now) | Seller interview | Ask. Do not infer from the catalog. |
 | Proof artefacts (live URLs, cases, screenshots, repos) | Seller interview | Mark every unproven lane `Provisional`. |
 | Existing `OFFER.md` | `OFFER.md` | Create it in this run. |
-| Win/loss reasons | the pipeline (`python <SCRIPTS>/core/pipeline.py`), the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) files | Skip and note `Not found` in the interview record. |
+| Win/loss reasons | `PIPELINE.md`, the prospect's `HISTORY.md` files | Skip and note `Not found` in the interview record. |
 
 Read `../vintoria-sales/references/truth-rules.md` and `../vintoria-sales/references/pricing-policy.md` before writing a single claim.
 
 ## Workflow
 
 1. Read `../vintoria-sales/SKILL.md`, the catalog, all 12 discipline files, truth rules, pricing policy and the quality bar.
-2. Read `SELLER-PROFILE.json`. If absent, write the skeleton with these headings only: identity, markets, languages, delivery owner, pricing (empty), proof (empty). Continue.
+2. Read `SELLER-PROFILE.md`. If absent, write the skeleton with these headings only: identity, markets, languages, delivery owner, pricing (empty), proof (empty). Continue.
 3. Ask the interview questions below in **one batch**. Stop at 12. If the seller answers fewer than 6, produce a `Provisional` offer and say which lanes are guesses.
 4. Classify every discipline as **Active**, **Dormant** or **Excluded** using the rules in step 5. Write the classification down before choosing lanes.
 5. Apply the classification rules:
@@ -55,7 +55,7 @@ Read `../vintoria-sales/references/truth-rules.md` and `../vintoria-sales/refere
    - Any comparative sentence that cannot be checked against the catalog or the seller profile is deleted.
 10. Write `OFFER.md` using the template below. Keep pricing out except the placeholder line.
 11. Run the quality gates. If any gate fails, set `Status: Provisional`, list the failing gate at the top, and still save the file.
-12. If the request is really about identity, markets, currency or pricing numbers, update `SELLER-PROFILE.json` instead and tell the seller in one line. `OFFER.md` never holds prices.
+12. If the request is really about identity, markets, currency or pricing numbers, update `SELLER-PROFILE.md` instead and tell the seller in one line. `OFFER.md` never holds prices.
 
 ### Interview questions (maximum 12)
 
@@ -81,7 +81,7 @@ Write exactly this structure to `OFFER.md`.
 Status: Confirmed | Provisional
 Last updated: YYYY-MM-DD
 Owner: <seller name>
-Built from: catalog 2026, SELLER-PROFILE.json (date), interview (date)
+Built from: catalog 2026, SELLER-PROFILE.md (date), interview (date)
 
 ## Positioning statement
 <One sentence, 40 words max: who we serve, the problem, the disciplines we use, and one checkable differentiator or nothing.>
@@ -132,7 +132,7 @@ Built from: catalog 2026, SELLER-PROFILE.json (date), interview (date)
 - <banned claim>
 
 ## Commercial boundary
-Pricing lives in SELLER-PROFILE.json. Any figure here is [PRICE TO CONFIRM].
+Pricing lives in SELLER-PROFILE.md. Any figure here is [PRICE TO CONFIRM].
 
 ## Interview record
 | # | Question | Answer | Answered |
@@ -162,7 +162,7 @@ Below the floor: label `Provisional`, state the failing gate, and keep the file 
 - **No seller profile.** Create the skeleton, mark identity fields `Not found`, continue.
 - **Vague or empty answers.** Use the discipline files' own segment and signal lists as candidate lanes, mark the file `Provisional`, and ask the 5 highest-value questions again next session.
 - **Interview conflicts with the profile.** The profile wins for facts; log the conflict in the interview record.
-- **Request is really about prices.** Do not build lanes; send the seller to `SELLER-PROFILE.json` pricing and say why.
+- **Request is really about prices.** Do not build lanes; send the seller to `SELLER-PROFILE.md` pricing and say why.
 - **Ambiguous request.** If the user asks what we sell, build the offer. If they ask what to say to one buyer, route to `vintoria-outreach`.
 
 ## Definition of done

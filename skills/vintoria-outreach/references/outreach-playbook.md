@@ -1,13 +1,12 @@
 # vintoria-outreach — Playbook
 
-> Web access: use your agent's web tools if it has them; otherwise run the scripts in the `vintoria-sales` skill's
-> `scripts/` folder (`<SCRIPTS>` = `../vintoria-sales/scripts/` next to this skill): `fetch_page.py <url>` and
-> `web_search.py "<query>"`. Never invent what you could not fetch — write "Not found".
+> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## When This Skill Is Invoked
 
 - **Standalone:** The user runs `vintoria-outreach` (<prospect>). The `<prospect>` can be a URL, company name, or reference to an existing analysis. Perform personalization research and output OUTREACH-SEQUENCE.md.
-- **Within `vintoria-prospect-research`:** this work is done by the strategy role (`vintoria-prospect-research/references/role-strategy.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
+- **Within `vintoria-prospect-research`:** this work is done by the strategy role (`../../vintoria-prospect-research/references/role-strategy.md`). This skill is the standalone, more detailed version and writes its own file to `prospects/<slug>/`.
 
 ---
 

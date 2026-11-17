@@ -1,8 +1,0 @@
-schema_version: "1.1"
-name: price-question-from-austin
-expected_outcome: |
-  The reply is classified as interest/a question, the pipeline shows Glow Skin as replied with follow-ups stopped, and a short draft
-  answer is written: it answers cost and timeline only from the profile (USD 2,000 minimum / ~6,000 typical, 4-6 weeks) or marks them to confirm,
-  offers 2-3 call slots shown in Austin time (Central) and may include the booking link. Nothing is sent.
-context:
-  scaffold_script: place-files.sh

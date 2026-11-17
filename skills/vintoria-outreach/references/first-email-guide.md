@@ -11,7 +11,7 @@
 
 Rules: no attachments, at most one link (better none), no images, no tracking, no "guaranteed", no fake
 urgency, no flattery you can't back up, no invented mutual connections. Match their language: a Hinglish post can
-get a short Hinglish opener; keep the rest clear and professional. Every factual sentence must pass `claim_check.py`.
+get a short Hinglish opener; keep the rest clear and professional. Every factual sentence must pass the truth self-check.
 
 ## 10 examples
 
@@ -27,7 +27,7 @@ get a short Hinglish opener; keep the rest clear and professional. Every factual
 > Worth a 15-minute call this week to see if we're a fit?
 
 Why it works: names the real request, one checkable fact, one relevant line, one easy question. (The "3-4 weeks"
-must be in the user's own notes/ICP or the claim check fails.)
+must be in the user's own notes/ICP or the truth self-check fails.)
 
 ### 2. BAD — generic and unverifiable
 > Subject: Grow your business 10X!!!
@@ -50,7 +50,7 @@ Why it fails: no reason it's for them, invented numbers, a guarantee, shouty sub
 ### 4. BAD — invented observation
 > "I noticed your website gets very little traffic and you're losing about 40% of mobile visitors."
 
-Why it fails: no tool measured traffic or loss; the claim check will flag both numbers.
+Why it fails: no tool measured traffic or loss; the truth self-check rejects both numbers.
 
 ### 5. GOOD — audit-led, no public post
 > Subject: sweet crumbs homepage
@@ -89,5 +89,5 @@ Why it fails: no tool measured traffic or loss; the claim check will flag both n
 
 ## Before showing the draft
 - Recipient email status is `verified` (or tell the user it isn't).
-- `claim_check.py` passes; no `[PLACEHOLDER]` left.
+- The truth self-check passes (`../../vintoria-sales/references/truth-rules.md`); no `[PLACEHOLDER]` left.
 - Under 120 words (count them), one link max, opt-out line present, postal address for US recipients.

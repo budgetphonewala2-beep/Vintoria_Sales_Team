@@ -24,10 +24,10 @@ Grow each delivered account through catalog-backed adjacencies, dated triggers a
 
 | Input | Where | If missing |
 |---|---|---|
-| Delivery status and acceptance | the pipeline history (`python <SCRIPTS>/core/pipeline.py note`), contract, acceptance notes | Ask the seller which deliverables were accepted and on what date. Do not assume completion. |
-| What was bought and delivered | `CLIENT-PROPOSAL.md`, the pipeline (`python <SCRIPTS>/core/pipeline.py`) `services` | Rebuild the service list from the contract. Mark unknown IDs `Not found`. |
+| Delivery status and acceptance | the prospect's `HISTORY.md`, contract, acceptance notes | Ask the seller which deliverables were accepted and on what date. Do not assume completion. |
+| What was bought and delivered | `CLIENT-PROPOSAL.md`, `PIPELINE.md` `services` | Rebuild the service list from the contract. Mark unknown IDs `Not found`. |
 | Client-reported outcomes | Client emails, meeting notes, review calls | Leave the outcome field blank. Never infer a metric from traffic, screenshots or a hunch. |
-| Client contacts and roles | the pipeline (`python <SCRIPTS>/core/pipeline.py`), `DOSSIER.md` | Ask the seller for the day-to-day contact and the budget holder. |
+| Client contacts and roles | `PIPELINE.md`, `DOSSIER.md` | Ask the seller for the day-to-day contact and the budget holder. |
 | Written permission for proof | A dated email or note from the client | No permission means no case study, no logo, no quote, no numbers. |
 | Churn reason | `CLOSE-PLAN.md` loss debrief or exit notes | Ask the seller; otherwise mark `Not found` and do not guess. |
 | Expansion target and timing | Seller | Propose one candidate and one date; ask the seller to confirm. |
@@ -36,7 +36,7 @@ Read `../vintoria-sales/references/services-` for every discipline before propos
 
 ## Workflow
 
-1. **Confirm the account is safe to grow.** Check three facts: the last deliverable was accepted, there is no open incident or complaint, and the invoice position is not in dispute. If any is unclear, pause and ask the seller. Log the check date in the pipeline history (`python <SCRIPTS>/core/pipeline.py note`).
+1. **Confirm the account is safe to grow.** Check three facts: the last deliverable was accepted, there is no open incident or complaint, and the invoice position is not in dispute. If any is unclear, pause and ask the seller. Log the check date in the prospect's `HISTORY.md`.
 
 2. **Record what was actually delivered.** List catalog IDs and names, the acceptance date and any buyer-stated outcome with its source. Anything the client did not state stays blank. A delivered service is the only proof you may reference.
 
@@ -112,11 +112,11 @@ Read `../vintoria-sales/references/services-` for every discipline before propos
 
 9. **Run win-back after churn.** Sequence: day 30 exit review with the reason code from `../vintoria-sales/references/team.md` practice, day 90 a useful artefact with no ask, day 180 a trigger-based note. Maximum four touches per year. Stop immediately on any request. Reference the original reason and what changed; never guilt, never a discount.
 
-10. **Move the pipeline correctly.** Keep the row at `delivery` while work is live. Move to `expand` only when a repeat opportunity is identified and dated. When scope is agreed, create the next step as `proposal`. Always set `next_action`, `next_due` and `updated`, and append the change to the pipeline history (`python <SCRIPTS>/core/pipeline.py note`).
+10. **Move the pipeline correctly.** Keep the row at `delivery` while work is live. Move to `expand` only when a repeat opportunity is identified and dated. When scope is agreed, create the next step as `proposal`. Always set `next_action`, `next_due` and `updated`, and append the change to the prospect's `HISTORY.md`.
 
 ## Output format
 
-Write `prospects/<slug>/EXPANSION-MAP.md` in this shape, then update the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) and the pipeline (`python <SCRIPTS>/core/pipeline.py`).
+Write `prospects/<slug>/EXPANSION-MAP.md` in this shape, then update the prospect's `HISTORY.md` and `PIPELINE.md`.
 
 ```md
 # Expansion map — <company>
@@ -205,4 +205,4 @@ Do not show the map until all of these pass.
 - [ ] Referral asked at most once, script recorded, permission noted.
 - [ ] Case study and testimonial captured with named approval, or marked blocked.
 - [ ] Win-back scheduled with reason code and stop condition where relevant.
-- [ ] the pipeline (`python <SCRIPTS>/core/pipeline.py`) and the pipeline history (`python <SCRIPTS>/core/pipeline.py note`) updated, stage truthful, next action dated.
+- [ ] `PIPELINE.md` and the prospect's `HISTORY.md` updated, stage truthful, next action dated.

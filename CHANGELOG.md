@@ -1,5 +1,32 @@
 # Changelog
 
+## 5.0.0 — 2026-11-17 (instruction-only skills for any bot; LinkedIn + Reddit)
+
+### Changed
+- **No code.** Every Python script, test, tool and the installer are removed (they remain in git history up to v4.0.0).
+  The 8 skills are pure Markdown and work in any bot that follows instructions — Grok, Claude, GPT, Gemini, Codex, Cursor.
+- **State in plain files** instead of a database: `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md`,
+  `PIPELINE.md`, `DO-NOT-CONTACT.md`, `prospects/<slug>/` (`references/pipeline-format.md`); chat bots without file
+  access keep it in the conversation.
+- Every former script step is now a written procedure: the truth self-check, the email quality score, the manual site
+  audit, the agency-buyer and BANT scoring tables, the follow-up cadence and today's agenda.
+- **Lead sources: LinkedIn and Reddit only**, through the logged-in accounts. Reddit buyers get a professional, helpful
+  public comment with Vintoria's clickable WhatsApp link; LinkedIn buyers get an email from business@vintoria.org (or a
+  comment / connection note when no email is found).
+- **Approval mode** (`auto` / `review`) and daily limits per platform replace "the user sends everything".
+
+### Added
+- `vintoria-sales/references/vintoria-contact.md`: business@vintoria.org, WhatsApp +91 87660 33979, the `wa.me` link
+  with pre-filled text, sign-offs per channel, tone.
+- `vintoria-outreach/references/reddit-comment-playbook.md` and `linkedin-playbook.md`.
+- `vintoria-setup/references/seller-profile-template.md` (pre-filled with the catalog, email, WhatsApp, channels).
+- Reddit and LinkedIn rules in `compliance.md`.
+
+### Removed
+- `scripts/`, `tests/`, `tools/`, `install.py`, `install.sh`, `uninstall.sh`, `requirements.txt`, `examples/`,
+  `adapters/` (Claude subagents), `archive/`, eval cases, `AUDIT.md`, duplicate catalog JSON/list, the PDF-report tooling,
+  per-skill copies of `compliance.md` (one shared copy now).
+
 ## 4.0.0 — 2026-11-17 (Vintoria: 8 skills, organised engine, 270-service catalog)
 
 ### Changed

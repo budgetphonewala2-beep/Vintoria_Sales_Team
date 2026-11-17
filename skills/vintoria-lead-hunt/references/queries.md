@@ -1,68 +1,65 @@
-# Lead queries and sources — the playbook
+# Lead queries — LinkedIn and Reddit only
 
-Better queries = better leads. The sharpest queries come from **your** profile: `SELLER-PROFILE.json` (made by
-`vintoria-setup`) feeds your niches, platforms, buyer pains, buying triggers, tools clients leave, buyer titles,
-target countries and excluded markets into every query. `python <SCRIPTS>/leads/query_library.py` prints them;
-`lead_sources.py` runs them. Without a profile you get generic service queries — fine to start, weak to scale.
+Vintoria hunts on the two platforms the bot is logged in to. Better queries = better leads, and the sharpest come from
+`SELLER-PROFILE.md` and `OFFER.md`: niches, pains, triggers, tools clients leave, target countries. Keep the queries that
+work in `IDEAL-CUSTOMER-PROFILE.md`.
 
-## The formula (why these queries work)
+## The formula
 
-**ASKING phrase + SERVICE phrase + platform + exclusions + recency.**
+**ASKING phrase + SERVICE phrase (+ niche / pain / place) + exclusions + recency.**
 
 | Part | Examples | Why |
 |---|---|---|
-| Asking | "looking for", "can anyone recommend", "need", "suggestions", "anyone know" | Without it you get sellers |
-| Niche (from your profile) | "DTC skincare", "dental clinics", "specialty coffee" | 5-10x fewer irrelevant posts |
-| Pain / trigger / switch | "store is slow", "product launch", "moving from Wix" | Catches buyers who never name the role |
-| Service (buyer words) | "web developer", "need a new website", "website redesign", "SEO agency", "rank on Google" | Buyers name the outcome, not "digital solutions" |
-| Platform | `site:linkedin.com/posts`, `site:reddit.com`, r/forhire `flair:Hiring` | One platform per query = cleaner results |
-| Exclusions | `-"for hire"` `-"open to work"` `-"we offer"` `-"I am a"`, LinkedIn `NOT "open to work"` | Removes freelancers advertising |
-| Recency | `--posted 24h/week`, Google `qdr:w`, HN `created_at_i>` | A 3-day-old ask converts far better than a 3-week-old one |
-| Market | Google country code from your target countries; `NOT India` / `-India` when you exclude it | Overseas clients only; leads mentioning an excluded market are dropped |
-| Location (local ICP only) | `AND "Austin"`, `"Manchester"`, `"Sydney"` | Halves noise for local services; skip it for remote work |
+| Asking | "looking for", "can anyone recommend", "need", "suggestions", "anyone know", "koi batao", "chahiye" | Without it you get sellers |
+| Service (buyer words) | "web developer", "need a website", "website redesign", "app developer", "AI chatbot", "automate", "Shopify developer", "SEO agency", "rank on Google" | Buyers name the outcome, not "digital solutions" |
+| Niche / pain / trigger | "clinic", "restaurant", "D2C", "store is slow", "moving from Wix", "launching next month" | 5-10x fewer irrelevant posts |
+| Place (local work) | "Pune", "Mumbai", "Bangalore", "London", "Sydney", "Texas" | Halves noise for local services |
+| Exclusions | `NOT "open to work"`, `NOT hiring` (job ads), `-"for hire"` | Removes freelancers advertising and job posts |
+| Recency | Date posted: past 24 hours / past week; sort by Latest / New | A 1-day-old ask converts far better than a 3-week-old one |
 
-## LinkedIn post search (HarvestAPI actor) — rules
-- Boolean `AND`, `OR`, `NOT` (uppercase), `"exact phrases"`, parentheses. **Max 5 operators, 500 characters** per query —
-  `query_library.valid_linkedin()` enforces it; longer queries are refused before any credits are spent.
-- Put `NOT ...` last. LinkedIn returns up to ~400-500 posts per query, so split broad ideas into several sharp queries.
-- Strong patterns (operators counted):
-  - `"looking for" AND ("web developer" OR "website developer" OR "web designer")` (3)
-  - `("can anyone recommend" OR "recommendations for") AND ("SEO agency" OR "SEO expert")` (3)
-  - `("need a website" OR "need a new website" OR "website redesign") AND ("looking for" OR help)` (4)
-  - `"looking for" AND ("Shopify developer" OR "Shopify expert") AND skincare NOT India` (4) — niche × service
-  - `("store is slow" OR "low conversion" OR "theme looks dated") AND ("our website" OR "our store" OR help)` (5) — pain
-  - `("moving from Wix" OR "migrate from Wix" OR "switching from Squarespace") AND (help OR developer)` (5) — switch
-- Run with `--posted 24h` daily or `--posted week` weekly; sort by date.
+## LinkedIn (logged in)
 
-## Every source, and what it is best for
+**Where:** search bar → Posts → sort **Latest**, **Date posted: Past 24 hours** (daily) or **Past week**; optionally
+Author industry / location filters.
+**Rules:** boolean `AND`, `OR`, `NOT` in capitals, `"exact phrases"`, parentheses, at most 5 operators per query (longer
+ones are ignored), `NOT …` last.
 
-| Source | Command | Best for | Notes |
-|---|---|---|---|
-| **Google SERP via Bright Data (main)** | `serp.py watch` (newest since last run) / `serp.py hunt --hours 24` | Everything at once: LinkedIn posts, Reddit, Quora, X, FB groups, Indie Hackers, Upwork jobs via X-ray, in your countries, sorted by date, exact post times | `BRIGHTDATA_API_KEY` + `BRIGHTDATA_ZONE`; `serp.py providers` shows the cost |
-| LinkedIn posts | `lead_sources.py linkedin` | B2B founders/owners asking publicly | Apify HarvestAPI; author name + headline + profile URL included |
-| Hacker News | `lead_sources.py hackernews` | Startups: "Seeking freelancer" thread (monthly), Ask HN asks | Free, no key; posts often include an email → no finder needed |
-| Reddit | `lead_sources.py reddit` | r/forhire `[Hiring]`, r/smallbusiness, r/startups, r/shopify, r/indianstartups | Apify, or free public JSON; buyers rarely leave an email → reply where they posted (user does it) |
-| X / Twitter | `lead_sources.py x` | Founders, indie hackers, creators asking for help | Apify tweet scraper; uses `-filter:retweets -"for hire"` |
-| Facebook groups | `lead_sources.py facebook --group-url ...` | Local business owners, Indian SMB groups | Public groups only; you name the groups |
-| Google X-ray | `lead_sources.py google` | Quora, Indie Hackers, Upwork public jobs, FB groups, hiring signals | Apify Google scraper or Bright Data |
-| Apollo (via Apify) | `lead_sources.py apollo [--url ...] --add --verify` | Decision makers by title × country × size × niche | Lists, not intent — deep-scan first, strong first line |
-| Leads Finder | `lead_sources.py leads --add --verify` | Apollo-style filters without an Apollo account | Same |
-| LinkedIn people | `lead_sources.py people` / `employees --company <url>` | Founders/owners in a niche; the right person at a known company | Pair with their company's dossier |
-| Google Maps | `lead_sources.py maps` (cities from your profile) | Local businesses with **no website / social-only page / low rating / few reviews** | Outbound list with need signals + phone (WhatsApp) |
-| Product Hunt | `lead_sources.py producthunt` | New launches with few upvotes → need marketing, SEO, design | Free developer token |
-| Any Apify actor | `lead_sources.py actor user/name --input in.json` | Anything else (Instagram, YouTube comments, Craigslist, job boards...) | Output normalized and intent-scored |
+Strong queries (operators counted):
+- `"looking for" AND ("web developer" OR "website developer" OR "web designer")` (3)
+- `("need a website" OR "new website" OR "website redesign") AND ("looking for" OR recommend)` (4)
+- `("can anyone recommend" OR "recommendations for") AND ("app developer" OR "mobile app")` (3)
+- `"looking for" AND ("AI chatbot" OR "AI agent" OR "AI developer")` (3)
+- `("automate" OR "CRM setup" OR "Zapier") AND ("looking for" OR "need help")` (4)
+- `"looking for" AND ("Shopify developer" OR "Shopify expert")` (2)
+- `("SEO agency" OR "SEO expert" OR "digital marketing agency") AND recommend NOT hiring` (4)
+- Niche × service: `"looking for" AND ("web developer" OR "app developer") AND clinic` (3)
 
-`lead_sources.py hunt` runs every intent source you have keys for, with your profile's queries, in this order:
-Hacker News → LinkedIn → Reddit → Google X-ray → X.
+Also useful: posts in the **Jobs → "Services" / ProFinder-style requests** and comments under "looking for agency
+recommendations" posts by founders. Each lead: author name, headline, profile URL, the post URL and its date.
 
-## Hidden-intent (signal) searches — companies that need you but didn't ask
-- Hiring for the role you replace: `(site:linkedin.com/jobs OR site:indeed.com OR site:glassdoor.com) ("SEO specialist" OR "Shopify developer") "Austin"`
-- Just launched / raised: Product Hunt launches; `"<city>" ("just launched" OR "soft launch" OR "grand opening") restaurant OR clinic`;
-  `site:techcrunch.com OR site:crunchbase.com "raised" seed <niche>`
-- Bad web presence: Google Maps "no website"; `site:business.site <category> <city>` (free Google sites)
-- Unhappy with the current provider: `("our agency" OR "our developer") ("disappeared" OR "not responding" OR "ghosted")`
+## Reddit (logged in)
+
+**Where:** search inside a subreddit (`subreddit → search`, sort **New**, time **Past week**), or Reddit-wide search
+with `subreddit:` / `flair:` filters.
+
+| Subreddit | What to search | Notes |
+|---|---|---|
+| r/forhire | `flair:Hiring website OR app OR SEO OR shopify OR "AI"` | Buyers post `[Hiring]`; offers in comments are expected — read the rules |
+| r/smallbusiness | `"need a website" OR "looking for a developer" OR "recommend" web` | Check rules for self-promotion before linking |
+| r/Entrepreneur, r/startups | `"looking for" developer OR agency OR "MVP"` | Founders building MVPs, apps, automations |
+| r/indianstartups, r/india, r/bangalore, r/pune, r/mumbai | `"website" OR "app developer" OR "developer chahiye"` | Indian SMBs and founders; Hinglish posts |
+| r/shopify, r/ecommerce | `"looking for" OR "hire" developer OR expert` | Store builds, speed, conversion |
+| r/SEO, r/PPC, r/socialmedia | `"looking for" agency OR "recommend"` | Strict rules — often no promotion; help-only comments |
+| r/ChatGPT, r/automation, r/zapier, r/n8n | `"looking for" OR hire chatbot OR automation` | AI and automation buyers |
+| Niche subs (r/Dentistry, r/restaurateur, r/realtors, r/gymowner…) | `website OR app OR "marketing"` | Owners talking shop |
+
+Each lead: username, the post URL, its age, the comment count (fewer = less competition) and the subreddit's rules on
+promotion (note them once per subreddit).
+
+## Hidden intent (they need us but didn't ask)
+- LinkedIn: "our agency disappeared", "developer not responding", "website is down again", "launching next month".
+- Reddit: complaints about their current site, store speed or a freelancer who vanished — help-only comments work best.
 
 ## Keep what works
-- Every lead keeps its `source` (`hunt:li-web`, `maps:dentist in Austin`, ...). Each Monday, `pipeline.py report` →
-  `by_source` shows prospects, meetings and wins per source: double the queries that book meetings, drop the rest.
-- Add your niche words to the strongest queries (`clinic`, `D2C`, `SaaS`, `real estate`) once you know what converts.
+Every lead keeps its `source` in `PIPELINE.md` (`li:need-website-clinic`, `rd:forhire-hiring`). Each Monday
+`vintoria-report` counts replies, calls and wins per source: double the queries that book calls, drop the rest.

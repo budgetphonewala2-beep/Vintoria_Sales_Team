@@ -56,7 +56,7 @@ Always cite the exact ID and name from the discipline file:
 
 1. The catalog is **service scope only**. It contains no price, SLA, timeline, team size, guarantee or client name.
 2. Never state or imply a VINTORIA price, discount, delivery time or past result unless the seller's own
-   `SELLER-PROFILE.json` (`python <SCRIPTS>/core/seller_profile.py show`) contains it verbatim.
+   `SELLER-PROFILE.md` contains it verbatim.
 3. Anything not in the catalog or the seller profile is `Not found` (research) or omitted (outreach).
 4. If a buyer needs something outside the 270, say so plainly and name the closest covered services instead of
    inventing a new one.

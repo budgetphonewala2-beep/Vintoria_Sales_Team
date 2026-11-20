@@ -54,6 +54,7 @@ other agencies.
    | Marketing & growth (Radian) | "performance marketing agency", "SEO agency", "Amazon agency", "social media agency", "D2C growth agency" |
    | Switching (both) | "our agency isn't delivering", "looking to switch agencies", "developer disappeared" |
    | Hinglish | "agency chahiye", "website banwana hai — koi achhi company batao", "app banwana hai" |
+   | **Any other of the ~330 services** | the service rotation in `references/queries.md`: the next services of this PC's share, turned into buyer words ("PostgreSQL developer", "Blinkit onboarding") |
 2. **Search LinkedIn, newest first** (`references/queries.md` — every query, the hour-by-hour market rotation and the
    direct search URL): Posts → **Latest** → **Past 24 hours**, plus the comments under "recommend an agency" posts,
    LinkedIn service requests (if Vintoria has a Service Page) and joined groups. For each hit note: author, headline,

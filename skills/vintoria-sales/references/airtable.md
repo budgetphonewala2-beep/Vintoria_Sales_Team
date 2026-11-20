@@ -31,8 +31,8 @@ owner changes all three, or keeps them in a **Settings** table and every run rea
 **Leads** — one record per person looking for an agency
 `Post URL` (URL) · `Person name` · `Headline` · `Person URL` (URL) · `Company` · `Website` (URL) · `Country` (single select:
 IN / US / UK / AU) · `City` · `Quote` (long text, exact words) · `Need` (long text) · `Agency intent` (single select:
-agency / open / switching) · `Lane` (single select: web-ecommerce / apps-saas-ai / design-branding / marketplaces-qcom /
-seo-aeo-geo / paid-ads / social-content / cro-retention / video) · `Services` (multiple select, catalog IDs or Radian names)
+agency / open / switching) · `Discipline` (single select: 01-12 or Radian) · `Lane` (single select: web-ecommerce / apps-saas-ai /
+design-branding / marketplaces-qcom / seo-aeo-geo / paid-ads / social-content / cro-retention / video / other) · `Services` (multiple select, catalog IDs or Radian names)
 · `Brand` (single select: Vintoria / Radian) · `Posted at` (date-time — `Found at` minus the age shown) · `Found at`
 (date-time) · `Age at find (h)` (number) · `Comments at find` (number) · `Value score` (number) · `Score parts` (text) ·
 `HOT` (checkbox) · `Email` (email) · `Email status` (single select: published / verified / catch_all / unverified /
@@ -60,7 +60,7 @@ REVIEW, ALERT, BLOCKED, HOURLY, STANDUP, DECISION, ESCALATE, HOT, HEALTH, DIGEST
 `Done` (checkbox)
 
 **Runs** — `Run ID` · `PC` · `Started` · `Ended` · `Candidates` · `Valuable` · `HOT` · `Saved` · `Emails sent` ·
-`Comments` · `Notes` · `Messages` · `Replies found` · `Skipped by critic` · `Queries used` · `Supply note`
+`Comments` · `Notes` · `Messages` · `Replies found` · `Skipped by critic` · `Queries used` · `Rotation from` · `Rotation to` (service IDs or Radian names) · `Supply note`
 
 **Daily** — `Date` (the sales day runs 05:00-04:59 IST) · `PC` · `Leads saved` · `Target` (60) · `Started at` ·
 `Target reached at` · `Widening step` (0-4) · `Candidates judged` · `Valuable rate` (formula) · `Emails` ·

@@ -68,6 +68,35 @@ looking for work, not agencies selling, not companies hiring an employee.
 - `("looking for an agency" OR "recommend an agency") AND (Mumbai OR Pune OR Bangalore OR Delhi)` (5)
 - `("looking for an agency" OR "recommend an agency") AND (London OR Sydney OR Melbourne OR "New York")` (5)
 
+## Any of our ~330 services — the service rotation
+
+Vintoria sells 270 catalog services and Radian ~60 more: **an agency-seeker for any of them is a lead.** The fixed
+queries above catch the common asks; the rotation makes sure every other service gets searched too.
+
+**Each PC's share** (`../../vintoria-sales/references/hermes-setup.md`):
+| PC | Services it rotates through |
+|---|---|
+| PC1 | Vintoria 001-120: 01 Strategy, 02 Web, 03 SaaS, 04 Mobile, 05 UI/UX, 06 Branding |
+| PC2 | Radian's full list (`../../vintoria-sales/references/radian-profile.md`) + Vintoria 211-270: 11 Marketing & SEO, 12 Growth |
+| PC3 | Vintoria 121-210: 07 AI, 08 Automation, 09 Backend & Cloud, 10 E-Commerce |
+
+**Every run:**
+1. Read where the last run stopped (`Rotation to` on this PC's latest **Runs** record) and take the **next 6 services** in
+   catalog order (wrap around at the end of the share).
+2. Turn each service into **buyer words** — what a founder would actually type, using the service's file
+   (`services-0X-….md` → "Who buys this", "Buying signals"):
+   `173 PostgreSQL Development` → "PostgreSQL developer", "Postgres database help" ·
+   `028 Booking Platform Development` → "booking website", "appointment booking system" ·
+   Radian `Quickcommerce Onboarding` → "Blinkit onboarding", "Zepto listing".
+3. One query per service: `("looking for an agency" OR "looking for a company" OR recommend) AND ("<buyer words 1>" OR "<buyer words 2>")`
+   — 4 operators, past 24 hours, Latest.
+4. Write `Rotation from` / `Rotation to` (service IDs or Radian names) and the queries used on this run's **Runs** record.
+5. A lead found this way is cited by its exact service (`173 PostgreSQL Development`, or Radian's own name).
+
+Six services a run cover a PC's whole share in about 20 runs. The position carries over to the next day, so every
+service gets its turn even on days the 60 is reached early. A service whose query finds valuable leads
+twice in a week joins the fixed queries in `IDEAL-CUSTOMER-PROFILE.md`.
+
 ## Which market, which hour (24/7 rotation)
 
 People post during their own working day (times in IST):

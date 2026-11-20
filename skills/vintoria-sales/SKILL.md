@@ -148,7 +148,7 @@ Setting up the three Hermes PCs (profiles, skills, `AGENTS.md`, scheduled jobs, 
 - `references/airtable.md` — the shared Airtable base: which table replaces each file, fields, find-before-create, claims, batching and rate limits, views
 - `references/hermes-setup.md` — the three Hermes PCs: who hunts what, daily targets, install, AGENTS.md, scheduled jobs, sub-agents, watchdog, first day
 - `references/autopilot.md` — 24/7 without waiting for a human: the loop, the 6-hour full inbox sweep, the watchdog and role failover, default actions, what still needs a human
-- `references/self-test.md` — 37 scenarios with the expected behaviour: run before going live, after any change, monthly
+- `references/self-test.md` — 38 scenarios with the expected behaviour: run before going live, after any change, monthly
 - `references/service-catalog.md` — the 12 disciplines and how to cite a service
 - `references/services-01-strategy.md` — discipline 01 Strategy & Consulting (001-015): every service, signals, who buys it, when not to sell it
 - `references/services-02-web.md` — discipline 02 Web Development (016-040): every service, signals, who buys it, when not to sell it

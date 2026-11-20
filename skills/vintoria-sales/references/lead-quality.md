@@ -22,8 +22,8 @@ Priority by age: under 2 hours = act first, 2-12 hours = high, 12-24 hours = nor
 1. **Looking for an agency** — the author (or their business) wants to hire an agency, studio, company, outside team or
    partner — or asks "who can do X for us" in a way open to agencies — per
    `../../vintoria-lead-hunt/references/intent-rubric.md` (agency intent), confidence ≥ 0.7, with an **exact quote**.
-2. **We sell it** — the need maps to a Vintoria catalog service in an active lane of `OFFER.md` (or, for Radian's growth
-   lane, a service in `radian-profile.md`).
+2. **We sell it** — the need maps to **any** of Vintoria's 270 catalog services (`service-catalog.md`) or any Radian
+   service (`radian-profile.md`) — about 330 in all. `OFFER.md` lanes decide priority, not eligibility.
 3. **Right market** — India, United States, United Kingdom or Australia (or the profile's targets): stated, or
    clear from the profile, company page, currency or city.
 4. **Not excluded** — not an agency or freelancer selling; not a job ad or job seeker; not "freelancer / intern / student

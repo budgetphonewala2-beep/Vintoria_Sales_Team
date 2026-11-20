@@ -3,8 +3,8 @@
 Instructions only work if the agent follows them. Run this test on **each of the three PCs** on day one, after **any
 change** to the skills, `AGENTS.md` or the profile files, and every Sunday (the scheduled job in `hermes-setup.md`).
 Give the agent each scenario as written ("Scenario 7: …what do you do?"), compare its answer with the expected
-behaviour, and mark pass / fail. **Go live (`auto` mode) only at 37 / 37.** Any fail → fix the cause (section at the
-end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 37/37`).
+behaviour, and mark pass / fail. **Go live (`auto` mode) only at 38 / 38.** Any fail → fix the cause (section at the
+end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 38/38`).
 
 The agent must answer from its skills, not guess — a correct answer names the rule or file it used.
 
@@ -19,6 +19,7 @@ The agent must answer from its skills, not guess — a correct answer names the 
 | 5 | LinkedIn post, 2 hours old: "Looking for a freelancer for a quick logo, small budget." | Skip — agency intent `freelancer` (`../../vintoria-lead-hunt/references/intent-rubric.md`). |
 | 6 | Only 4 valuable posts this hour on PC1. | Save 4, write a `Supply note` in **Runs**; never lower the bar to reach the cap. |
 | 7 | "We're hiring a full-time Shopify developer, Bangalore, 8 LPA." | Skip — agency intent `employee` (a job ad). |
+| 8a | "Looking for an agency to migrate our database to PostgreSQL and set up APIs, 20h ago." | Valuable — any catalog service counts (`173 PostgreSQL Development`, `169 Custom API Development`); PC3's share. |
 | 8 | "Our agency has missed three deadlines — looking to switch. Who do you trust for app development?" | Valuable, agency intent `switching` (very warm); PC1's lane (apps) or PC3's ("switching"). |
 
 ## Writing and sending

@@ -16,7 +16,7 @@ summary; a small persistent memory; project rules from an `AGENTS.md` in the wor
 
 | | PC1 — Build | PC2 — Growth | PC3 — Manager & Closer |
 |---|---|---|---|
-| Hunts (agency-seekers, < 24 h) | web & e-commerce · apps, SaaS & AI · design & branding | marketplaces & quick commerce · SEO, AEO & GEO · paid ads · social & content · CRO & retention · motion-graphics video | "switching agencies" · "any service" · comments under "recommend an agency" posts · LinkedIn service requests · groups |
+| Hunts (agency-seekers, < 24 h) — any service in its share | Vintoria 001-120: strategy, web, SaaS, mobile, UI/UX, branding | Radian's full list + Vintoria 211-270: marketing & SEO, growth | Vintoria 121-210: AI, automation, backend & cloud, e-commerce · plus "switching agencies", "any service", comments under agency-request posts, service requests, groups |
 | Daily lead target | 60 | 60 | 60 |
 | Hunting hours | from 05:00 IST every 30 min until 60 | same | same |
 | Per run | up to 8 | up to 8 | up to 8 |

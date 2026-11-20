@@ -77,9 +77,10 @@ This hourly pass is the only place sequence emails are sent, so each lands in th
    **Health first:** the latest LinkedIn and email levels in `HEALTH.md` (`vintoria-account-health`) — GREEN = full
    limits, YELLOW = half, RED = no LinkedIn activity / no email this hour. Older than 6 hours → run the check first.
 1. **Search LinkedIn, last 24 hours only** — `../vintoria-lead-hunt/references/queries.md`: Posts → Latest → Past 24
-   hours, **this PC's lanes only** (`../vintoria-sales/references/hermes-setup.md`: PC1 build lanes, PC2 growth lanes,
-   PC3 "switching agencies", "any service", comments under agency-request posts, service requests), this hour's lane
-   first, aimed at the market where it is
+   hours, **this PC's share of the ~330 services** (`../vintoria-sales/references/hermes-setup.md`: PC1 Vintoria 001-120,
+   PC2 Radian + Vintoria 211-270, PC3 Vintoria 121-210 + "switching agencies" and "any service"): the fixed queries for
+   this hour's lane **plus the next 6 services of the PC's service rotation** ("Any of our ~330 services" in
+   `queries.md` — buyer words for each, the position carried over in **Runs**), aimed at the market where it is
    daytime now ("Which market, which hour"), opened by the direct search URL. Also: comments under "recommend an agency"
    posts, LinkedIn service requests, joined groups. Collect 25-40 candidates; skip any URL already in `SEEN.md`.
 2. **Filter with the exact rules** in `../vintoria-sales/references/lead-quality.md`: age on the post under 24 h (`1d` = too

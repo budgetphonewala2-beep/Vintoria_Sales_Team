@@ -1,4 +1,4 @@
-# Radian Marketing — brand facts (the only Radian facts bots may use)
+# Radian Marketing — brand facts (the only Radian facts the agents may use)
 
 Collected from radianmarketing.com on 2026-11-17 (pages: home, /about/, /services/, /case-studies/,
 /case-study-seo-growth-01/, /contact-us, /career/, /privacy-policy/). Use only what is here; anything marked
@@ -51,7 +51,7 @@ increasing LTV. Never promise a number for any of them.
 Business Profile Optimization, Local SEO, Lead Generation, Account Based Marketing, Influencer Marketing, Podcast
 Marketing, Link Building Services, SaaS SEO.
 
-### Radian prices (the only Radian numbers bots may quote)
+### Radian prices (the only Radian numbers the agents may quote)
 
 | Service | Price | How to say it |
 |---|---|---|

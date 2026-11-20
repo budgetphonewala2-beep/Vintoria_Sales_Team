@@ -1,111 +1,102 @@
-# The Vintoria sales team — roles, the team board, and how bots work together
+# The sales team — three Hermes PCs working as one, for Vintoria and Radian Marketing
 
-Several bots can run Vintoria's sales 24/7 like one professional team: each has a role, they talk on a shared **team
-board**, hand work over with full context, review each other's messages, and never step on each other. One bot can also
-play every role — the protocol is the same.
+Three Hermes agents on three PCs run the whole sale end to end for both agencies — find, research, contact, reply, book,
+close, collect proof — like one professional team. They never call each other directly: everything they share lives in
+**Airtable** (`airtable.md`), and they talk on its **Board** table with one message format. Setup: `hermes-setup.md`.
 
-They can't call each other directly, so everything goes through shared files (`pipeline-format.md`): `TEAM-BOARD.md`
-(messages), `PIPELINE.md` (who owns which lead), `SEEN.md` (posts already judged or claimed), `RUN-LOG.md` (counters).
-If the bots don't share a folder, use one shared channel all of them can read and write (a Telegram / Slack / Discord
-group or a shared Google Doc) with exactly the same message format.
+## Who does what
 
-## Roles
-
-| Role | Skill | Owns | Hands off to |
+| PC | Roles | Skills it runs | Owns |
 |---|---|---|---|
-| **Sales Manager** | `vintoria-sales`, `vintoria-report`, `vintoria-account-health` | the plan, priorities, standups, account health, the owner digest, conflicts, limits, weekly review, escalations | everyone |
-| **LinkedIn Hunter** | `vintoria-hourly-run` (LinkedIn half), `vintoria-lead-hunt` | finding valuable LinkedIn posts < 24 h, getting the email | Writer |
-| **Reddit Hunter** | `vintoria-hourly-run` (Reddit half), `vintoria-lead-hunt` | finding valuable Reddit posts < 24 h, subreddit rules | Writer |
-| **Researcher** | `vintoria-prospect-research` | quick dossiers and site audits for leads scoring 80+ with a website | Writer |
-| **Writer** | `vintoria-outreach`, `vintoria-authority` | Reddit comments, LinkedIn emails / comments / notes, follow-ups, nurture, the daily LinkedIn post | Reviewer, then posts |
-| **Reviewer** | `critic-check.md` | the critic check on the Writer's messages (any bot except the one that wrote it) | Writer |
-| **Closer** | `vintoria-reply-book`, `vintoria-close` | every reply, WhatsApp chat, booking, call prep, proposal, closing, the proof bank after launch | Manager (won / lost) |
+| **PC1 — Build** | Hunter (build lanes) · Writer (Vintoria) · Researcher for its leads | `vintoria-hourly-run`, `vintoria-lead-hunt`, `vintoria-prospect-research`, `vintoria-outreach`, `vintoria-authority` | agency-seekers for web & e-commerce, apps, SaaS & AI, design & branding; every Vintoria email from `business@vintoria.org` (signed Pratik Patil, Co-founder); PC1's LinkedIn touches; the daily LinkedIn post |
+| **PC2 — Growth** | Hunter (growth lanes) · Writer (Radian) · Researcher for its leads | `vintoria-hourly-run`, `vintoria-lead-hunt`, `vintoria-prospect-research`, `vintoria-outreach` | agency-seekers for marketplaces & quick commerce, SEO / AEO / GEO, paid ads, social & content, CRO & retention, video; every Radian email from `amar@radianmarketing.site` (signed Amar) incl. Radian's day-1 emails for PC1's leads; PC2's LinkedIn touches |
+| **PC3 — Manager & Closer** | Sales Manager · Closer · Hunter (cross-lane) | `vintoria-sales`, `vintoria-reply-book`, `vintoria-close`, `vintoria-account-health`, `vintoria-report`, `vintoria-hourly-run` | every reply (both inboxes, LinkedIn messages), booking, call prep, proposals, negotiation, the proof bank; account health; standups, digest, weekly report, self-test, watchdog; hunts "switching agencies", "any service", comments under agency-request posts, LinkedIn service requests |
 
-With fewer bots, combine roles: 2 bots = Hunter+Researcher / Writer+Closer (Manager = whichever starts the day);
-1 bot = all roles, and the Reviewer step is a fresh-eyes self-review.
+**Reviewer:** every message is checked by a `delegate_task` sub-agent with a fresh context (`critic-check.md`) on the PC
+that wrote it — independent eyes without waiting for another PC.
 
-## The team board (`TEAM-BOARD.md`)
+## The Board (Airtable)
 
-Append-only, newest at the bottom. Every message has this shape:
+The **Board** table in Airtable (`airtable.md`): one record per message, never deleted. Every message has this shape:
 
 ```
-### M-20261117-1405-RH · 14:05 IST · Reddit Hunter → Writer · HANDOFF · neha_physio@reddit
-Need: booking website for a physiotherapy clinic in Pune.
-Quote: "Need a website for my physio clinic where patients can book appointments"
-Post: https://www.reddit.com/r/smallbusiness/comments/… · posted 2 h ago · 1 reply · offers allowed in comments
-Score: 82 (intent 23, fresh 12, urgency 9, scope 10, budget 0, DM 7, competition 10, fit 5, contact 5)
-Suggested service: 028 Booking Platform Development
-Ask: comment within 30 minutes (post is fresh, little competition).
+### M-20261117-1405-PC1 · 14:05 IST · PC1 Hunter → PC1 Writer + PC2 (Radian day 1) · HANDOFF · glowkart.in
+Need: agency to rebuild their D2C skincare store on Shopify before the festive sale.
+Quote: "We're looking for an agency to rebuild our D2C store on Shopify before the festive sale."
+Who: Riya Mehta, Founder, GlowKart (Mumbai) · email found on the company site's contact page (published)
+Post: https://www.linkedin.com/posts/… · posted 1 h ago · 4 comments (2 agencies already "DM'd you")
+Agency intent: agency 0.95 · Score: 87 HOT (intent 24, fresh 15, urgency 12, scope 10, budget 6, DM 8, competition 10, fit 5, contact 5)
+Brand: Vintoria (192 Shopify Development) day 0; Radian day 1 — hook: no email/SMS flows on the store
+Ask: email + comment within 10 minutes.
 ```
 
-- **ID:** `M-<date>-<time>-<role initials>` (SM, LH, RH, RS, WR, RV, CL). Replies quote it: `Re: M-20261117-1405-RH`.
+- **ID:** `M-<date>-<time>-<PC>` (PC1, PC2, PC3). Replies quote it: `Re: M-20261117-1405-RH`.
 - **Types:** `HANDOFF` · `CLAIM` · `DONE` · `QUESTION` · `ANSWER` · `REVIEW-REQUEST` · `REVIEW` · `ALERT` · `BLOCKED` ·
   `HOURLY` · `STANDUP` · `DECISION` · `ESCALATE` · `HOT` (fast-track lead) · `HEALTH` (account level) · `DIGEST` (owner summary) · `SWEEP` (6-hour inbox sweep) ·
-  `HEARTBEAT` (I'm alive — at least one line per bot per hour; see `autopilot.md`).
-- **To:** a role, `@all`, or `@owner` (the human — only for `ESCALATE`).
+  `HEARTBEAT` (I'm alive — at least one Runs record and Board line per PC per hour; see `autopilot.md`).
+- **To:** a PC (`PC1`, `PC2`, `PC3`), a role on a PC, `@all`, or `@owner` (the human — only for `ESCALATE`).
 - **Self-contained:** whoever receives a message must be able to act without opening another file — need, exact quote,
   link, age, score, service, ask, deadline.
 - **Professional tone:** short, factual, polite, no chit-chat, no blame; disagree with a reason and a proposal.
 - **Never** put passwords, tokens or private data of prospects beyond what the task needs on the board.
 
-## How bots coordinate
+## How the three PCs coordinate (all through Airtable)
 
-1. **Start of every turn:** read the board since your last message; handle anything addressed to your role or `@all`
-   first (`ALERT` > `HOT` > `QUESTION` > `REVIEW-REQUEST` > `HANDOFF`), then your own work. Check the latest `HEALTH`
-   level before any post or send.
-2. **Claim before you work.** Post `CLAIM <slug or post URL>` and set `owner` + `claimed_at` in `PIPELINE.md` (and the
-   post in `SEEN.md` with your role). A claim lasts 60 minutes; post `DONE` when finished. Never work a lead someone else
-   holds; an expired claim can be taken over with a `CLAIM` that quotes the old one.
-3. **Hand off with context** (`HANDOFF` message above) and change `owner` in `PIPELINE.md` to the next role.
-4. **Review before posting** (Writer → Reviewer): `REVIEW-REQUEST` with the exact text and the critic result; the Reviewer
-   answers `REVIEW: approve` or `REVIEW: change — <line> — <fix>` within 10 minutes. No answer in 10 minutes → the Writer
-   runs the critic check itself with fresh eyes and records "self-reviewed".
-5. **Ask, don't guess:** missing fact → `QUESTION` to the role that knows (a price → `@owner` via `ESCALATE`). The
-   asker keeps working on other leads meanwhile.
-6. **Alerts:** anyone who sees a reply, WhatsApp message, booking, removed comment or platform warning posts `ALERT` at
-   once. Replies → the Closer acts within 15 minutes. A removed comment or warning → the Manager pauses that platform
-   (`DECISION: pause Reddit`) until the owner reviews.
-7. **Shared limits:** before posting or sending, add 1 to the hour's counter in `RUN-LOG.md`; if the counter is at the
-   limit, queue the message for the next hour instead. All bots together stay within the limits in `SELLER-PROFILE.md`.
-8. **Conflicts:** two bots on one lead, or disagreement on a fact → the Manager posts a `DECISION`; the fact with a saved,
+1. **Start of every run:** read the **Board** since your PC's last run; handle anything to your PC or `@all` first
+   (`ALERT` > `HOT` > `QUESTION` > `REVIEW` > `HANDOFF`), then your own work. Check your channels' latest **Health** level
+   before any post or send.
+2. **Find before you save.** A post or person already in **Seen** or **Leads** (any PC) is never saved or contacted again.
+3. **Claim on the record.** Set `Owner PC` + `Claimed at` on the Leads record and read it back; a newer claim (< 60 min)
+   by another PC wins. Done → clear the claim or hand off. An expired claim may be taken over.
+4. **Hand off with context** — a `HANDOFF` on the Board (format above) and `Owner PC` changed on the record. Typical
+   handoffs: PC1 lead → PC2 for Radian's day-1 email, PC2 lead → PC1 for Vintoria's day-1 email (an **Emails** record with the other PC as `Sender PC`); any reply → PC3.
+5. **Review** by a fresh-context sub-agent on the writing PC (`critic-check.md`); record `Critic: pass` on the record.
+6. **Ask, don't guess:** a missing fact → `QUESTION` to the PC that knows; a price → `ESCALATE` to `@owner`. Keep
+   working on other leads meanwhile.
+7. **Alerts:** whoever sees a reply, WhatsApp message, booking, captcha, restriction or warning posts `ALERT` at once.
+   Replies → PC3 within 15 minutes. A restriction on one PC's LinkedIn account pauses **that PC's** LinkedIn activity
+   only (`DECISION: pause PC2 LinkedIn`); its lanes are covered by the other PCs if needed.
+8. **Limits:** LinkedIn limits are per account (per PC); email limits per inbox (PC1 Vintoria, PC2 Radian). Count in the
+   hour's **Runs** record before acting; at the limit, queue for the next hour.
+9. **Conflicts:** two PCs on one lead, or a disagreement on a fact → PC3 posts a `DECISION`; the fact with a saved,
    dated source wins, otherwise it is "Not found".
 
 ## Rhythm (24/7)
 
 | When | Who | What |
 |---|---|---|
-| Every hour | Hunters | `vintoria-hourly-run`, then one `HOURLY` line: found / valuable / handed off / queued |
-| Every hour | Writer, Reviewer | clear all handoffs (freshest first) within the hour |
-| Within 15 min of an `ALERT` | Closer | answer the reply, move to WhatsApp / email / call |
-| 09:30 and 18:30 owner time | Manager | `STANDUP` to `@all`: last 12 h numbers (from `RUN-LOG.md`), wins, replies, blockers, today's focus (best queries / subreddits) |
-| Every 6 hours | Manager | `vintoria-account-health` → `HEALTH` line; level changes are `ALERT`s; the watchdog (`autopilot.md`) |
-| Every 6 hours (00/06/12/18 IST) | Closer | full inbox sweep of both brands incl. spam → `SWEEP` line (`autopilot.md`) |
-| Weekdays 08:30-10:00 (market morning) | Writer | one LinkedIn post + 5-10 comments on buyers' posts (`vintoria-authority`) |
-| Wednesday | Writer | nurture engine on `nurture` leads (`vintoria-outreach`) |
-| 21:00 owner time | Manager | `DIGEST` to `@owner` (below) |
-| Monday 10:00 | Manager | weekly review (`vintoria-report`): keep what got replies, drop what didn't, update queries and `OFFER.md` |
+| Every hour, all three PCs | each PC | `vintoria-hourly-run` for its lanes: due emails of its brand → hunt → save to Airtable → contact → `HOURLY` |
+| Every 15 min | PC3 | fast reply check (both inboxes, LinkedIn messages) — answer within 15 minutes |
+| Every 6 hours (00/06/12/18 IST) | PC3 | full inbox sweep incl. Spam → `SWEEP` (`autopilot.md`) |
+| Every 6 hours (:05) | each PC | `vintoria-account-health` for its own LinkedIn account and inbox → `HEALTH` |
+| 09:30 and 18:30 IST | PC3 | `STANDUP` to `@all` from **Runs**, **Daily**, **Leads** |
+| Weekdays 09:00 IST | PC1 | one LinkedIn post + 5-10 comments on buyers' posts (`vintoria-authority`) |
+| Wednesday 11:00 IST | PC1, PC2 | nurture engine for their brand (`vintoria-outreach`) |
+| 21:00 IST | PC3 | `DIGEST` to `@owner` |
+| Monday 10:00 IST | PC3 | weekly review (`vintoria-report`): keep what got replies, drop what didn't, update queries and `OFFER.md` |
+| Sunday 03:00 IST | each PC | `self-test.md` |
 
 Standup format:
 ```
 ### M-20261117-0930-SM · 09:30 IST · Sales Manager → @all · STANDUP
-Last 12 h: LinkedIn 58 found / 21 valuable / 14 emailed · Reddit 61 found / 19 valuable / 17 commented
-Replies: 4 (2 WhatsApp, 1 email, 1 Reddit) · Calls booked: 1 · Removed comments: 0
-Best: r/smallbusiness + "need a website" (3 replies) · Weak: r/SEO (0 replies, strict rules) → drop
-Focus today: clinics + restaurants in Pune and Mumbai; Writer: shorter Reddit openers
+Last 12 h: LinkedIn 112 found / 31 valuable (6 HOT) · emails 22 (Vintoria 14, Radian 8) · comments 9 · notes 11
+Replies: 4 (2 email, 1 WhatsApp, 1 LinkedIn) · Calls booked: 1 · Acceptance 14 d: 36 %
+Best: "switching agencies" query (2 replies) · Weak: "branding agency" (0 replies in 5 days) → drop
+Focus today: D2C + SaaS founders in Mumbai and Bangalore; Writer: shorter comments, sharper first question
 Blockers: none
 ```
 
 ## Owner digest (21:00, WhatsApp-ready, 10 lines at most)
 ```
 ### M-20261117-2100-SM · 21:00 IST · Sales Manager → @owner · DIGEST
-Today: 214 found · 41 valuable · 36 contacted (19 Reddit, 14 email, 3 LinkedIn) · 5 replies · 2 calls booked
-Hot: Neha (physio clinic, Pune) wants booking site before Jan — call Thu 11:00
+Today: 186 found · 47 valuable (9 HOT) · 38 contacted (26 email, 12 LinkedIn) · 5 replies · 2 calls booked
+Hot: Riya (GlowKart, Mumbai) wants a Shopify agency before the festive sale — call Thu 11:00
 Calls tomorrow: Acme Dental 10:00 IST · Brightleaf (UK) 15:30 IST
 Proposals out: 2 · waiting on you: price for 192 Shopify Development [PRICE TO CONFIRM]
-Health: Reddit GREEN · LinkedIn YELLOW (captcha 14:10) · Email GREEN
+Health: LinkedIn YELLOW (captcha 14:10) · Vintoria email GREEN · Radian email GREEN
 Need from you: 1) Shopify price  2) permission to use the bakery result in posts
 ```
-Numbers come from `RUN-LOG.md`, `PIPELINE.md` and `HEALTH.md` — never estimated.
+Numbers come from the Airtable **Runs**, **Daily**, **Leads** and **Health** tables — never estimated.
 
 ## Escalate to the owner (`@owner`)
 
@@ -113,11 +104,10 @@ Only for: a price, discount or contract term that isn't in the profile; a legal 
 threatening prospect; a platform warning, ban or removed comment; a prospect asking for a call today; anything about
 money already paid. Use `ESCALATE`, keep it to five lines, and keep working on other leads.
 
-## Targets (per day, adjust in `SELLER-PROFILE.md`)
+## Targets (per day, adjust in `SELLER-PROFILE.md` → Automation)
 
-| Role | Target | Quality bar |
+| PC | Target | Quality bar |
 |---|---|---|
-| Hunters | up to 10 valuable leads per platform per hour | ≥ 80 % of handed-off leads pass the critic check |
-| Writer | every handoff answered within the hour | 100 % pass the critic check; reply rate tracked per opening |
-| Closer | every reply answered within 15 minutes | ≥ 40 % of positive replies → booked call |
-| Manager | 2 standups, 1 weekly review | numbers from `RUN-LOG.md`, never estimated |
+| PC1, PC2, PC3 | up to 180 agency-seekers saved each (up to 8 per hourly run) | every saved lead under 24 h, agency intent, exact quote, no duplicates |
+| PC3, also | every reply answered within 15 minutes | ≥ 40 % of positive replies → booked call |
+| Team | up to 540 a day (goal 400-500+) | 100 % of messages pass the critic check; numbers from Airtable, never estimated |

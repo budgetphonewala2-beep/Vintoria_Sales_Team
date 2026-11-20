@@ -1,9 +1,10 @@
 # WhatsApp — where Vintoria's deals are won
 
-Every Reddit comment and most emails end with Vintoria's WhatsApp link, so the buyers who are most interested arrive here
+Every Vintoria email and LinkedIn message ends with Vintoria's WhatsApp link, so the buyers who are most interested arrive here
 first. A person who taps the link is hot for **minutes**, not days: answer fast, sound like a person, qualify gently,
 and move to a call. The Closer owns WhatsApp (`../../vintoria-sales/references/team.md`); the business phone sends the
-messages (the owner, or a bot with access to WhatsApp Web / WhatsApp Business).
+messages: PC3 drafts each reply on the Airtable **Board**, the owner sends it from the business phone (never connect
+the business number to Hermes's gateway — `../../vintoria-sales/references/hermes-setup.md`).
 
 ## Speed
 
@@ -16,7 +17,7 @@ A slow first answer loses more deals than a weak one. Post an `ALERT` on the tea
 
 ## Message 1 — recognise them
 
-Find them first: the pre-filled text ("I saw your reply on my Reddit post about…"), their number's country code, or their
+Find them first: the pre-filled text ("replying to your email about…"), their number's country code, or their
 name in `PIPELINE.md` / `THREAD.md`. Then:
 
 > Hi <name>, this is Pratik Patil from Vintoria — thanks for reaching out about <their request, in their words>.
@@ -79,9 +80,9 @@ At most 3 follow-ups without an answer, then stop and mark `nurture`. "Not now" 
   the 3 options in 4 lines.
 - Anything about money already paid, a complaint, or a discount not in the profile → `ESCALATE` to the owner.
 
-## Example (Reddit lead, India)
+## Example (LinkedIn lead, India)
 
-> **Them:** Hi Vintoria, I saw your reply on my Reddit post about my clinic website
+> **Them:** Hi Pratik, replying to your email about our clinic website
 > **Us:** Hi Neha, this is Pratik Patil from Vintoria — thanks for reaching out about the booking website for your physio clinic.
 > Do you have a site today, or are we starting from scratch?
 > **Them:** we have a basic wix site but patients call to book

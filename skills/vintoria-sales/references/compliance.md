@@ -34,12 +34,10 @@ Every message must be legal to send. When a market's rule is unclear, ask the us
   email limit never overrides it. Over the cap → queue for tomorrow.
 - **Two brands** (`brands.md`): each email identifies its real sender, brand and postal address; one suppression list
   (`DO-NOT-CONTACT.md`) covers both brands; a reply or opt-out to either stops both.
-- **Reddit** (bot comments from Vintoria's logged-in account): only on real buyer posts, only where the subreddit's rules
-  allow offers, one comment per post, said openly to be from Vintoria, helpful first, no identical text, within the
-  limits in `SELLER-PROFILE.md` → Automation (counted for all bots in `RUN-LOG.md`); no vote manipulation, no second accounts. A removed comment or a warning stops Reddit activity
-  until the user reviews it. Reddit's rules and each subreddit's rules win over this playbook.
-- **LinkedIn** (bot works from the logged-in account): LinkedIn's terms don't allow automation, so keep a person's pace —
-  the limits in `SELLER-PROFILE.md` → Automation, no identical text; stop at any warning and escalate to the owner.
+- **LinkedIn** (the only lead source; each PC works from its own logged-in account): LinkedIn's terms don't allow automated
+  activity, so keep a person's pace — the limits in `SELLER-PROFILE.md` → Automation, comments at least 10 minutes apart,
+  one comment per post, no identical text, said openly to be from Vintoria (or Radian), no second accounts, no
+  engagement pods; stop at any captcha, warning or restriction and escalate to the owner (`vintoria-account-health`).
   DMs only to people who invited them or accepted a connection.
 - **WhatsApp** — Vintoria's link (`https://wa.me/918766033979`) is offered so the buyer messages first. Vintoria
   writes to a prospect's WhatsApp only after they messaged or shared their number; no bulk, no groups.

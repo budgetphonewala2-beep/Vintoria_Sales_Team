@@ -49,7 +49,7 @@ optional fields. Never invent answers; above all, never invent proof.
 - `signals.tools_they_leave` → `("moving from Wix" OR "migrate from Wix" OR "switching from Squarespace") AND (help OR developer)`
 - `targets.buyer_titles` × `targets.countries` × `targets.company_size` × `offer.niches` → Apollo people-search URLs,
   Leads Finder filters and LinkedIn profile searches
-- `offer.niches` → niche subreddits (r/Dentistry, r/shopify, r/realtors ...) and Google Maps searches in `targets.cities`
+- `offer.niches` → LinkedIn agency-seeking queries per niche ("looking for an agency" + niche) and the cities in `targets.cities`
 - `targets.exclude_countries` → `NOT India` / `-India` in queries, and leads mentioning that market are dropped
 - `targets.countries` → Google country code, and each prospect's send window in their own time zone
 

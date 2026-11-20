@@ -1,13 +1,13 @@
 # Critic check — the last gate before anything is posted or sent
 
-The bot that wrote a message is the worst judge of it. Before posting, switch roles: read the message fresh, as a strict
+The agent that wrote a message is the worst judge of it. Before posting, switch roles: read the message fresh, as a strict
 reviewer who wants to reject it, and answer every line with **yes** or **no**. One "no" = fix it and check again; still
-"no" after two rewrites = skip the lead and note why. In a team, the Writer's message can be checked by another bot
+"no" after two rewrites = skip the lead and note why. On Hermes the check runs in a fresh-context `delegate_task` sub-agent
 (`team.md`, "Review").
 
 ## Every message
 
-- [ ] The lead passed `lead-quality.md` (buyer, under 24 h, valuable, not seen, not claimed by another bot).
+- [ ] The lead passed `lead-quality.md` (buyer, under 24 h, valuable, not seen, not claimed by another PC).
 - [ ] It opens with **their** exact need, in their words — not with "We" or "I".
 - [ ] Deletion test: remove their name and details — it no longer fits anyone else's post.
 - [ ] Every fact traces to their post, their page, the catalog or the profile (`truth-rules.md`). No invented client,
@@ -23,14 +23,6 @@ reviewer who wants to reject it, and answer every line with **yes** or **no**. O
 - [ ] Language matches theirs (English, or polite Hinglish if they wrote Hinglish).
 - [ ] Not in `DO-NOT-CONTACT.md`; within the hourly limit in `RUN-LOG.md`.
 
-## Reddit comment, also
-
-- [ ] 60-110 words; one or two genuinely useful tips that help even if they never reply.
-- [ ] The subreddit's rules allow offers in comments (noted in `IDEAL-CUSTOMER-PROFILE.md`); otherwise help only, no link.
-- [ ] The WhatsApp link is a Markdown link: `[WhatsApp: +91 87660 33979](https://wa.me/918766033979?text=…)` and the
-      pre-filled text mentions their post.
-- [ ] No other Vintoria comment on this post, and none in this subreddit in the last hour.
-- [ ] No price, no booking link, no "DM me".
 
 ## LinkedIn email, also
 
@@ -42,15 +34,20 @@ reviewer who wants to reject it, and answer every line with **yes** or **no**. O
 - [ ] The right brand: sender, signature, address and contact line all belong to the same brand (`brands.md`); it doesn't
       mention the other brand; no other email to this person today; at most 4 in the last 7 days across both brands;
       the other brand hasn't received a reply or opt-out from them.
-- [ ] Radian email: a marketing fact not used in Vintoria's email to this person; Radian's own service names
+- [ ] Second agency's email: a fact or angle not used in the first agency's email to this person; Radian's own service names
       (`radian-profile.md`), not Vintoria catalog IDs.
 - [ ] Proof stays in its brand: no Radian client, testimonial or case study in a Vintoria message, and the reverse; no
       `[TO CONFIRM]` item from `radian-profile.md`.
-- [ ] Vintoria email 1 with a Radian email planned goes out Monday-Thursday in their time zone (so Radian lands the next
+- [ ] The first agency's email 1 goes out Monday-Thursday in their time zone (so the second agency's lands the next
       working day).
 
-## LinkedIn comment / connection note, also
+## LinkedIn comment / connection note / message, also
 
-- [ ] Comment 40-80 words with the email (no WhatsApp link); note ≤ 300 characters, no link.
+- [ ] The author is looking for an agency or outside team (agency intent `agency`, `open` or `switching`, `lead-quality.md`).
+- [ ] Comment 40-80 words: their need restated, one or two real approach points, who we are once, one easy question
+      (`../../vintoria-outreach/references/comment-angles.md`); none of "DM'd you", "check your inbox", "we'd love to help".
+- [ ] Signed `— Pratik Patil, Co-founder, Vintoria · business@vintoria.org`; no WhatsApp link, no price, no "DM me".
+- [ ] No other Vintoria comment on this post; at least 10 minutes since the last Vintoria comment.
+- [ ] Connection note ≤ 300 characters, no link; the message after they accept is 2-3 lines and may carry the WhatsApp link.
 
 Record the result in one line: `Critic: pass (12/12)` or `Critic: fail — <which line>`.

@@ -180,7 +180,7 @@
 ### 14. "Show me your past work first." / "Can you make a sample design for free?"
 
 **Category:** Trust / Process
-**Frequency:** Very common (SMB buyers, Reddit and LinkedIn leads)
+**Frequency:** Very common (SMB buyers and LinkedIn agency-seekers)
 
 **Response Framework:**
 - **Acknowledge:** "Fair — you should see how we work before you decide."

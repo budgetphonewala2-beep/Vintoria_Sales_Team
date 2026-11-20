@@ -1,6 +1,6 @@
 # vintoria-outreach — Playbook
 
-> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> Web access: use your own browser and web search (LinkedIn is logged in). Open the page before you state a
 > fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## Invocation

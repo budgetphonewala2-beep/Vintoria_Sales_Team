@@ -1,4 +1,7 @@
-# Pipeline format — plain files are the database
+# Pipeline format — the records every PC reads and writes
+
+**On Hermes these live in Airtable** (`airtable.md`): each file name below is the name the skills use for the matching
+Airtable table. The formats, values and rules here are the same in both.
 
 No code, no database: the pipeline is a few Markdown files any agent (or person) can read and edit. Keep them boring
 and consistent, because the next agent only knows what these files say.
@@ -11,13 +14,13 @@ OFFER.md                     offer lanes by catalog service ID + the proof map
 IDEAL-CUSTOMER-PROFILE.md    segments, signals, disqualifiers, scoring, the search queries that work
 PIPELINE.md                  one row per prospect (format below) — the agenda is built from it
 DO-NOT-CONTACT.md            opt-outs and bounces, one per line, append-only, never removed
-TEAM-BOARD.md                the bots' shared message board (team.md) — handoffs, claims, reviews, alerts, standups
+TEAM-BOARD.md                the shared message board (team.md) — the Airtable **Board** — handoffs, claims, reviews, alerts, standups
 SEEN.md                      every post URL already judged or claimed, so no post is handled twice
 RUN-LOG.md                   per-hour counters and results of the hourly run (shared limits)
 HEALTH.md                    account health levels (GREEN / YELLOW / RED) per platform, every 6 hours
 PROOF-BANK.md                real results, quotes, reviews and referrals, with the client's permission
 CONTENT-LOG.md               LinkedIn posts and their results (vintoria-authority)
-SHEET-QUEUE.md               rows waiting for the Google Sheet when it couldn't be reached (sheet-sync.md)
+AIRTABLE-QUEUE.md            records waiting for Airtable when it couldn't be reached (airtable.md) — local to each PC
 SEEN-ARCHIVE.md              SEEN.md lines older than 30 days
 SALES-REPORT.md              the weekly report (vintoria-report)
 prospects/<slug>/
@@ -43,48 +46,42 @@ prospects/<slug>/
 `<slug>` = their domain without `www` (`acme.com`), or `name@platform` for someone without a website
 (`anita-desai@linkedin`). Never use another prospect's folder as context.
 
-### When you can't save files (chat bots, Grok, custom GPTs)
-Keep the same structure in the conversation: at the end of every task print the **changed `PIPELINE.md` rows** and any
-new file contents in code blocks, and ask the user to save them (or paste them back next session). Start each session by
-asking the user to paste `SELLER-PROFILE.md` and `PIPELINE.md` if you don't have them.
-
 ## `PIPELINE.md`
 
 ```markdown
 | slug | company | contact | title | email | email_status | country | services | channel | stage | score | source | post_url | owner | last_touch | next_action | next_due | outcome | value |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | acme.com | Acme Dental | Priya Shah | Owner | priya@acme.com | published | IN | 033,214 | linkedin-email | contacted | 78 | li:need-website-clinic | https://www.linkedin.com/posts/… | Writer | 2026-11-17 | Email 2 (day 3) | 2026-11-20 | | |
-| neha_physio@reddit | Neha's Physio | u/neha_physio | Owner | | | IN | 028 | reddit-comment | contacted | 71 | rd:smallbusiness-website | https://www.reddit.com/r/… | Closer | 2026-11-17 | Check replies | 2026-11-18 | whatsapp-reply | |
+| riya-mehta@linkedin | GlowKart | Riya Mehta | Founder | | | IN | 192 | linkedin-comment | contacted | 87 | li:agency-shopify | https://www.linkedin.com/posts/… | Closer | 2026-11-17 | Check replies | 2026-11-18 | linkedin-reply | |
 ```
 
 - `services` — catalog IDs, comma-separated (`033,214`); names live in the catalog.
-- `channel` — `reddit-comment`, `reddit-dm`, `linkedin-email`, `linkedin-comment`, `linkedin-note`, `whatsapp` (they messaged).
+- `channel` — `linkedin-email`, `linkedin-comment`, `linkedin-note`, `linkedin-message` (after they accept), `whatsapp` (they messaged).
 - `email_status` — `verified` (a verifier tool said so) · `published` (on their own site or post) · `catch_all` ·
   `unverified` (found elsewhere) · `pattern-guessed` · `invalid`. Cold email only to `verified` or `published`.
 - `score` — 0-100 from the scoring tables; `value` — only a real price from the profile, with currency.
 - `channel` for email leads is `linkedin-email`; which brand sent which step lives in `OUTREACH-SEQUENCE.md` and the
-  sheet's **Emails** tab (`brand` = Vintoria / Radian).
+  Airtable **Emails** table (`Brand` = Vintoria / Radian, `Sender PC` = PC1 / PC2).
 - `next_due` — always a real date. A row without `next_action` + `next_due` is not in the pipeline.
 - `owner` — the role working it now (plus `claimed_at` time in `HISTORY.md`); change it at every handoff.
-- `outcome` — what the first touch produced: `no-reply` · `reddit-reply` · `whatsapp-reply` · `email-reply` ·
-  `linkedin-reply` · `call-booked` · `removed` (comment removed) · `opt-out`. The weekly report ranks queries, subreddits
+- `outcome` — what the first touch produced: `no-reply` · `email-reply` · `linkedin-reply` · `connection-accepted` ·
+  `whatsapp-reply` · `call-booked` · `comment-deleted` · `opt-out`. The weekly report ranks queries, lanes, agency intent
   and openings by it.
 
 ## `SEEN.md`
 
-One line per post, added the moment it is judged or claimed: `2026-11-17 14:05 · RH · reddit · https://… · kept 82`
-or `… · dropped: seller`. Check it before judging any post; keep 30 days, then move old lines to `SEEN-ARCHIVE.md`.
+One line per post, added the moment it is judged or claimed: `2026-11-17 14:05 · HA · linkedin · https://… · kept 87 (agency)`
+or `… · dropped: freelancer-only`. Check it before judging any post; keep 30 days, then move old lines to `SEEN-ARCHIVE.md`.
 
 ## `RUN-LOG.md`
 
-One block per hour; every bot adds to the same block before it posts or sends (that is how the shared limits hold):
+One record per PC per hour (Airtable **Runs**); the PC adds to it before it posts or sends (that is how the limits hold):
 
 ```markdown
 ## 2026-11-17 14:00-15:00 IST
-- LinkedIn: found 31 · valuable 10 · emailed 6 · commented 2 · notes 1 · queued 1
-- Reddit: found 27 · valuable 9 · commented 9 · help-only 0 · queued 0
-- Replies: 1 (WhatsApp) · Alerts: 0 · Removed: 0 · Skipped by critic: 3
-- Limits this hour: Reddit 9/10 · LinkedIn emails 6/10 · LinkedIn comments+notes 3/5
+- LinkedIn: found 34 · valuable 9 (2 HOT) · emailed 6 (Vintoria 4, Radian 2) · commented 3 · notes 2 · queued 1
+- Due emails sent: 11 · Replies: 1 (email) · Alerts: 0 · Skipped by critic: 2
+- Limits this hour: emails 6/10 · LinkedIn comments 3/3 · notes today 9/15 · inbox caps today Vintoria 18/30 · Radian 9/15
 - Openings used: "For a clinic site the two things…", "Shopify speed usually comes down to…"
 ```
 
@@ -105,10 +102,10 @@ One block per hour; every bot adds to the same block before it posts or sends (t
 
 ## The cadence
 
-- **LinkedIn email:** Vintoria email 1 on day 0, then day 3, 7, 14 and 28; Radian Marketing (only with a real marketing
-  hook) on day 1, then day 4, 8, 15 and 29 (`brands.md`). Never two emails on one day.
-- **Reddit comment / LinkedIn comment or note:** one touch only; check for a reply the next day; no answer in 7 days →
-  `nurture` (LinkedIn: one short message after they accept a connection).
+- **LinkedIn email:** the first agency's email 1 on day 0, then day 3, 7, 14 and 28; the second agency's email 1 on
+  day 1, then day 4, 8, 15 and 29 — every emailed lead gets both (`brands.md`). Never two emails on one day.
+- **LinkedIn comment or note (no email found):** one comment per post and one connection note; check the next day; once
+  they accept, one short message; no answer 7 days after the last touch → `nurture`.
 After every message that went out, write it into `THREAD.md` (with its link), update `last_touch`, and set
 `next_action` / `next_due`. Any reply on any channel stops every sequence for that prospect at once.
 

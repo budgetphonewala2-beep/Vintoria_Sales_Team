@@ -2,7 +2,7 @@
 
 The deepest research mode, for leads worth real effort (value score 80+, a website, a clear budget or a big scope). Start
 from the dossier (`DOSSIER.md` and `SITE-AUDIT.md`), then run the five roles **in this order** — the Strategy role needs the
-other four. In a team the Researcher may hand roles 1-4 to other bots in parallel (`../../vintoria-sales/references/team.md`);
+other four. In a team the Researcher may run roles 1-4 as parallel `delegate_task` sub-agents (`../../vintoria-sales/references/team.md`);
 each returns its section in the format below. Every point needs evidence (a page with URL and date, their post, the
 audit); unknown = "Not found" and a neutral 5.
 
@@ -55,7 +55,7 @@ Research: footer credits ("Designed by…"), platform hints, reviews of their cu
 | Dimension | 10 means |
 |---|---|
 | Personalization quality | A first line only this prospect could receive |
-| Channel | The right channel is open (email found, Reddit offers allowed, LinkedIn comments open) |
+| Channel | The right channel is open (email found, LinkedIn comments open, connection request possible) |
 | Message fit | The angle matches their situation and one catalog service |
 | Objection readiness | The 2 likeliest objections answered (`../../vintoria-close/references/objections-playbook.md`) |
 | Timing | Fresh post or a live trigger; their working hours known |

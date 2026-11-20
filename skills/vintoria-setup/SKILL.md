@@ -1,8 +1,8 @@
 ---
 name: vintoria-setup
-description: "Sets Vintoria up before any prospecting: interviews the user and writes SELLER-PROFILE.md (sender identity, postal address, time zone, active disciplines from the 270-service catalog, niches, target markets in India, US, UK and Australia, prices per market, real case studies, differentiators, buyer pains and triggers), then OFFER.md (3-5 offer lanes mapped to exact catalog service IDs, active vs dormant disciplines, a claim-by-claim proof map) and IDEAL-CUSTOMER-PROFILE.md (firmographics, buying signals, personas, scoring rubric and the exact search queries for X, LinkedIn, Reddit and Google). Every query, email and proposal in the other Vintoria skills is built from these files. Use it at the start, whenever SELLER-PROFILE.md is missing or incomplete, or when the user says 'set up', 'onboard me', 'build my ICP', 'which services should we push', 'who should we target', 'change our niche', or Hinglish 'setup karo', 'mera ideal client kaun hai', 'humein kya bechna chahiye', 'profile banao'."
+description: "Sets Vintoria up before any prospecting: interviews the user and writes SELLER-PROFILE.md (sender identity, postal address, time zone, active disciplines from the 270-service catalog, niches, target markets in India, US, UK and Australia, prices per market, real case studies, differentiators, buyer pains and triggers), then OFFER.md (3-5 offer lanes mapped to exact catalog service IDs, active vs dormant disciplines, a claim-by-claim proof map) and IDEAL-CUSTOMER-PROFILE.md (firmographics, buying signals, personas, scoring rubric and the exact LinkedIn search queries for agency-seekers). Every query, email and proposal in the other Vintoria skills is built from these files. Use it at the start, whenever SELLER-PROFILE.md is missing or incomplete, or when the user says 'set up', 'onboard me', 'build my ICP', 'which services should we push', 'who should we target', 'change our niche', or Hinglish 'setup karo', 'mera ideal client kaun hai', 'humein kya bechna chahiye', 'profile banao'."
 license: MIT
-compatibility: "Instruction-only Agent Skill: no code. Works in any agent or bot (Claude, Grok, GPT, Gemini…) that can follow instructions; best with a browser logged in to LinkedIn and Reddit, and file access."
+compatibility: "Instruction-only Agent Skill for Hermes Agent (Nous Research) on three PCs, agentskills.io format; needs the browser logged in to LinkedIn, Airtable, and the brand inbox for that PC."
 metadata:
   author: "Vintoria (built on ai-sales-team-claude by Zubair Trabzada)"
   version: "7.0.0"
@@ -11,7 +11,7 @@ metadata:
 # Vintoria Setup — profile, offer lanes and ideal customer
 
 Generic queries find generic leads and generic emails get ignored. You learn Vintoria's business properly once, write
-it down, and every bot after you builds on the same facts.
+it down, and all three PCs build on the same facts.
 
 The catalog is `../vintoria-sales/references/service-catalog.md`; prices follow
 `../vintoria-sales/references/pricing-policy.md`; never write a fact the user didn't give you.
@@ -40,7 +40,7 @@ The catalog is `../vintoria-sales/references/service-catalog.md`; prices follow
    firmographics per market, the phrases buyers really post (English and Hinglish — "need a website for my clinic",
    "website banwana hai", "koi SEO wala batao"), pains, budget qualifiers, negative ICP, a 0-100 rubric, 2-3 personas,
    and **10-20 ready search queries** built with the formula in `../vintoria-lead-hunt/references/queries.md` —
-   X (Grok), LinkedIn boolean, Google X-ray, subreddits, Google Maps categories.
+   LinkedIn boolean queries for people looking for an agency (posts, comments, groups).
 6. **Show the queries** and ask whether the results look like Vintoria's buyers; adjust niches and pains until they do.
    Next: `vintoria-lead-hunt`. Create an empty `PIPELINE.md` and `DO-NOT-CONTACT.md` if they don't exist.
 

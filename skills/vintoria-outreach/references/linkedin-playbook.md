@@ -23,9 +23,10 @@ Vintoria does about it with one catalog service, a soft question, and the email 
 
 ## Fallback — no email
 
-- **Comment on their post** (40-80 words), the same shape as a Reddit comment but shorter: their need → one useful
-  point → "We're Vintoria — we build <service>." → "— <name>, Vintoria · business@vintoria.org". LinkedIn comments with
-  links get less reach, so put the email, not the WhatsApp link, in a comment.
+- **Comment on their post** (40-80 words), shaped to stand out from the other agencies in the thread
+  (`comment-angles.md`): their need restated → one or two real approach points → "We're Vintoria — this is exactly what
+  we build (<catalog service>)." → one easy question → "— Pratik Patil, Co-founder, Vintoria · business@vintoria.org".
+  No WhatsApp link, no "DM'd you", no price.
 - **Connection request with a note** (≤ 300 characters, no link): "Hi <name>, saw your post about <their need>. We build
   exactly this at Vintoria — happy to share a quick plan if useful. — Pratik Patil". Once they accept, a 2-3 line message
   can carry the WhatsApp link.
@@ -33,7 +34,7 @@ Vintoria does about it with one catalog service, a soft question, and the email 
 
 ## Limits (keep it human)
 
-LinkedIn's terms don't allow automated activity on accounts, so the bots keep a person's pace and the limits in
+LinkedIn's terms don't allow automated activity on accounts, so each PC keeps a person's pace on its own account and the limits in
 `SELLER-PROFILE.md` → Automation (default: up to 10 emails an hour within the prospect's working hours, 3 comments an
 hour, 15 connection notes a day), spread out, never the same text twice. If LinkedIn shows a warning
 or a "you're sending too many invitations" limit, stop LinkedIn actions for the day and tell the user.

@@ -1,8 +1,29 @@
-# Comment angles — useful tips by service, and openings that never repeat
+# Comment angles — stand out in a crowded agency-request thread
 
-A comment wins when its tip is something the buyer can use today. This bank gives correct, general tips per lane so the
-Writer never has to invent advice, and opening shapes so 200 comments a day don't read like one template. Always adapt the
-tip to **their** post (their niche, city, platform, problem); never paste a tip that doesn't fit what they asked.
+When a founder posts "looking for an agency", the comments fill with "DM'd you", "check your inbox", "we can help!" and
+logo-heavy pitches. The founder skims past all of them. A Vintoria comment wins by being the **only one that already
+thinks about their project**: their need in their words, one or two sharp points on how to approach it, an honest line
+on who we are, and one easy question. This file gives the opening shapes and a bank of correct points per lane, so the
+Writer never invents advice and no two comments read the same. Adapt every point to **their** post (niche, city,
+platform, problem); never paste one that doesn't fit.
+
+## What the other agencies write (never do this)
+"DM'd you" · "Check your inbox" · "We'd love to help! 🚀" · "We are a leading agency with 10+ years…" · a list of
+services · a portfolio link with no context · "Let's connect" · tagging colleagues to boost the comment.
+
+## The winning shape (40-80 words)
+1. **Their need, restated precisely** — shows you read the post ("A Shopify rebuild before the festive sale…").
+2. **One or two approach points** — from the tip bank below, specific to their case.
+3. **Who we are, once** — "We're Vintoria, a digital product studio — this is exactly what we build (<catalog service>)."
+4. **One easy question** — "Is the deadline the sale date itself?" — it invites a reply in the thread, where others see it.
+5. **Sign-off** — `— Pratik Patil, Co-founder, Vintoria · business@vintoria.org` (no WhatsApp link in comments).
+
+### Example (post: "Looking for an agency to rebuild our D2C skincare store on Shopify before Diwali")
+> A Shopify rebuild before the festive rush works best if the theme, product pages and checkout go live two weeks
+> before the sale, so there's time to fix what customers trip on. Worth planning URL redirects too, so existing Google
+> rankings carry over. We're Vintoria, a digital product studio — this is exactly what we build (192 Shopify
+> Development). Is the launch date the sale itself or a few days earlier?
+> — Pratik Patil, Co-founder, Vintoria · business@vintoria.org
 
 ## Opening shapes (rotate; log which one you used in `RUN-LOG.md`)
 
@@ -17,7 +38,7 @@ tip to **their** post (their niche, city, platform, problem); never paste a tip 
 | 7 | Quick diagnosis | "If the store is slow mostly on mobile, it's usually <cause> rather than the hosting." |
 | 8 | Phase it | "You don't need everything at once: launch <core> first, add <extra> once it's earning." |
 
-Never open with "We", "I", "Hey there!", "Great question", or the same shape twice in a row in one subreddit.
+Never open with "We", "I", "Hey there!", "Great question", or the same shape twice in a row.
 
 ## Tip bank by lane (pick one or two; make them about their case)
 
@@ -44,7 +65,7 @@ Never open with "We", "I", "Hey there!", "Great question", or the same shape twi
 
 **AI chatbots and AI agents** — 123 AI Chatbot Development
 - A good business chatbot answers from your own content (FAQs, prices, policies) and hands over to a human when unsure.
-- Start with the 20 questions customers ask most; measure how many the bot answers correctly before adding features.
+- Start with the 20 questions customers ask most; measure how many the chatbot answers correctly before adding features.
 - Decide the channel first: website widget, WhatsApp or Instagram — the build differs.
 
 **Automation and CRM** — 147 Workflow Automation, 148 CRM Automation

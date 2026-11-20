@@ -67,12 +67,12 @@ Why it fails: no tool measured traffic or loss; the truth self-check rejects bot
 > "Can we jump on a 45-minute demo Tuesday or Wednesday? Also please fill this form and share your Google
 > Analytics access."
 
-### 7. GOOD — SEO request on Reddit
+### 7. GOOD — SEO agency request on LinkedIn
 > Subject: seo for your dental clinic
 >
 > Hi Dr. Shah,
 >
-> Saw your r/dentistry question about finding a good SEO agency for the clinic.
+> Saw your LinkedIn post asking for a good SEO agency for the clinic.
 > Your homepage title is just "Home", which doesn't tell Google you're a dentist in Austin — a small, quick fix.
 > We do local SEO for clinics; I can show you what we'd change first.
 >

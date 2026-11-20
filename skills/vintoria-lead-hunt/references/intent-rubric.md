@@ -5,7 +5,7 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
 ```json
 {"role": "buyer | seller | job_seeker | other", "is_buyer": true, "services": ["web", "app", "seo", "marketing", "design", "software"],
  "urgency": "high | medium | low | unknown", "budget": "only if stated, else null", "location": "only if stated/obvious, else null",
- "evidence_quote": "EXACT words copied from the post", "confidence": 0.0}
+ "agency_intent": "agency | open | switching | freelancer | employee", "evidence_quote": "EXACT words copied from the post", "confidence": 0.0}
 ```
 
 ## Decision rules
@@ -22,6 +22,38 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
 6. **Confidence**: 0.9+ explicit request with details; 0.7 clear request, few details; 0.5 ambiguous → **not**
    a buyer (threshold 0.7). If unsure whether it's a job or a project, it's not a buyer.
 7. The quote must be copied verbatim. If you can't quote the intent, it isn't there.
+
+## Agency intent — the second question (Vintoria only works with agency-seekers)
+
+After "is the author a buyer?", ask "**do they want an agency or outside team?**" and add `"agency_intent"` to the JSON:
+
+| `agency_intent` | Means | Examples | Keep? |
+|---|---|---|---|
+| `agency` (0.85-1.0) | names an agency, studio, company, firm, partner, vendor, outside team, or sends an RFP / brief | "looking for an agency", "recommend a development partner", "RFP for a website" | **yes** |
+| `open` (0.7-0.85) | wants it done and doesn't care who — an agency fits | "who can build an app for us?", "recommendations for someone to run our ads" | **yes** |
+| `switching` (0.9) | unhappy with their current agency or developer | "our agency isn't delivering", "developer disappeared mid-project" | **yes — very warm** |
+| `freelancer` | explicitly wants one freelancer, a student, part-time help, or "cheapest possible" | "anyone know a freelancer…", "part-time freelancer, paid per task" | no |
+| `employee` | a job: full-time, salary, CTC, internship | "we're hiring a Flutter developer" | no |
+
+Confidence for the lead = the lower of the two (buyer confidence, agency intent). Keep only ≥ 0.7. In the 30 examples
+below, #8 and #25 are buyers but `freelancer` → **skip**.
+
+### 12 LinkedIn agency-intent examples
+
+| # | Post (abridged) | Buyer | Agency intent | Keep? |
+|---|---|---|---|---|
+| A1 | "We're looking for an agency to rebuild our D2C store on Shopify before the festive sale. Recommendations welcome." | 0.95 | agency 0.95 | yes — HOT if fresh |
+| A2 | "Can anyone recommend a reliable app development company in Pune? We have the specs ready." | 0.95 | agency 0.95 | yes |
+| A3 | "Founders — which performance marketing agency has actually worked for you? Scaling Meta ads next quarter." | 0.85 | agency 0.85 | yes (Radian lane) |
+| A4 | "Our current agency has missed three deadlines. Looking to switch. Who do you trust for web development?" | 0.9 | switching 0.9 | yes — very warm |
+| A5 | "Sharing an RFP: we need a partner to build an AI support chatbot for our SaaS. DM for the brief." | 0.95 | agency 0.95 | yes |
+| A6 | "Who can build a booking platform for a chain of 4 clinics? Open to agencies or teams." | 0.9 | open 0.85 | yes |
+| A7 | "Need help with SEO for our real estate site. Any suggestions?" | 0.8 | open 0.75 | yes |
+| A8 | "Looking for a freelancer for a quick logo, small budget." | 0.85 | freelancer | no |
+| A9 | "We are a digital agency helping brands grow. Looking for new clients!" | seller | — | no |
+| A10 | "Hiring: Senior React developer, full-time, Bangalore." | other | employee | no |
+| A11 | "Which agency should I join as a fresher — product or service company?" | job seeker | — | no |
+| A12 | "Thanks for all the agency suggestions — we've signed with one!" | other | — | no (already chose) |
 
 ## 30 labelled examples
 

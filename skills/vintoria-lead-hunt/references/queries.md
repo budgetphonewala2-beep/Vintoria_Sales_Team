@@ -1,106 +1,109 @@
-# Lead queries — LinkedIn and Reddit only
+# Lead queries — LinkedIn only, people looking for an agency
 
-Vintoria hunts on the two platforms the bot is logged in to. Better queries = better leads, and the sharpest come from
-`SELLER-PROFILE.md` and `OFFER.md`: niches, pains, triggers, tools clients leave, target countries. Keep the queries that
-work in `IDEAL-CUSTOMER-PROFILE.md`.
+Vintoria hunts on **LinkedIn only**, through the account already logged in. The target is one kind of person: a founder,
+owner or manager who is **looking to hire an agency, studio or outside team** — "looking for an agency", "can anyone
+recommend a development partner", "we need a team to build our app", "our agency isn't delivering". Not freelancers
+looking for work, not agencies selling, not companies hiring an employee.
 
 ## The formula
 
-**ASKING phrase + SERVICE phrase (+ niche / pain / place) + exclusions + recency.**
+**AGENCY-SEEKING phrase + SERVICE phrase (+ niche / place) + exclusions + past 24 hours.**
 
 | Part | Examples | Why |
 |---|---|---|
-| Asking | "looking for", "can anyone recommend", "need", "suggestions", "anyone know", "koi batao", "chahiye" | Without it you get sellers |
-| Service (buyer words) | "web developer", "need a website", "website redesign", "app developer", "AI chatbot", "automate", "Shopify developer", "SEO agency", "rank on Google" | Buyers name the outcome, not "digital solutions" |
-| Niche / pain / trigger | "clinic", "restaurant", "D2C", "store is slow", "moving from Wix", "launching next month" | 5-10x fewer irrelevant posts |
-| Place (local work) | "Pune", "Mumbai", "Bangalore", "London", "Sydney", "Texas" | Halves noise for local services |
-| Exclusions | `NOT "open to work"`, `NOT hiring` (job ads), `-"for hire"` | Removes freelancers advertising and job posts |
-| Recency | Date posted: past 24 hours only; sort by Latest / New | The first good answer usually wins; older posts are skipped (`../../vintoria-sales/references/lead-quality.md`) |
+| Agency-seeking | "looking for an agency", "recommend an agency", "agency recommendations", "looking for a partner", "development partner", "tech partner", "outsource", "looking for a team", "need a company to", "RFP", "request for proposal", "vendor for" | Without it you get freelancers, job ads and sellers |
+| Service (their words) | "web development", "website", "app development", "mobile app", "software development", "AI", "automation", "Shopify", "SEO", "digital marketing", "performance marketing", "branding", "UI/UX" | Buyers name the outcome |
+| Niche / place | "D2C", "SaaS", "real estate", "clinic", "restaurant", "startup"; Pune, Mumbai, Bangalore, Delhi, London, Sydney, New York | 5-10x less noise |
+| Exclusions | `NOT hiring`, `NOT "open to work"`, `NOT freelancer`, `NOT internship`, `NOT "we are hiring"` | Removes job ads, job seekers and freelancers advertising |
+| Recency | **Posts → Latest → Past 24 hours** | The first good agency reply usually gets the call |
+
+## Where to search on LinkedIn
+
+1. **Posts search** (main source) — search bar → Posts → **Latest** → **Past 24 hours**. Optionally filter "Author
+   industry" or "From companies". Each lead: author name, headline, company, profile URL, post URL, age, comment count.
+2. **Comments under "recommend an agency" posts** — when someone asks for agency recommendations, people in the comments
+   often say "following" or "we need this too" — each of them is a lead too (same 24-hour rule for their comment).
+3. **LinkedIn Services requests** — if Vintoria's LinkedIn Service Page is set up, buyers can send it proposal requests;
+   check them in every hourly run (they're the warmest leads LinkedIn gives).
+4. **Groups** the account has joined (founders, startups, D2C, SaaS, real estate) — sort by recent, same queries.
+
+## Agency-seeking queries (at most 5 operators each — longer ones are ignored)
+
+**Any service**
+- `("looking for an agency" OR "recommend an agency" OR "agency recommendations") NOT hiring` (3)
+- `("looking for a development partner" OR "looking for a tech partner" OR "outsourcing partner")` (2)
+- `("need an agency" OR "hire an agency" OR "suggest an agency")` (2)
+- `("request for proposal" OR RFP) AND (website OR app OR marketing)` (4)
+
+**Web & e-commerce**
+- `("website development agency" OR "web development agency" OR "web design agency") AND (looking OR recommend)` (4)
+- `("Shopify agency" OR "Shopify partner" OR "ecommerce agency") AND (looking OR recommend OR need)` (5)
+
+**Apps, SaaS & AI**
+- `("app development agency" OR "app development company") AND (looking OR recommend OR need)` (4)
+- `("software development company" OR "MVP development") AND ("looking for" OR recommend)` (3)
+- `("AI agency" OR "AI development company" OR "automation agency") AND ("looking for" OR need)` (4)
+
+**Marketing & growth (Radian's lane)**
+- `("digital marketing agency" OR "performance marketing agency" OR "SEO agency") AND ("looking for" OR recommend)` (4)
+- `("Amazon agency" OR "marketplace agency" OR "D2C agency") AND ("looking for" OR recommend)` (4)
+- `("social media agency" OR "branding agency") AND ("looking for" OR recommend) NOT hiring` (4)
+
+**More growth lanes (Radian's full service list — `../../vintoria-sales/references/radian-profile.md`)**
+- `("Myntra agency" OR "Flipkart agency" OR "Nykaa agency" OR "marketplace management") AND ("looking for" OR recommend)` (5)
+- `("quick commerce" OR Blinkit OR Zepto OR Instamart) AND ("looking for" OR onboarding)` (5)
+- `("CRO agency" OR "conversion rate optimization" OR "landing page agency") AND ("looking for" OR recommend)` (4)
+- `("email marketing agency" OR "retention agency" OR "WhatsApp marketing") AND ("looking for" OR recommend)` (4)
+- `("Meta ads agency" OR "Google ads agency" OR "PPC agency") AND ("looking for" OR recommend) NOT hiring` (5)
+- `("GEO" OR "AEO" OR "AI search visibility" OR "generative engine optimization") AND (agency OR "looking for")` (5)
+- `("motion graphics agency" OR "explainer video agency" OR "UGC video agency" OR "video production agency") AND ("looking for" OR recommend)` (5)
+- `("growth audit" OR "funnel audit" OR "marketing consultant") AND ("looking for" OR recommend) NOT hiring` (5)
+
+**Switching agencies (very warm)**
+- `("our agency" OR "current agency" OR "previous agency") AND ("not delivering" OR disappointed OR switching)` (5)
+- `("developer disappeared" OR "agency ghosted" OR "looking to switch agencies")` (2)
+
+**India, Hinglish and places**
+- `("agency chahiye" OR "website banwana" OR "app banwana" OR "developer chahiye")` (3)
+- `("looking for an agency" OR "recommend an agency") AND (Mumbai OR Pune OR Bangalore OR Delhi)` (5)
+- `("looking for an agency" OR "recommend an agency") AND (London OR Sydney OR Melbourne OR "New York")` (5)
 
 ## Which market, which hour (24/7 rotation)
 
-People post during their own working day, so each hourly run aims where it is daytime now (times in IST):
+People post during their own working day (times in IST):
 
-| IST | Daytime in | Search first | Then |
-|---|---|---|---|
-| 03:30-08:59 | Australia (Sydney 09:00-14:30*) | AU: Sydney, Melbourne, Brisbane, Perth; r/australia, r/sydney, r/melbourne and Australian small-business subs you have checked | India early posts |
-| 09:00-13:29 | India | Indian cities and Hinglish phrases; r/indianstartups, r/india, r/bangalore, r/pune, r/mumbai, r/delhi, r/hyderabad | AU afternoon |
-| 13:30-18:29 | India + UK | UK: London, Manchester, Birmingham; UK small-business subs you have checked, r/smallbusiness | India |
-| 18:30-23:59 | US East morning + UK afternoon | US: New York, Texas, Florida, California; r/smallbusiness, r/Entrepreneur, r/forhire | UK |
-| 00:00-03:29 | US (all zones) | US niches and r/forhire, r/shopify, r/ecommerce | — |
-
-\* Sydney is 4.5-5.5 hours ahead of IST depending on daylight saving. Global subreddits (r/forhire, r/smallbusiness,
-r/shopify, r/Entrepreneur) are searched every hour regardless.
-
-**Lane rotation:** hour of the day mod 6 → 0 web & booking · 1 Shopify / e-commerce · 2 apps & MVPs · 3 AI chatbots &
-agents · 4 automation & CRM · 5 SEO & marketing. Only lanes active in `OFFER.md`; skip inactive ones. Each run uses
-the lane of the hour **plus** the two best-performing queries from last week (`IDEAL-CUSTOMER-PROFILE.md`).
-
-## Open the search directly (fewer clicks, fewer mistakes)
-
-Replace `<q>` with the URL-encoded query (space → `%20`, `"` → `%22`, `(` → `%28`, `)` → `%29`).
-
-| What | URL |
-|---|---|
-| LinkedIn posts, past 24 h, newest | `https://www.linkedin.com/search/results/content/?keywords=<q>&datePosted=%22past-24h%22&sortBy=%22date_posted%22` |
-| Reddit, one subreddit, newest, past day | `https://www.reddit.com/r/<sub>/search/?q=<q>&restrict_sr=1&sort=new&t=day` |
-| Reddit, all of Reddit, newest, past day | `https://www.reddit.com/search/?q=<q>&sort=new&t=day` |
-| A subreddit's newest posts (no query) | `https://www.reddit.com/r/<sub>/new/` |
-
-If LinkedIn ignores a URL filter, set **Posts → Latest → Past 24 hours** by hand and continue. Always confirm the age on
-the post itself (`../../vintoria-sales/references/lead-quality.md`).
-
-## LinkedIn (logged in)
-
-**Where:** search bar → Posts → sort **Latest**, **Date posted: Past 24 hours**; optionally
-Author industry / location filters.
-**Rules:** boolean `AND`, `OR`, `NOT` in capitals, `"exact phrases"`, parentheses, at most 5 operators per query (longer
-ones are ignored), `NOT …` last.
-
-Strong queries (operators counted):
-- `"looking for" AND ("web developer" OR "website developer" OR "web designer")` (3)
-- `("need a website" OR "new website" OR "website redesign") AND ("looking for" OR recommend)` (4)
-- `("can anyone recommend" OR "recommendations for") AND ("app developer" OR "mobile app")` (3)
-- `"looking for" AND ("AI chatbot" OR "AI agent" OR "AI developer")` (3)
-- `("automate" OR "CRM setup" OR "Zapier") AND ("looking for" OR "need help")` (4)
-- `"looking for" AND ("Shopify developer" OR "Shopify expert")` (2)
-- `("SEO agency" OR "SEO expert" OR "digital marketing agency") AND recommend NOT hiring` (4)
-- Niche × service: `"looking for" AND ("web developer" OR "app developer") AND clinic` (3)
-- India: `("website developer" OR "app developer") AND (Pune OR Mumbai OR Bangalore) AND "looking for"` (4)
-- Hinglish: `("website chahiye" OR "app banwana" OR "developer chahiye")` (2)
-- UK / AU wording: `("web designer" OR "website designer") AND recommend AND (London OR Sydney)` (4)
-- Hidden intent: `("developer disappeared" OR "agency not responding" OR "website is down") NOT hiring` (3)
-
-Also useful: posts in the **Jobs → "Services" / ProFinder-style requests** and comments under "looking for agency
-recommendations" posts by founders. Each lead: author name, headline, profile URL, the post URL and its date.
-
-## Reddit (logged in)
-
-**Where:** search inside a subreddit (`subreddit → search`, sort **New**, time **Past 24 hours**), or Reddit-wide search
-with `subreddit:` / `flair:` filters.
-
-| Subreddit | What to search | Notes |
+| IST | Daytime in | Search first |
 |---|---|---|
-| r/forhire | `flair:Hiring website OR app OR SEO OR shopify OR "AI"` | Buyers post `[Hiring]`; offers in comments are expected — read the rules |
-| r/hiring, r/freelance_forhire | `website OR app OR developer OR shopify` | Read each sub's rules; only posts by people hiring |
-| r/smallbusiness | `"need a website" OR "looking for a developer" OR "recommend" web` | Check rules for self-promotion before linking |
-| r/Entrepreneur, r/startups | `"looking for" developer OR agency OR "MVP"` | Founders building MVPs, apps, automations |
-| r/indianstartups, r/india, r/bangalore, r/pune, r/mumbai | `"website" OR "app developer" OR "developer chahiye"` | Indian SMBs and founders; Hinglish posts |
-| r/shopify, r/ecommerce | `"looking for" OR "hire" developer OR expert` | Store builds, speed, conversion |
-| r/SEO, r/PPC, r/socialmedia | `"looking for" agency OR "recommend"` | Strict rules — often no promotion; help-only comments |
-| r/ChatGPT, r/automation, r/zapier, r/n8n | `"looking for" OR hire chatbot OR automation` | AI and automation buyers |
-| Niche subs (r/Dentistry, r/restaurateur, r/realtors, r/gymowner…) | `website OR app OR "marketing"` | Owners talking shop |
+| 03:30-08:59 | Australia | AU cities (Sydney, Melbourne, Brisbane, Perth) |
+| 09:00-13:29 | India | Indian cities, Hinglish queries |
+| 13:30-18:29 | India + UK | London, Manchester, Birmingham, Indian cities |
+| 18:30-23:59 | US East morning + UK afternoon | New York, Texas, Florida, California, London |
+| 00:00-03:29 | US (all zones) | US cities and "any service" queries |
 
-Each lead: username, the post URL, its age, the comment count (fewer = less competition) and the subreddit's rules on
-promotion (note them once per subreddit).
+Sydney is 4.5-5.5 hours ahead of IST depending on daylight saving. "Any service" and "switching agencies" queries run
+every hour regardless.
 
-**Skip:** r/slavelabour-style "cheapest possible" requests, students' assignment help, and any subreddit whose rules
-ban commercial replies (note it once in `IDEAL-CUSTOMER-PROFILE.md` and stop searching it).
+**Lane rotation:** hour of the day mod 8 → 0 web & e-commerce · 1 apps, SaaS & AI · 2 marketplaces & quick commerce ·
+3 SEO, AEO & GEO · 4 paid ads (Meta, Google) · 5 social media & content · 6 CRO, landing pages & retention (email /
+WhatsApp) · 7 branding, design & motion-graphics videos. Only lanes active in `OFFER.md`. Each run uses the lane of the hour plus the
+"any service" and "switching" queries plus the two best queries from last week (`IDEAL-CUSTOMER-PROFILE.md`).
 
-## Hidden intent (they need us but didn't ask)
-- LinkedIn: "our agency disappeared", "developer not responding", "website is down again", "launching next month".
-- Reddit: complaints about their current site, store speed or a freelancer who vanished — help-only comments work best.
+## Open the search directly
+
+Replace `<q>` with the URL-encoded query (space → `%20`, `"` → `%22`, `(` → `%28`, `)` → `%29`):
+
+`https://www.linkedin.com/search/results/content/?keywords=<q>&datePosted=%22past-24h%22&sortBy=%22date_posted%22`
+
+If LinkedIn ignores a URL filter, set **Posts → Latest → Past 24 hours** by hand. Always confirm the age on the post
+itself (`../../vintoria-sales/references/lead-quality.md`).
+
+## Skip
+- Agencies and freelancers advertising ("we are an agency…", "DM me for websites").
+- Job ads ("we are hiring a developer", salary / CTC / full-time / internship).
+- "Looking for a freelancer / intern / student, small budget" — they don't want an agency.
+- People asking which agency to **join** (career questions).
+- Posts where the author already chose ("found our agency, thanks").
 
 ## Keep what works
-Every lead keeps its `source` in `PIPELINE.md` (`li:need-website-clinic`, `rd:forhire-hiring`). Each Monday
-`vintoria-report` counts replies, calls and wins per source: double the queries that book calls, drop the rest.
+Every lead keeps its `source` in `PIPELINE.md` (`li:agency-any`, `li:agency-shopify`, `li:switching`). Each Monday
+`vintoria-report` counts replies, calls and wins per query: double the queries that book calls, drop the rest.

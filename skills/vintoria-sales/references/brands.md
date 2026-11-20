@@ -1,6 +1,6 @@
 # Two brands, one system — Vintoria and Radian Marketing
 
-The owner runs two real businesses with their own inboxes. The bots use both for email outreach to LinkedIn leads:
+The owner runs two real agencies with their own inboxes. PC1 sends Vintoria's emails and PC2 Radian's, to LinkedIn leads:
 
 | | Vintoria | Radian Marketing |
 |---|---|---|
@@ -33,9 +33,11 @@ The owner runs two real businesses with their own inboxes. The bots use both for
    (`vintoria-reply-book`); the other brand never writes to them again.
 3. **Never two emails to one person on the same day**, and at most **4 emails in any 7 days across both brands**. On a
    clash, the later email moves one day.
-4. **Radian only when its angle is real.** It needs its own hook — a marketing fact you actually checked (Google Business
-   Profile incomplete, no reviews answered, no meta descriptions, ads running to a slow page). No real marketing hook → no
-   Radian sequence; Vintoria's runs alone.
+4. **Both agencies, every emailed lead — each with its own angle.** The second agency's email is never a copy of the
+   first: Radian uses a growth fact you checked (Google Business Profile, reviews, meta descriptions, ads landing on a
+   slow page, marketplace listings, no email / WhatsApp flows); Vintoria uses a build fact (site speed on mobile, no
+   booking or checkout flow, outdated store, manual work an app or automation would remove). No separate fact found →
+   an angle from their own post (after launch: how they'll get customers — Radian; how they'll run it — Vintoria).
 5. Cold email only to `verified` / `published` addresses, per country rules in `compliance.md`.
 
 ## Making Radian's email more personal (it arrives second, so it must be better)
@@ -63,6 +65,17 @@ The owner runs two real businesses with their own inboxes. The bots use both for
 > 55, 3rd Floor, Saidulajab, Near Westend Marg Lane-2, New Delhi, India
 >
 > Not relevant? Reply "stop" and I won't contact you again.
+
+## Which brand goes first
+
+| The lead needs | First brand (day 0) | Second brand |
+|---|---|---|
+| A build: website, store, app, SaaS, AI, design (PC1's lanes) | **Vintoria** (PC1) | **Radian** on day 1 (PC2) — growth angle |
+| Growth: marketplaces, SEO / AEO / GEO, ads, social, CRO, retention, video (PC2's lanes) | **Radian** (PC2) | **Vintoria** on day 1 (PC1) — build angle |
+| "Switching agencies" or "any service" (PC3's finds) | the agency whose services match the need best | the other agency on day 1 |
+
+Every emailed lead gets both agencies, one day apart. The second agency's calendar is day 1, 4, 8, 15, 29; the first
+agency's day 0, 3, 7, 14, 28. Honest identity, shared stop rules, one email a day and 4 in any 7 days apply to both.
 
 ## Calendar for one lead (both brands, all checks passing)
 

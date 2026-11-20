@@ -1,6 +1,6 @@
 # Vintoria contact details and signatures — the only ones to use
 
-Every message (Reddit comment, LinkedIn comment or note, email, WhatsApp) takes the brand's contact details from this
+Every message (email, LinkedIn comment, note or message, WhatsApp) takes the brand's contact details from this
 file. Never type them from memory and never invent another channel.
 
 **Who speaks for Vintoria: Pratik Patil, Co-founder — and only him.** Every Vintoria email, comment, note, WhatsApp
@@ -43,17 +43,12 @@ Radian's emails never use Vintoria's number, link, address or signature, and Vin
 - Format: `https://wa.me/918766033979` — country code + number, **no** `+`, spaces or dashes.
 - Pre-filled text makes it one tap for the buyer. URL-encode it: spaces → `%20`, comma → `%2C`, `?` → `%3F`,
   `'` → `%27`, `&` → `%26`. Keep it short and about their request:
-  - Reddit: `https://wa.me/918766033979?text=Hi%20Vintoria%2C%20I%20saw%20your%20reply%20on%20my%20Reddit%20post%20about%20my%20website`
-  - LinkedIn: `https://wa.me/918766033979?text=Hi%20Vintoria%2C%20following%20up%20on%20your%20message%20about%20our%20app`
-- On Reddit write it as a Markdown link so it is clickable: `[WhatsApp: +91 87660 33979](https://wa.me/918766033979?text=...)`.
+  - Email: `https://wa.me/918766033979?text=Hi%20Pratik%2C%20replying%20to%20your%20email%20about%20our%20website`
+  - LinkedIn message: `https://wa.me/918766033979?text=Hi%20Pratik%2C%20following%20up%20on%20your%20LinkedIn%20message`
+- In emails and LinkedIn messages paste the plain link; never in a LinkedIn comment or connection note.
 - Check the link once after writing it: it must start `https://wa.me/918766033979`.
 
 ## Sign-offs (pick the one for the channel)
-
-**Reddit comment** (ends the comment, one line):
-```
-— Vintoria (digital product studio) · [WhatsApp: +91 87660 33979](https://wa.me/918766033979?text=<encoded>) · business@vintoria.org
-```
 
 **LinkedIn comment / connection note** (no link in a connection note — LinkedIn strips them; the email is enough):
 ```

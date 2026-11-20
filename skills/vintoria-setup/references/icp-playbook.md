@@ -1,6 +1,6 @@
 # vintoria-setup — Playbook
 
-> Web access: use your own browser and web search (LinkedIn and Reddit are logged in). Open the page before you state a
+> Web access: use your own browser and web search (LinkedIn is logged in). Open the page before you state a
 > fact from it, and note its URL and date. Never invent what you could not open — write "Not found".
 
 ## Purpose
@@ -78,7 +78,7 @@ Define observable behaviors that signal a company is an ideal prospect:
 
 - **Content Consumption:** What blogs, podcasts, newsletters, YouTube channels do they follow? What topics do they search for?
 - **Event Attendance:** Which conferences, webinars, meetups, trade shows do they attend? List 5-10 specific events by name.
-- **Community Membership:** Which Slack groups, LinkedIn groups, Reddit communities, Discord servers, forums are they active in?
+- **Community Membership:** Which LinkedIn groups, founder communities and events are they active in?
 - **Buying Patterns:** How do they typically discover and evaluate solutions? RFP process? Committee decisions? Champion-led? Top-down mandate?
 - **Social Signals:** What do they post about on LinkedIn? What job titles engage with relevant content?
 - **Hiring Patterns:** What roles are they hiring for that signal need for your solution?
@@ -115,7 +115,7 @@ Define financial criteria for ideal customers:
 
 Define how to reach and engage ideal customers:
 
-- **Research Channels:** Where do they go to research solutions? (G2, Capterra, analyst reports, peer recommendations, Google, Reddit, LinkedIn)
+- **Research Channels:** Where do they go to research solutions? (peer recommendations, LinkedIn posts asking for agencies, Google, Clutch-style agency directories)
 - **Preferred Contact Methods:** Rank by effectiveness: cold email, LinkedIn DM, phone call, referral, event networking, community engagement, content/inbound
 - **Decision-Making Process:** Map the typical buying journey. Who initiates? Who evaluates? Who approves? How long does it take?
 - **Content Preferences:** What content formats do they engage with? (case studies, ROI calculators, demos, whitepapers, video testimonials, free trials)

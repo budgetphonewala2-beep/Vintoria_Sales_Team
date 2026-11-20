@@ -1,7 +1,8 @@
 # The email sequence — frameworks, the 5 emails, A/B tests, output format
 
-For LinkedIn leads with an email (sent from `business@vintoria.org`). Reddit leads get one comment instead
-(`reddit-comment-playbook.md`). Every email also follows `first-email-guide.md`, `quality.md` and the critic check.
+For LinkedIn leads with an email (sent from `business@vintoria.org`, Radian from `amar@radianmarketing.site`). Leads
+without an email get a comment and a connection note instead (`linkedin-playbook.md`). Every email also follows
+`first-email-guide.md`, `quality.md` and the critic check.
 
 ## 1. Pick the framework (one per prospect)
 
@@ -68,8 +69,8 @@ report compares reply rates and keeps the winner.
 
 ## 4b. The second brand
 
-LinkedIn leads with a real marketing hook also get Radian Marketing's sequence from `amar@radianmarketing.site`, starting
-on day 1 (one day after Vintoria's) with its own 3/7/14/28 follow-ups — calendar, honest-identity rules and an example in
+Every LinkedIn lead with an email gets both agencies: the second one (Radian after Vintoria, or Vintoria after Radian)
+starts on day 1 from its own inbox with its own angle and its own 3/7/14/28 follow-ups — calendar, honest-identity rules and an example in
 `../../vintoria-sales/references/brands.md`. `OUTREACH-SEQUENCE.md` lists both brands' emails in one table with a `Brand`
 column.
 
@@ -97,7 +98,7 @@ Framework: <name> · Service: <ID name> · Top hooks: <1>; <2>; <3>
 ## Email 2 … ## Email 5
 <bodies>
 
-## LinkedIn / Reddit touches
+## LinkedIn touches
 <comment or note text, if any, with its link once posted>
 
 Compliance notes: <rules for their country>

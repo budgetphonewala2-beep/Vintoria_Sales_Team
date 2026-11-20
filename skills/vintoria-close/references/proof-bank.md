@@ -43,7 +43,7 @@ Use for: clinics, healthcare, booking, India
   permission.
 
 ## Where proof is used
-- Reddit comments: one short line when it's the same niche ("we built this for a physio clinic in Pune last month").
+- LinkedIn comments and messages: one short line when it's the same niche ("we built this for a physio clinic in Pune last month").
 - Email 3 of the sequence (`../../vintoria-outreach/references/sequence-playbook.md`), proposals (case study section),
   WhatsApp after the qualifying questions, LinkedIn "how we did it" posts (`vintoria-authority`).
 - Referrals → a new `PIPELINE.md` row (`source` = `referral:<P-id>`, `channel` email or WhatsApp), first message names who

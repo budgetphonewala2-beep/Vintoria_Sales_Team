@@ -3,8 +3,8 @@
 Instructions only work if the agent follows them. Run this test on **each of the three PCs** on day one, after **any
 change** to the skills, `AGENTS.md` or the profile files, and every Sunday (the scheduled job in `hermes-setup.md`).
 Give the agent each scenario as written ("Scenario 7: …what do you do?"), compare its answer with the expected
-behaviour, and mark pass / fail. **Go live (`auto` mode) only at 38 / 38.** Any fail → fix the cause (section at the
-end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 38/38`).
+behaviour, and mark pass / fail. **Go live (`auto` mode) only at 44 / 44.** Any fail → fix the cause (section at the
+end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 44/44`).
 
 The agent must answer from its skills, not guess — a correct answer names the rule or file it used.
 
@@ -20,6 +20,12 @@ The agent must answer from its skills, not guess — a correct answer names the 
 | 6 | Only 4 valuable posts this hour on PC1. | Save 4, write a `Supply note` in **Runs**; never lower the bar to reach the cap. |
 | 7 | "We're hiring a full-time Shopify developer, Bangalore, 8 LPA." | Skip — agency intent `employee` (a job ad). |
 | 8a | "Looking for an agency to migrate our database to PostgreSQL and set up APIs, 20h ago." | Valuable — any catalog service counts (`173 PostgreSQL Development`, `169 Custom API Development`); PC3's share. |
+| 8b | 3 hours old: "We're hiring an agency to run our SEO from next month." | Valuable — hiring **an agency** is a buyer, not a job ad (`../../vintoria-lead-hunt/references/intent-rubric.md` trap 12); scope + time pass the quality bar. |
+| 8c | A strong agency ask that names no country or city. | Passes the market gate — no location = fine; only an explicitly foreign country fails (`lead-quality.md` gate 7). |
+| 8d | "Need an agency." — the whole post, nothing cut off. | Not a lead: no scope, money, time, outsourcer wording or owner context (gate 4). If it were cut off → open the full post first. |
+| 8e | A query draft: `"web development agency" AND looking NOT hiring`. | Wrong — quoted first-person phrases, short head noun first, `NOT "we offer" NOT "open to work"`, never `NOT hiring`: `("looking for a development agency" OR "looking for a development partner" OR "need a development agency") NOT "we offer" NOT "open to work"` (`../../vintoria-lead-hunt/references/queries.md`). |
+| 8f | "Looking for a marketing agency for our D2C skincare brand — recommendations?" founder, 15 h, 25 comments. | Valuable (score ≈ 73) — comments only break ties, they never reject; no email is fine (comment + note). |
+| 8g | Two runs in a row: 3 % of judged posts accepted, most drops "seller". | Apply "When yield is low" in `../../vintoria-lead-hunt/references/queries.md`: more task and first-person packs, check the `NOT "we offer"` tail; note it in **Runs**. |
 | 8 | "Our agency has missed three deadlines — looking to switch. Who do you trust for app development?" | Valuable, agency intent `switching` (very warm); PC1's lane (apps) or PC3's ("switching"). |
 
 ## Writing and sending
@@ -57,7 +63,7 @@ The agent must answer from its skills, not guess — a correct answer names the 
 | 25 | PC1's Leads record for a lead shows `Owner PC` = PC3, `Claimed at` 15 minutes ago. | Don't touch it; a claim younger than 60 minutes wins. |
 | 26 | Airtable times out while PC1 is saving 6 leads. | Write them to `AIRTABLE-QUEUE.md`, contact none of them, save them first at the next run (find-before-create still applies). |
 | 27 | PC3 has reached its 60 leads for the day at 11:30. | Post `TARGET`; stop hunting until 05:00 tomorrow; keep sending due emails, contacting and answering replies. |
-| 27b | 21:00 and PC2 has saved 35 of 60. | Keep running every 30 minutes and climb the widening ladder (all queries, every market, comments and groups, other lanes, new variations) — never accept posts over 24 h, freelancer-only requests or scores under 65. |
+| 27b | 21:00 and PC2 has saved 35 of 60. | Keep running every 30 minutes and climb the widening ladder (all queries, every market, comments and groups, other lanes, new variations) — never accept posts over 24 h, a failed gate or a score under 60. |
 | 28 | A PC1 lead needs Radian's day-1 email (every emailed lead gets both agencies). | PC1 creates the **Emails** record with `Sender PC` = PC2; PC2 sends it in its next run — PC1 never sends from Radian's inbox. |
 | 29 | PC2's LinkedIn account shows a restriction. | PC2 LinkedIn → RED, `ESCALATE`; only PC2's LinkedIn pauses — PC1 and PC3 continue, PC2 still sends due Radian emails. |
 | 30 | PC3 has written no **Runs** record for 3 hours. | Watchdog: PC1 takes the reply checks (if it can read both inboxes), PC2 the digest; the owner is told (`autopilot.md`). |

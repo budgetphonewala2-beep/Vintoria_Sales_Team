@@ -31,7 +31,8 @@ owner changes all three, or keeps them in a **Settings** table and every run rea
 **Leads** — one record per person looking for an agency
 `Post URL` (URL) · `Person name` · `Headline` · `Person URL` (URL) · `Company` · `Website` (URL) · `Country` (single select:
 IN / US / UK / AU) · `City` · `Quote` (long text, exact words) · `Need` (long text) · `Agency intent` (single select:
-agency / open / switching) · `Discipline` (single select: 01-12 or Radian) · `Lane` (single select: web-ecommerce / apps-saas-ai /
+agency / open / switching) · `Intent strength` (explicit / active_search / recommendation) · `Signals` (multiple
+select: scope / money / time / outsourcer / owner_referral) · `Query family` (1-10 or rotation) · `Discipline` (single select: 01-12 or Radian) · `Lane` (single select: web-ecommerce / apps-saas-ai /
 design-branding / marketplaces-qcom / seo-aeo-geo / paid-ads / social-content / cro-retention / video / other) · `Services` (multiple select, catalog IDs or Radian names)
 · `Brand` (single select: Vintoria / Radian) · `Posted at` (date-time — `Found at` minus the age shown) · `Found at`
 (date-time) · `Age at find (h)` (number) · `Comments at find` (number) · `Value score` (number) · `Score parts` (text) ·
@@ -41,8 +42,9 @@ pattern-guessed / invalid) · `Email source` (text) · `Stage` (single select: t
 (date-time) · `Next action` (text) · `Next due` (date-time) · `Outcome` (single select) · `Value` (currency) ·
 `Dossier` (long text) · `Site audit` (long text) · `Critic` (text) · `Updated at` (last modified time)
 
-**Seen** — every judged post: `Post URL` · `Judged at` · `PC` · `Result` (kept / dropped) · `Reason` (seller, job ad,
-freelancer-only, too old, wrong market, red flag, duplicate person…) · `Score`
+**Seen** — every judged post: `Post URL` · `Judged at` · `PC` · `Result` (kept / dropped) · `Reason` (`prefilter: seller` / `job ad` /
+`job seeker` / `advice` / `hashtag wall` / `filled`, or the failed gate: `not buyer`, `freelancer`, `employee`, `no real ask`,
+`no signal`, `not our service`, `too old`, `foreign market`, `red flag`, `duplicate`) · `Score`
 
 **Emails** — `Email ID` · `Lead` (link to Leads) · `Brand` · `From` · `To` · `Step` (1-5) · `Day` (first brand 0/3/7/14/28;
 a second brand one day later: 1/4/8/15/29) · `Scheduled for` (date-time, prospect's time zone noted) · `Sent at` · `Subject` · `Body` · `Score` ·
@@ -60,7 +62,8 @@ REVIEW, ALERT, BLOCKED, HOURLY, STANDUP, DECISION, ESCALATE, HOT, HEALTH, DIGEST
 `Done` (checkbox)
 
 **Runs** — `Run ID` · `PC` · `Started` · `Ended` · `Candidates` · `Valuable` · `HOT` · `Saved` · `Emails sent` ·
-`Comments` · `Notes` · `Messages` · `Replies found` · `Skipped by critic` · `Queries used` · `Rotation from` · `Rotation to` (service IDs or Radian names) · `Supply note`
+`Comments` · `Notes` · `Messages` · `Replies found` · `Skipped by critic` · `Queries used` · `Rotation from` · `Rotation to` (service IDs or Radian names) · `Prefiltered out` · `Judged` · `Accept rate` ·
+`Top drop reasons` · `Supply note`
 
 **Daily** — `Date` (the sales day runs 05:00-04:59 IST) · `PC` · `Leads saved` · `Target` (60) · `Started at` ·
 `Target reached at` · `Widening step` (0-4) · `Candidates judged` · `Valuable rate` (formula) · `Emails` ·

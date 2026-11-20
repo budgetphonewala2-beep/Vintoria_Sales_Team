@@ -93,7 +93,7 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
   connection notes 15 per day (LinkedIn's own weekly invitation limit applies) · LinkedIn messages 20 per day
 - Circuit breakers: `vintoria-account-health` every 6 hours → GREEN (full limits) / YELLOW (half) / RED (pause + escalate);
   a captcha, warning or restriction triggers the check at once · email bounces over 2 % in 14 days → YELLOW
-- Hot leads (value 85+, under 2 h, ≤ 5 comments): fast track, contacted within ~15 minutes
+- Hot leads (score 80+, under 2 h, ≤ 10 comments): fast track, contacted within ~15 minutes
 - Authority: one LinkedIn post a weekday from Pratik Patil's profile + 5-10 comments on buyers' posts — yes / no
 - Google Business Profile review link (for the proof bank): [ASK]
 - Owner digest: 21:00 IST to the owner (WhatsApp-ready)

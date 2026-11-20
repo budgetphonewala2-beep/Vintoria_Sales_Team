@@ -141,14 +141,14 @@ Setting up the three Hermes PCs (profiles, skills, `AGENTS.md`, scheduled jobs, 
 - `references/compliance.md` — legal and deliverability rules for every message, by market and channel
 - `references/vintoria-contact.md` — business@vintoria.org, WhatsApp +91 87660 33979, the wa.me link, sign-offs per channel, tone
 - `references/team.md` — the sales team: roles, the team board message format, claims, handoffs, reviews, alerts, standups, escalation
-- `references/lead-quality.md` — the exact 24-hour rule, what a valuable lead is, the value score, red flags
+- `references/lead-quality.md` — the 24-hour rule, the nine gates every lead passes, the 0-100 score with calibration examples, red flags
 - `references/critic-check.md` — the yes/no checks every message passes before it is posted or sent
 - `references/radian-profile.md` — Radian Marketing's sourced facts: identity, contact, services by its own names, usable and to-confirm proof, offers, sign-off
 - `references/brands.md` — the two email brands (Vintoria, Radian Marketing): angles, honest identity, shared stop rules, the day 0/1 + 3/7/14/28 calendar, deliverability
 - `references/airtable.md` — the shared Airtable base: which table replaces each file, fields, find-before-create, claims, batching and rate limits, views
 - `references/hermes-setup.md` — the three Hermes PCs: who hunts what, daily targets, install, AGENTS.md, scheduled jobs, sub-agents, watchdog, first day
 - `references/autopilot.md` — 24/7 without waiting for a human: the loop, the 6-hour full inbox sweep, the watchdog and role failover, default actions, what still needs a human
-- `references/self-test.md` — 38 scenarios with the expected behaviour: run before going live, after any change, monthly
+- `references/self-test.md` — 44 scenarios with the expected behaviour: run before going live, after any change, monthly
 - `references/service-catalog.md` — the 12 disciplines and how to cite a service
 - `references/services-01-strategy.md` — discipline 01 Strategy & Consulting (001-015): every service, signals, who buys it, when not to sell it
 - `references/services-02-web.md` — discipline 02 Web Development (016-040): every service, signals, who buys it, when not to sell it

@@ -5,7 +5,10 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
 ```json
 {"role": "buyer | seller | job_seeker | other", "is_buyer": true, "services": ["web", "app", "seo", "marketing", "design", "software"],
  "urgency": "high | medium | low | unknown", "budget": "only if stated, else null", "location": "only if stated/obvious, else null",
- "agency_intent": "agency | open | switching | freelancer | employee", "evidence_quote": "EXACT words copied from the post", "confidence": 0.0}
+ "agency_intent": "agency | open | switching | freelancer | employee",
+ "intent_strength": "explicit | active_search | recommendation | problem_awareness | research | none",
+ "signals": ["scope", "money", "time", "outsourcer", "owner_referral"], "decision_maker": true,
+ "cut_off": false, "evidence_quote": "EXACT words copied from the post", "confidence": 0.0}
 ```
 
 ## Decision rules
@@ -19,8 +22,9 @@ Judge the **author's** intent, not the topic. For each candidate post produce:
    tutorials, memes, people who already found someone, spam, crypto.
 5. **Urgency**: high = deadline or "asap/urgent/this week/before Diwali"; medium = clear plan, no date; low =
    "thinking about", "maybe next year".
-6. **Confidence**: 0.9+ explicit request with details; 0.7 clear request, few details; 0.5 ambiguous → **not**
-   a buyer (threshold 0.7). If unsure whether it's a job or a project, it's not a buyer.
+6. **Confidence** is recorded, not a gate on its own: 0.9+ explicit request with details; 0.7 clear request; 0.5
+   ambiguous. The gates in `../../vintoria-sales/references/lead-quality.md` decide. If unsure whether it's a job or
+   a project, weigh the signals (rule 12 below) instead of guessing.
 7. The quote must be copied verbatim. If you can't quote the intent, it isn't there.
 
 ## Agency intent — the second question (Vintoria only works with agency-seekers)
@@ -35,8 +39,51 @@ After "is the author a buyer?", ask "**do they want an agency or outside team?**
 | `freelancer` | explicitly wants one freelancer, a student, part-time help, or "cheapest possible" | "anyone know a freelancer…", "part-time freelancer, paid per task" | no |
 | `employee` | a job: full-time, salary, CTC, internship | "we're hiring a Flutter developer" | no |
 
-Confidence for the lead = the lower of the two (buyer confidence, agency intent). Keep only ≥ 0.7. In the 30 examples
-below, #8 and #25 are buyers but `freelancer` → **skip**.
+`agency`, `open` and `switching` pass gate 2; `freelancer` and `employee` don't. In the 30 examples below, #8 and #25
+are buyers but `freelancer` → **skip**.
+
+## Intent strength (gate 3 — only the first three pass)
+
+| Level | Means | Example |
+|---|---|---|
+| `explicit` | a clear procurement ask | "We're hiring an agency to run our Google Ads from next month." |
+| `active_search` | sourcing right now | "Talking to agencies this week for our app build — who should I add?" |
+| `recommendation` | asking for referrals | "Can anyone recommend a good SEO agency for a B2B SaaS?" |
+| `problem_awareness` | a problem, no ask | "Our website conversions are terrible." → not a lead (yet — the nurture engine may watch them) |
+| `research` | exploring | "Thinking about outsourcing marketing next year — pros and cons?" |
+| `none` | no buying intent | tips, opinions, news |
+
+## The quality bar (gate 4) — at least one concrete signal
+
+`scope` (what the agency will own: "handle our SEO", "rebuild our store", "manage our ads") · `money` (budget, retainer,
+ad spend) · `time` (deadline, "this quarter", "before launch") · `outsourcer` ("outsource our…", "need an outside team",
+"hire an agency") · `owner_referral` (an owner asking "anyone know a good X agency for our launch?").
+A bare "need an agency" with none of these is vague → not a lead. If the post is **cut off** before the service, the
+direction or the scope is visible, set `cut_off: true`, open the full post and judge again — never reject what you
+couldn't see.
+
+## Agency traps — reject each, even in disguise
+
+8. **Agency self-promotion** — "we're a full-service X agency", "we help brands with…", "taking new clients", "we
+   scale DTC brands". "Looking to partner with ambitious brands" is an agency hunting clients = seller.
+9. **A freelancer selling agency-level work** — "I run a one-person agency", "agency-quality work, available" = job
+   seeker, never a buyer.
+10. **Agency-to-agency collab with no client** — "looking for an agency to partner with", "collab with fellow
+    agencies?", "white-label partnership" = not a lead. It becomes one only with a clear need of their own ("we need an
+    agency to handle OUR rebrand").
+11. **Agency directories / "vetted network"** — a platform recruiting agencies as inventory = seller.
+12. **Hiring AN agency vs hiring FOR an agency** — "we're **hiring an agency** for our SEO" = buyer (the thing hired
+    is an outside firm). "Hiring a designer **to join our agency team**, 3+ years, apply with CV" = employee job ad.
+    Weigh the signals: years-of-experience thresholds, "join our team", application forms, salary or benefits →
+    employment; a bounded job, a deadline, a budget, "for our project" → buyer. Decide — don't keyword-match.
+13. **List-building / engagement bait** — "we're compiling a list of top agencies, comment below" = not a lead.
+14. **A recruiter "for our client"** — placing people at someone else's company = seller.
+15. **Mixed signals** — "need a video agency — DM me if you know one" is a buyer asking for referrals; "DM me for
+    video production" is a seller. Judge the main intent.
+
+## Already filled or gone
+"found our agency", "update: hired", "contract awarded", "no longer looking", "thanks everyone, we found…" → gate 8
+fails. A deleted post ("this post is unavailable") → skip.
 
 ### 12 LinkedIn agency-intent examples
 

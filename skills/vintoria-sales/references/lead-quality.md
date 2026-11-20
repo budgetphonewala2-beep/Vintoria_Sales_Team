@@ -1,59 +1,76 @@
-# Lead quality — what a "valuable lead" is, and the 24-hour rule
+# Lead quality — gates, score, and the 24-hour rule
 
-Leads come from **LinkedIn only**, and only from people **looking to hire an agency** (or an outside team / partner).
-Each PC's hourly run keeps up to its per-run cap (8 on every PC), until it has 60 new, unique leads for the day — 180 for the team (`hermes-setup.md`). They must be **valuable**, not just many: one real agency-seeker answered
-fast is worth more than ten weak ones. If an hour has only four valuable posts, keep four and say so.
+Leads come from **LinkedIn only**, from people **looking to hire an agency** or an outside team / partner, for any of
+our ~330 services. Each PC saves **60 unique leads a day** (180 for the team, `hermes-setup.md`).
 
-## 1. The 24-hour rule (exact)
+The method is the one Lead-Forge measured on live LinkedIn searches. A lead must pass **every gate** (the gates catch
+sellers, job ads and wrong-direction posts), and then it is **ranked** by a score. Clearing an average is never enough,
+but a genuine buyer is never rejected just because the post doesn't mention a budget, a country or an email.
 
-Read the age on the post (or comment) itself, not on the search result.
+Expected yield: about **10-15 %** of the posts that pass the cheap prefilter
+(`../../vintoria-lead-hunt/references/prefilter.md`). Under 3 % after 200 prefiltered posts means the **searches** are
+wrong, not the market — see "When yield is low" in `../../vintoria-lead-hunt/references/queries.md`.
+
+## 1. The 24-hour rule
+
+Read the age on the post (or comment) itself. Use LinkedIn's **Posts → Latest → Past 24 hours** filter, then confirm.
 
 | LinkedIn shows | Keep? |
 |---|---|
 | `12m`, `45m`, `3h`, `23h` | yes |
 | `1d`, `2d`, `1w` | **no** — `1d` can mean 24-47 hours |
 | Edited post | the original post time counts |
-| A comment ("we need this too") under an older post | judge the comment's own age |
 
 Priority by age: under 2 hours = act first, 2-12 hours = high, 12-24 hours = normal.
 
-## 2. Must-haves (all of them, or it isn't a lead)
+## 2. Gates — all must pass (any "no" = not a lead; record which gate in **Seen**)
 
-1. **Looking for an agency** — the author (or their business) wants to hire an agency, studio, company, outside team or
-   partner — or asks "who can do X for us" in a way open to agencies — per
-   `../../vintoria-lead-hunt/references/intent-rubric.md` (agency intent), confidence ≥ 0.7, with an **exact quote**.
-2. **We sell it** — the need maps to **any** of Vintoria's 270 catalog services (`service-catalog.md`) or any Radian
-   service (`radian-profile.md`) — about 330 in all. `OFFER.md` lanes decide priority, not eligibility.
-3. **Right market** — India, United States, United Kingdom or Australia (or the profile's targets): stated, or
-   clear from the profile, company page, currency or city.
-4. **Not excluded** — not an agency or freelancer selling; not a job ad or job seeker; not "freelancer / intern / student
-   only"; not in `DO-NOT-CONTACT.md`; not in `SEEN.md`; not claimed by another PC; not contacted in the last 30 days.
-5. **Reachable** — an email in the post, the profile's Contact info or the company site — or the post accepts comments,
-   or the author accepts connection requests.
-
-## 3. Value score (0-100) — rank the must-haves, keep the best
-
-| Part | Max | Score |
+| # | Gate | Passes when |
 |---|---|---|
-| Agency intent | 25 | 25 × confidence they want to hire an agency / outside team (0-1) |
-| Freshness | 15 | < 2 h 15 · 2-6 h 12 · 6-12 h 9 · 12-24 h 6 |
-| Urgency | 12 | deadline / "asap" / launch date 12 · clear plan 8 · unknown 5 · "someday" 2 |
-| Scope clarity | 10 | they described what they need (pages, features, platform, channels) 10 · vague 4 |
-| Budget / company signal | 10 | a budget stated 10 · funded, several locations, running ads, 20+ staff 6 · none 0 |
-| Decision maker | 8 | founder / owner / CEO / director / head of marketing or tech 8 · team member asking for a boss 3 |
-| Low competition | 10 | 0-5 comments 10 · 6-20 → 6 · 21-50 → 2 · more → 0 (agency posts attract many sellers) |
-| Service fit | 5 | matches an entry service exactly 5 · close 2 |
-| Contactability | 5 | email found 5 · comment or connection only 2 |
+| 1 | **Buyer, not seller** | the author needs the work done — not offering it, not looking for work, not recruiting talent (`../../vintoria-lead-hunt/references/intent-rubric.md`) |
+| 2 | **Agency direction** | agency intent is `agency`, `open` or `switching` — not `freelancer` (one person) and not `employee` (a job). "We're **hiring an agency**" passes; "hiring **for our agency team**" doesn't |
+| 3 | **Real ask** | intent strength is `explicit`, `active_search` or `recommendation` (not just a problem, research or opinion) |
+| 4 | **Quality bar** | at least ONE concrete buying signal: **scope** (what the agency will own — "handle our SEO", "rebuild our store"), **money** (budget, retainer, ad spend), **time** (deadline, "this quarter", "before launch"), **outsourcer framing** ("outsource our…", "need an outside team") or an **owner's referral ask** ("anyone know a good X agency for our launch?") |
+| 5 | **We sell it** | service match ≥ 50: the need is one of Vintoria's 270 catalog services or a Radian service. An adjacent craft we don't sell scores ≤ 50 |
+| 6 | **Fresh** | under 24 hours (section 1) |
+| 7 | **Market not excluded** | no country named outside India, US, UK, Australia. **No location mentioned = passes** (most posts don't say) |
+| 8 | **Still open** | the post still exists and the need isn't filled ("found our agency", "update: hired", "contract awarded") |
+| 9 | **Not excluded** | not in **DoNotContact**, **Seen** or **Leads**; not claimed by another PC; no red flag (section 4) |
 
-**Valuable = all must-haves met and score ≥ 65.** 80+ = act first; **85+ under 2 hours with ≤ 5 comments = HOT**.
-Write the score and its parts in `HISTORY.md`.
+A post that looks like a genuine ask but is **cut off** before the service or direction is clear → open the full post and
+judge again. Never reject a cut-off post for what you can't see.
 
-Bonus signals (note them, they help the message): switching from another agency ("our agency isn't delivering") ·
-an RFP or a written brief · "we need this before <date>" · a funding or launch announcement in the last 30 days.
+## 3. Score (0-100) — only for posts that passed every gate; it ranks and decides HOT
 
-## 4. Red flags (any one drops the lead)
+| Part | Weight | How |
+|---|---|---|
+| Intent strength | 30 | explicit 100 % · active_search 85 % · recommendation 70 % |
+| Service match | 25 | the exact service named 90-100 % · clearly part of the ask 70 % · close 50 % |
+| Commercial signal | 15 | budget / scale / deadline 70-100 % · bare ask with scope 40-60 % |
+| Decision maker | 10 | founder, owner, CEO, director, head of marketing / tech / growth = 10 · otherwise 0 |
+| Freshness | 10 | < 2 h 10 · 2-6 h 8 · 6-12 h 6 · 12-24 h 5 |
+| Evidence | 10 | explicit ask + budget 90-100 % · clear ask 60-80 % · vague 40 % |
 
-Wants free work or spec samples · "equity only" · a budget far below the scope ("full app for ₹10,000") · "just
-exploring" · a student or college project · white-label or reselling requests (other agencies) · crypto, gambling or
-adult · they already picked someone ("found our agency, thanks") · only the cheapest price, no other detail ·
-"freelancer only" / "intern" / "full-time role".
+**Valuable = every gate passed and score ≥ 60.** HOT = 80+, under 2 hours, 10 comments or fewer → `HOT` on the Board.
+Comment count is only a tie-breaker (fewer comments first), never a reason to reject — agency asks always attract
+replies. A missing email is never a penalty: every LinkedIn post can get a comment and a connection note.
+Write the gates, the score and its parts in **Leads** (`Score parts`).
+
+### Calibration (score these the same way every time)
+- "Looking for a marketing agency for our D2C skincare brand — recommendations?" (founder, 15 h, 25 comments) →
+  gates pass (owner referral + scope "for our D2C brand") → intent 21 + match 23 + commercial 7 + DM 10 + fresh 5 +
+  evidence 7 = **73 → valuable**.
+- "We're hiring an agency to run our Google Ads, ₹2L/month spend, starting next month." (head of growth, 1 h) →
+  30 + 24 + 14 + 10 + 10 + 10 = **98 → HOT**.
+- "Need an agency." (no scope, money, time or owner context) → gate 4 fails → not a lead (cut off? open the full post first).
+- "We're a full-service creative agency helping DTC brands scale — DM for a free audit." → gate 1 fails (seller).
+- "Hiring a designer to join our agency team, 3+ years, apply with CV." → gate 2 fails (employee job ad).
+
+## 4. Red flags (any one = gate 9 fails)
+
+Wants free work or spec samples · "equity only" · a budget far below the scope ("full app for ₹10,000") · a student or
+college project · white-label or reselling requests from another agency · agency-to-agency "collab" with no client
+need · "we're compiling a list of top agencies" · crypto, gambling or adult · only the cheapest price, no other detail.
+
+Bonus signals (note them in **Leads**, they sharpen the message): switching from another agency · an RFP or written
+brief · a date ("before Diwali", "launch in March") · a funding or launch announcement in the last 30 days.

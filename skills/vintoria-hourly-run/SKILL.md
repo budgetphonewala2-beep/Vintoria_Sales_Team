@@ -54,8 +54,8 @@ leaves a clean trail so the other two PCs — and the owner — know exactly wha
   2. comments under "recommend an agency" posts, LinkedIn service requests and joined groups;
   3. the other PCs' lanes too (find-before-create keeps it duplicate-free);
   4. new variations of the five queries that found the most leads this week (other cities, niches, synonyms, Hinglish).
-  Never: posts older than 24 hours, confidence under 0.7, freelancer-only requests, job ads, agencies selling, a value
-  score under 65, or more than a person's pace on LinkedIn.
+  Never: posts older than 24 hours, a failed gate (`../vintoria-sales/references/lead-quality.md`), a score under 60,
+  freelancer-only requests, job ads, agencies selling, or more than a person's pace on LinkedIn.
 - **Short at 04:59** → the shortfall is reported honestly in **Daily** (`Leads saved` vs `Target`, the `Supply note`
   of each run) and in the owner's digest; the next day starts again at 05:00 with the best-performing queries first.
 
@@ -76,27 +76,32 @@ This hourly pass is the only place sequence emails are sent, so each lands in th
    the limits in `SELLER-PROFILE.md` → Automation. Anything paused by a `DECISION` stays paused.
    **Health first:** the latest LinkedIn and email levels in `HEALTH.md` (`vintoria-account-health`) — GREEN = full
    limits, YELLOW = half, RED = no LinkedIn activity / no email this hour. Older than 6 hours → run the check first.
-1. **Search LinkedIn, last 24 hours only** — `../vintoria-lead-hunt/references/queries.md`: Posts → Latest → Past 24
-   hours, **this PC's share of the ~330 services** (`../vintoria-sales/references/hermes-setup.md`: PC1 Vintoria 001-120,
-   PC2 Radian + Vintoria 211-270, PC3 Vintoria 121-210 + "switching agencies" and "any service"): the fixed queries for
-   this hour's lane **plus the next 6 services of the PC's service rotation** ("Any of our ~330 services" in
-   `queries.md` — buyer words for each, the position carried over in **Runs**), aimed at the market where it is
-   daytime now ("Which market, which hour"), opened by the direct search URL. Also: comments under "recommend an agency"
-   posts, LinkedIn service requests, joined groups. Collect 25-40 candidates; skip any URL already in `SEEN.md`.
-2. **Filter with the exact rules** in `../vintoria-sales/references/lead-quality.md`: age on the post under 24 h (`1d` = too
-   old), looking for an agency or outside team (agency intent `agency`, `open` or `switching`, confidence 0.7+) with an
-   exact quote, a service we sell, right market, no red flags. Add every judged post to `SEEN.md` (kept or dropped, why).
-3. **Score and rank** (value score 0-100). Keep **up to 8** that score 65+, freshest and highest first, until today's
-   60 is reached (see "The daily target"); then stop hunting until 05:00 and spend runs on contacting.
+1. **Search LinkedIn the measured way** — `../vintoria-lead-hunt/references/queries.md`: Posts → **Latest** → **Past 24
+   hours**; quoted buyer phrases packed 2-4 per query with `NOT "we offer" NOT "open to work"` (never `NOT hiring`);
+   **the first ~25 results of each query, then the next query** — never scroll deep. The run's plan ("A run's search
+   plan"): the first-person and switching packs, this hour's lane (head-noun pack first, then the ready-made packs and
+   the task family), then **the next 6 services of this PC's rotation** (`../vintoria-sales/references/hermes-setup.md`:
+   PC1 Vintoria 001-120, PC2 Radian + Vintoria 211-270, PC3 Vintoria 121-210), aimed at the market where it is daytime
+   now, opened by the direct search URL. Skip any URL already in **Seen** or **Leads**.
+2. **Prefilter in seconds** (`../vintoria-lead-hunt/references/prefilter.md`): read the first lines; keep every post with
+   a buyer phrase; skip sellers, job ads, job seekers, recruiters, advice posts, hashtag walls, filled or deleted posts —
+   each with its reason in **Seen**. Sort what's left: strongest ask first, then a date / budget / scope in the first
+   lines, then newest, then fewest comments.
+3. **Judge, then gate** (`../vintoria-lead-hunt/references/intent-rubric.md`, `../vintoria-sales/references/lead-quality.md`):
+   buyer or not, agency intent, intent strength, the concrete signals, service match against the service's vocabulary,
+   age, market. A cut-off post → open it in full first. **Every gate** must pass; then score it. Keep **up to 8** with a
+   score of **60+**, best and freshest first, until today's 60 is reached (see "The daily target"); then stop hunting
+   until 05:00 and spend runs on contacting. Fewer valuable posts this run = keep fewer; never lower a gate.
    **No duplicates, ever:** before saving, find the post and the person in **Seen** and **Leads**; right after saving,
    search **Leads** once more for the same `Post URL` and `Person URL` (another PC may have saved it in the same
    moment). Two records → the one created first wins; mark the newer one `Stage` = disqualified (`duplicate`), never
-   contact it, and don't count it in today's 60. Only unique, valuable leads count toward the target. Before saving, find the `Post URL` and the `Person URL` in Airtable
-   (**Seen**, **Leads**) — a duplicate is never saved twice. Save with `Posted at`, `Age at find (h)` and the quote. Fewer valuable
-   posts this hour = keep fewer; never lower the bar to reach 10.
-   **Hot lead fast track:** 85+, posted under 2 hours ago, 5 comments or fewer → `HOT` on the board, handled before
+   contact it, and don't count it in today's 60. Save with `Posted at`, `Age at find (h)`, the quote, agency intent,
+   intent strength, signals and the score parts.
+   **Hot lead fast track:** 80+, posted under 2 hours ago, 10 comments or fewer → `HOT` on the Board, handled before
    everything else: Writer within 10 minutes, Reviewer within 5. Hot leads with an email get the email **and** a short
    comment on their post.
+   **Yield check:** write the run's drop reasons in **Runs**. Under 5 % of judged posts accepted two runs in a row → apply
+   "When yield is low" in `queries.md` on the next run.
 4. **Claim** each kept lead (`Owner PC` + `Claimed at` on its Airtable record, read back) so no other PC touches it.
 5. **Brand and contact:** build need → Vintoria day 0, Radian day 1; growth need → Radian day 0, Vintoria day 1 — every
    emailed lead gets both agencies (`../vintoria-sales/references/brands.md`); create both email-1 records in **Emails**
@@ -151,15 +156,16 @@ This hourly pass is the only place sequence emails are sent, so each lands in th
 
 ## References (read when you reach that step)
 
-- `../vintoria-sales/references/lead-quality.md` — the 24-hour rule, the agency-seeker must-haves, the value score, red flags
+- `../vintoria-sales/references/lead-quality.md` — the 24-hour rule, the nine gates, the 0-100 score with calibration examples, red flags
 - `../vintoria-sales/references/critic-check.md` — the yes/no checks before anything is posted or sent
 - `../vintoria-sales/references/team.md` — roles, the team board, claims, handoffs, reviews, alerts, standups
 - `../vintoria-sales/references/pipeline-format.md` — PIPELINE.md, SEEN.md, RUN-LOG.md and TEAM-BOARD.md formats
 - `../vintoria-sales/references/airtable.md` — the Airtable tables, find-before-create, claims, batching
 - `../vintoria-sales/references/hermes-setup.md` — which PC hunts which lanes, per-run caps and daily targets
 - `../vintoria-sales/references/brands.md` — Vintoria day 0 + Radian Marketing day 1 emails and the shared rules
-- `../vintoria-lead-hunt/references/queries.md` — agency-seeking LinkedIn queries, market rotation, direct search URL
-- `../vintoria-lead-hunt/references/intent-rubric.md` — agency intent: agency / open / switching vs freelancer / employee
+- `../vintoria-lead-hunt/references/queries.md` — the measured query method: six rules, ten phrase families, ready-made packs, the rotation, low-yield fixes
+- `../vintoria-lead-hunt/references/intent-rubric.md` — agency intent, intent strength, the concrete-signal bar, agency traps, cut-off posts
+- `../vintoria-lead-hunt/references/prefilter.md` — the seconds-per-post check: buyer phrases to keep, seller / job / advice wording to skip
 - `../vintoria-outreach/references/linkedin-playbook.md` — finding the email; the LinkedIn comment, connection note and message
 - `../vintoria-outreach/references/comment-angles.md` — angles that make a comment stand out on an agency-request post
 - `../vintoria-outreach/references/premium-email.md` — the premium email and the five follow-up formats

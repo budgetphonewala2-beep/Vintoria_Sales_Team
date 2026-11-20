@@ -55,18 +55,21 @@ other agencies.
    | Switching (both) | "our agency isn't delivering", "looking to switch agencies", "developer disappeared" |
    | Hinglish | "agency chahiye", "website banwana hai — koi achhi company batao", "app banwana hai" |
    | **Any other of the ~330 services** | the service rotation in `references/queries.md`: the next services of this PC's share, turned into buyer words ("PostgreSQL developer", "Blinkit onboarding") |
-2. **Search LinkedIn, newest first** (`references/queries.md` — every query, the hour-by-hour market rotation and the
-   direct search URL): Posts → **Latest** → **Past 24 hours**, plus the comments under "recommend an agency" posts,
-   LinkedIn service requests (if Vintoria has a Service Page) and joined groups. For each hit note: author, headline,
-   company, profile URL, post URL, the age shown on the post, comment count.
-   **Under 24 hours only**, by the age on the post (`1d` = too old) — `../vintoria-sales/references/lead-quality.md`.
-   Skip every URL already in `SEEN.md`; add each one you judge.
-3. **Judge every candidate** with `references/intent-rubric.md`: buyer / seller / job_seeker / other **and agency intent**
-   (`agency`, `open`, `switching` → keep; `freelancer`, `employee` → drop), what they need (a Vintoria catalog service —
-   "AI chatbot for our SaaS" → `123 AI Chatbot Development` — or a Radian service), urgency, budget (only if stated),
-   location, and an **exact quote**. Keep only confidence 0.7+ on both questions.
-4. **Score** with the value score in `../vintoria-sales/references/lead-quality.md`; valuable = 65+, HOT = 85+ under
-   2 hours with ≤ 5 comments. Hourly 24/7 hunting runs through `vintoria-hourly-run`; this skill is the deeper one-off hunt.
+2. **Search LinkedIn the measured way** (`references/queries.md`): Posts → **Latest** → **Past 24 hours**; quoted
+   first-person buyer phrases, 2-4 per query, short head noun first ("looking for a **marketing** agency / **partner**"),
+   the task family ("need an agency to rebuild our website"), `NOT "we offer" NOT "open to work"` — never `NOT hiring`;
+   the first ~25 results per query, then the next one. Plus LinkedIn service requests and joined groups. For each hit
+   note: author, headline, company, profile URL, post URL, the age shown on the post, comment count. **Under 24 hours
+   only** (`1d` = too old). Skip every URL already in **Seen** or **Leads**.
+3. **Prefilter, then judge** — `references/prefilter.md` skips sellers, job ads, job seekers and advice posts in seconds
+   (never a post with a buyer phrase); then `references/intent-rubric.md` for each survivor: buyer or not, **agency
+   intent** (`agency`, `open`, `switching` pass; `freelancer`, `employee` don't), intent strength, the concrete signals
+   (scope, money, time, outsourcer, owner referral), the service (a Vintoria catalog service — "AI chatbot for our SaaS"
+   → `123 AI Chatbot Development` — or a Radian service), location if stated, and an **exact quote**. Cut off → open
+   the full post first.
+4. **Gate and score** with `../vintoria-sales/references/lead-quality.md`: every gate must pass (no location stated is
+   fine; only an explicitly foreign one fails); valuable = score 60+, HOT = 80+ under 2 hours with ≤ 10 comments. Hourly
+   24/7 hunting runs through `vintoria-hourly-run`; this skill is the deeper one-off hunt.
 5. **Pick the first brand:** a build need (website, app, AI, design) → Vintoria on day 0, Radian on day 1; a growth need
    (ads, SEO, social, marketplaces) → Radian on day 0, Vintoria on day 1 (`../vintoria-sales/references/brands.md`).
    Every emailed lead gets both agencies, one day apart, each with its own angle.
@@ -90,4 +93,5 @@ other agencies.
 ## References (read when you reach that step)
 
 - `references/intent-rubric.md` — buyer vs seller vs job seeker, the agency-intent layer, 12 LinkedIn agency examples + 30 general examples (English + Hinglish)
-- `references/queries.md` — agency-seeking LinkedIn queries by lane, where to search, 24/7 market rotation, the direct search URL, what to skip
+- `references/queries.md` — the measured query method: six rules, ten phrase families, ready-made packs per service, the rotation, low-yield fixes
+- `references/prefilter.md` — the seconds-per-post check before judging: buyer phrases keep, seller / job / advice wording skips

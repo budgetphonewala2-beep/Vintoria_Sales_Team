@@ -9,7 +9,8 @@ escalated item back up when the owner answers (the Airtable **Board**).
 | Every | Which PC | What |
 |---|---|---|
 | 15 min | PC3 | fast reply check: LinkedIn messages and comment replies, both email inboxes |
-| 1 hour | PC1, PC2, PC3 | `vintoria-hourly-run` for its lanes — due emails of its brand first, then new leads, then a reply check |
+| 05:00 daily | PC1, PC2, PC3 | the first run at or after 05:00 starts the day — target 60 per PC (180 team) |
+| 30 min | PC1, PC2, PC3 | `vintoria-hourly-run` for its lanes — due emails of its brand first, then new leads until 60, then a reply check |
 | **6 hours** (00:00, 06:00, 12:00, 18:00 IST) | PC3 | **full inbox sweep** (below) |
 | 6 hours (:05) | each PC | `vintoria-account-health` for its own LinkedIn account and inbox |
 | Daily 08:00 | PC3 | the **watchdog** (below) |

@@ -1,7 +1,7 @@
 # Lead quality — what a "valuable lead" is, and the 24-hour rule
 
 Leads come from **LinkedIn only**, and only from people **looking to hire an agency** (or an outside team / partner).
-Each PC's hourly run keeps up to its per-run cap (8 on every PC), within a ceiling of 180 per PC and 540 for the team a day (`hermes-setup.md`). They must be **valuable**, not just many: one real agency-seeker answered
+Each PC's hourly run keeps up to its per-run cap (8 on every PC), until it has 60 new, unique leads for the day — 180 for the team (`hermes-setup.md`). They must be **valuable**, not just many: one real agency-seeker answered
 fast is worth more than ten weak ones. If an hour has only four valuable posts, keep four and say so.
 
 ## 1. The 24-hour rule (exact)

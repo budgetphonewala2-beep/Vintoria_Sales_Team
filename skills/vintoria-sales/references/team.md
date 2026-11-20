@@ -33,7 +33,8 @@ Ask: email + comment within 10 minutes.
 - **ID:** `M-<date>-<time>-<PC>` (PC1, PC2, PC3). Replies quote it: `Re: M-20261117-1405-RH`.
 - **Types:** `HANDOFF` · `CLAIM` · `DONE` · `QUESTION` · `ANSWER` · `REVIEW-REQUEST` · `REVIEW` · `ALERT` · `BLOCKED` ·
   `HOURLY` · `STANDUP` · `DECISION` · `ESCALATE` · `HOT` (fast-track lead) · `HEALTH` (account level) · `DIGEST` (owner summary) · `SWEEP` (6-hour inbox sweep) ·
-  `HEARTBEAT` (I'm alive — at least one Runs record and Board line per PC per hour; see `autopilot.md`).
+  `HEARTBEAT` (I'm alive — at least one Runs record and Board line per PC per hour; see `autopilot.md`) · `START` (05:00
+  start of day) · `TARGET` (a PC reached its 60).
 - **To:** a PC (`PC1`, `PC2`, `PC3`), a role on a PC, `@all`, or `@owner` (the human — only for `ESCALATE`).
 - **Self-contained:** whoever receives a message must be able to act without opening another file — need, exact quote,
   link, age, score, service, ask, deadline.
@@ -65,7 +66,8 @@ Ask: email + comment within 10 minutes.
 
 | When | Who | What |
 |---|---|---|
-| Every hour, all three PCs | each PC | `vintoria-hourly-run` for its lanes: due emails of its brand → hunt → save to Airtable → contact → `HOURLY` |
+| 05:00 IST daily | each PC | the first run at or after 05:00 starts the day: today's **Daily** record (target 60), `START` on the Board |
+| Every 30 min, all three PCs | each PC | `vintoria-hourly-run` for its lanes: due emails of its brand → hunt until 60 → save to Airtable (no duplicates) → contact → `HOURLY` |
 | Every 15 min | PC3 | fast reply check (both inboxes, LinkedIn messages) — answer within 15 minutes |
 | Every 6 hours (00/06/12/18 IST) | PC3 | full inbox sweep incl. Spam → `SWEEP` (`autopilot.md`) |
 | Every 6 hours (:05) | each PC | `vintoria-account-health` for its own LinkedIn account and inbox → `HEALTH` |
@@ -108,6 +110,6 @@ money already paid. Use `ESCALATE`, keep it to five lines, and keep working on o
 
 | PC | Target | Quality bar |
 |---|---|---|
-| PC1, PC2, PC3 | up to 180 agency-seekers saved each (up to 8 per hourly run) | every saved lead under 24 h, agency intent, exact quote, no duplicates |
+| PC1, PC2, PC3 | 60 unique agency-seekers saved each, from 05:00 IST until done (up to 8 per run, every 30 min) | every saved lead under 24 h, agency intent, exact quote, no duplicates |
 | PC3, also | every reply answered within 15 minutes | ≥ 40 % of positive replies → booked call |
-| Team | up to 540 a day (goal 400-500+) | 100 % of messages pass the critic check; numbers from Airtable, never estimated |
+| Team | 180 unique leads a day | 100 % of messages pass the critic check; numbers from Airtable, never estimated |

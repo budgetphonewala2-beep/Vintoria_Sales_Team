@@ -2,7 +2,7 @@
 
 Vintoria's sales team runs on **Hermes Agent** (Nous Research) on **three PCs**. Each PC has its own Hermes, its own
 logged-in LinkedIn account, and access to the shared **Airtable** base (`airtable.md`). Together they aim for
-**400-500+ high-quality LinkedIn leads a day (ceiling 540: 180 per PC)** — people looking to hire an agency, all under 24 hours old — saved in
+**180 high-quality LinkedIn leads a day — 60 per PC, from 05:00 IST** — people looking to hire an agency, all under 24 hours old — saved in
 Airtable without duplicates, and contacted within safe limits.
 
 What Hermes gives us (from its docs): skills in `~/.hermes/skills/` loaded on demand and usable as slash commands
@@ -17,15 +17,17 @@ summary; a small persistent memory; project rules from an `AGENTS.md` in the wor
 | | PC1 — Build | PC2 — Growth | PC3 — Manager & Closer |
 |---|---|---|---|
 | Hunts (agency-seekers, < 24 h) | web & e-commerce · apps, SaaS & AI · design & branding | marketplaces & quick commerce · SEO, AEO & GEO · paid ads · social & content · CRO & retention · motion-graphics video | "switching agencies" · "any service" · comments under "recommend an agency" posts · LinkedIn service requests · groups |
-| Daily lead target (a ceiling) | 180 | 180 | 180 |
-| Per hourly run | up to 8 | up to 8 | up to 8 |
+| Daily lead target | 60 | 60 | 60 |
+| Hunting hours | from 05:00 IST every 30 min until 60 | same | same |
+| Per run | up to 8 | up to 8 | up to 8 |
 | Writes and sends | every Vintoria email from `business@vintoria.org` (signed Pratik Patil, Co-founder) — incl. Vintoria's day-1 emails for PC2's growth leads · LinkedIn comments / notes from PC1's account | every Radian email from `amar@radianmarketing.site` (signed Amar) — incl. Radian's day-1 emails for PC1's build leads · LinkedIn touches from PC2's account | LinkedIn touches for its own leads from PC3's account; no cold email |
 | Also | — | — | reads **both inboxes** and LinkedIn messages (Closer), account health, standups, owner digest, weekly report, self-test, watchdog |
 
-**Total ceiling: 540 leads a day** (180 per PC, equal on all three; the goal is 400-500). It is a ceiling, never a quota: if LinkedIn has only 300
-genuine agency-seekers today, the team saves 300 and the `Supply note` in **Runs** says so. The bar in
-`lead-quality.md` is never lowered to reach a number. A PC that reaches its daily target stops hunting for the day and
-spends its runs on contacting, emails and research.
+**Team total: 180 unique leads a day** (60 per PC, equal on all three). It is a ceiling, never a quota: if LinkedIn has only 300
+genuine agency-seekers today, the team saves 300 and the `Supply note` in **Runs** says so. Every PC starts at
+**05:00 IST** and hunts every 30 minutes **until its 60 is reached** — behind pace it widens the search (all its queries,
+every market, comments and groups, the other PCs' lanes, new query variations), never the bar in `lead-quality.md`.
+At 60 it stops hunting until the next 05:00 and spends its runs on contacting, emails and research.
 
 Leads are **saved** at this volume; **contacting** stays within the limits (per LinkedIn account and per inbox warm-up
 cap), best score and freshest first. The rest wait in **To contact** while still fresh.
@@ -87,7 +89,7 @@ owner's channel. Times are IST — after creating, check `hermes cron list` show
 
 | PC | Schedule | Skill(s) | Prompt (short) |
 |---|---|---|---|
-| PC1, PC2, PC3 | `0 * * * *` (every hour at :00) | `vintoria-hourly-run` | "Run the hourly cycle as <PCn> for your lanes (hermes-setup.md). Due emails of your brand first, then hunting up to your per-run cap and daily target, then contacting within limits. Update Runs. [SILENT] unless ESCALATE." |
+| PC1, PC2, PC3 | `*/30 * * * *` (every 30 min) | `vintoria-hourly-run` | "Run the cycle as <PCn> for your lanes (hermes-setup.md). If this is the first run at or after 05:00 IST, start the day (today's Daily record, target 60, START on the Board). Due emails of your brand first; if today's Leads saved < 60, hunt up to 8 (find before saving, check again after saving — no duplicates) (widen the search if behind pace, never the bar); then contact within limits. Update Runs and Daily. [SILENT] unless ESCALATE or TARGET." |
 | PC3 | `every 15m` | `vintoria-reply-book` | "Fast reply check: LinkedIn messages and both inboxes; answer, stop both brands' sequences on any reply, update Airtable." |
 | PC3 | `0 0,6,12,18 * * *` | `vintoria-reply-book` | "Full inbox sweep of both brands incl. Spam (autopilot.md); post SWEEP on the Board." |
 | PC1, PC2, PC3 | `5 0,6,12,18 * * *` | `vintoria-account-health` | "Health check for this PC's LinkedIn account (and this PC's inbox); write Health; RED → ESCALATE." |
@@ -99,7 +101,8 @@ owner's channel. Times are IST — after creating, check `hermes cron list` show
 | PC3 | `0 10 * * 1` | `vintoria-report` | "Weekly report from Airtable; deliver to the owner with this week's DECISIONs." |
 | PC1, PC2, PC3 | `0 3 * * 0` | `vintoria-sales` | "Run self-test.md on yourself; any fail → switch this PC to review mode and ESCALATE." |
 
-Cost note: about 30-40 scheduled runs per PC per day (PC3 more, with the 15-minute reply checks) — set the model in the
+Cost note: about 55-65 scheduled runs per PC per day (PC3 more, with the 15-minute reply checks); runs after the target
+are short (due emails and contacting only) — set the model in the
 profile's `config.yaml` accordingly.
 
 ## 5. Sub-agents (`delegate_task`)

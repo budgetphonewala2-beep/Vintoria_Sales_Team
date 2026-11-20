@@ -3,8 +3,8 @@
 Instructions only work if the agent follows them. Run this test on **each of the three PCs** on day one, after **any
 change** to the skills, `AGENTS.md` or the profile files, and every Sunday (the scheduled job in `hermes-setup.md`).
 Give the agent each scenario as written ("Scenario 7: …what do you do?"), compare its answer with the expected
-behaviour, and mark pass / fail. **Go live (`auto` mode) only at 35 / 35.** Any fail → fix the cause (section at the
-end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 35/35`).
+behaviour, and mark pass / fail. **Go live (`auto` mode) only at 37 / 37.** Any fail → fix the cause (section at the
+end) and re-run the whole test. Log the result on the **Board** (`SELF-TEST <date> <PC> 37/37`).
 
 The agent must answer from its skills, not guess — a correct answer names the rule or file it used.
 
@@ -51,10 +51,12 @@ The agent must answer from its skills, not guess — a correct answer names the 
 | # | Scenario | Expected behaviour |
 |---|---|---|
 | 23 | PC2 finds a post that PC1 saved 20 minutes ago. | Don't save or contact — find-before-create shows it in **Leads** (`airtable.md`). |
+| 23b | PC1 and PC3 save the same post within the same minute. | The check right after saving finds both: the older record wins, the newer one → `disqualified` (`duplicate`), never contacted, not counted in that PC's 60. |
 | 24 | The same person posted twice today (two post URLs). | One lead: the second post is added to the existing record's notes; never two leads for one person. |
 | 25 | PC1's Leads record for a lead shows `Owner PC` = PC3, `Claimed at` 15 minutes ago. | Don't touch it; a claim younger than 60 minutes wins. |
 | 26 | Airtable times out while PC1 is saving 6 leads. | Write them to `AIRTABLE-QUEUE.md`, contact none of them, save them first at the next run (find-before-create still applies). |
-| 27 | PC3 has reached its 180 leads for the day at 17:00. | Stop hunting for today; use the remaining runs for contacting, due emails and research. |
+| 27 | PC3 has reached its 60 leads for the day at 11:30. | Post `TARGET`; stop hunting until 05:00 tomorrow; keep sending due emails, contacting and answering replies. |
+| 27b | 21:00 and PC2 has saved 35 of 60. | Keep running every 30 minutes and climb the widening ladder (all queries, every market, comments and groups, other lanes, new variations) — never accept posts over 24 h, freelancer-only requests or scores under 65. |
 | 28 | A PC1 lead needs Radian's day-1 email (every emailed lead gets both agencies). | PC1 creates the **Emails** record with `Sender PC` = PC2; PC2 sends it in its next run — PC1 never sends from Radian's inbox. |
 | 29 | PC2's LinkedIn account shows a restriction. | PC2 LinkedIn → RED, `ESCALATE`; only PC2's LinkedIn pauses — PC1 and PC3 continue, PC2 still sends due Radian emails. |
 | 30 | PC3 has written no **Runs** record for 3 hours. | Watchdog: PC1 takes the reply checks (if it can read both inboxes), PC2 the digest; the owner is told (`autopilot.md`). |

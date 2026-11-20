@@ -83,7 +83,8 @@ If this section is empty, every price is written `[PRICE TO CONFIRM]`.
 - Cold calls / SMS: no
 - Approval mode: auto   ← `auto` = the PCs post and send messages that pass every check; `review` = the owner approves each one
 - Hourly run: on, 24/7 on all three PCs (`vintoria-hourly-run`, Hermes scheduled jobs — `../../vintoria-sales/references/hermes-setup.md`)
-- Daily lead targets (ceilings): 180 on every PC = 540 (goal 400-500+) · per hourly run: 8 on every PC
+- Daily lead target: 60 on every PC (180 team, no duplicates) · start 05:00 IST · every 30 minutes until reached · up to 8 per run ·
+  behind pace → widen the search, never the quality bar
 - Airtable base: [ASK: name + link] — tables per `../../vintoria-sales/references/airtable.md`
 - LinkedIn accounts: PC1 [ASK] · PC2 [ASK] · PC3 [ASK] (three different accounts, never one account on two PCs)
 - Per-hour target: up to 10 valuable LinkedIn agency-seekers (a ceiling, never a quota)

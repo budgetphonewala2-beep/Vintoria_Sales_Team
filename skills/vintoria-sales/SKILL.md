@@ -48,7 +48,7 @@ most calls, pick the right skill for each job, and never let anything go out tha
 | Set up Vintoria's profile, offer lanes and ideal customer (**first run**) | `vintoria-setup` | `SELLER-PROFILE.md`, `OFFER.md`, `IDEAL-CUSTOMER-PROFILE.md` |
 | **Keep the accounts alive:** LinkedIn restrictions, email bounces and spam placement, GREEN-YELLOW-RED limits | `vintoria-account-health` | `HEALTH.md`, `HEALTH` line on the board |
 | **Inbound:** a LinkedIn post a day, comments on buyers' posts, engagers → warm leads | `vintoria-authority` | `CONTENT-LOG.md`, warm-lead handoffs |
-| **Every hour, 24/7, on each PC:** fresh LinkedIn agency-seekers (team ceiling 540 a day — 180 per PC), saved to Airtable, contacted within the limits | `vintoria-hourly-run` | **Leads**, **Runs**, `HOURLY` on the **Board** |
+| **Every hour, 24/7, on each PC:** fresh LinkedIn agency-seekers (60 per PC from 05:00, 180 a day for the team, no duplicates), saved to Airtable, contacted within the limits | `vintoria-hourly-run` | **Leads**, **Runs**, `HOURLY` on the **Board** |
 | A deeper or one-off hunt for agency-seekers on LinkedIn | `vintoria-lead-hunt` | judged leads with exact quotes in `PIPELINE.md` |
 | Everything about one prospect: research, site audit, contacts + email, qualification, competitors, full score | `vintoria-prospect-research` | `prospects/<slug>/DOSSIER.md` and friends |
 | Emails from both brands (Vintoria day 0, Radian day 1), LinkedIn comments, connection notes and messages, follow-ups | `vintoria-outreach` | emails sent, comments posted, all logged |
@@ -148,7 +148,7 @@ Setting up the three Hermes PCs (profiles, skills, `AGENTS.md`, scheduled jobs, 
 - `references/airtable.md` — the shared Airtable base: which table replaces each file, fields, find-before-create, claims, batching and rate limits, views
 - `references/hermes-setup.md` — the three Hermes PCs: who hunts what, daily targets, install, AGENTS.md, scheduled jobs, sub-agents, watchdog, first day
 - `references/autopilot.md` — 24/7 without waiting for a human: the loop, the 6-hour full inbox sweep, the watchdog and role failover, default actions, what still needs a human
-- `references/self-test.md` — 35 scenarios with the expected behaviour: run before going live, after any change, monthly
+- `references/self-test.md` — 37 scenarios with the expected behaviour: run before going live, after any change, monthly
 - `references/service-catalog.md` — the 12 disciplines and how to cite a service
 - `references/services-01-strategy.md` — discipline 01 Strategy & Consulting (001-015): every service, signals, who buys it, when not to sell it
 - `references/services-02-web.md` — discipline 02 Web Development (016-040): every service, signals, who buys it, when not to sell it

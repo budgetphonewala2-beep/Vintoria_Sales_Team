@@ -62,7 +62,8 @@ REVIEW, ALERT, BLOCKED, HOURLY, STANDUP, DECISION, ESCALATE, HOT, HEALTH, DIGEST
 **Runs** — `Run ID` · `PC` · `Started` · `Ended` · `Candidates` · `Valuable` · `HOT` · `Saved` · `Emails sent` ·
 `Comments` · `Notes` · `Messages` · `Replies found` · `Skipped by critic` · `Queries used` · `Supply note`
 
-**Daily** — `Date` · `PC` · `Leads saved` · `Target` · `Candidates judged` · `Valuable rate` (formula) · `Emails` ·
+**Daily** — `Date` (the sales day runs 05:00-04:59 IST) · `PC` · `Leads saved` · `Target` (60) · `Started at` ·
+`Target reached at` · `Widening step` (0-4) · `Candidates judged` · `Valuable rate` (formula) · `Emails` ·
 `LinkedIn touches` · `Replies` · `Calls` · `Health LinkedIn` · `Health email`
 
 **Health** — `Check ID` · `At` · `PC` · `Channel` (LinkedIn account / Vintoria email / Radian email) · `Level`
@@ -95,7 +96,9 @@ REVIEW, ALERT, BLOCKED, HOURLY, STANDUP, DECISION, ESCALATE, HOT, HEALTH, DIGEST
 
 1. **Find before you create.** Before saving a lead, search **Seen** and **Leads** for the `Post URL`, and **Leads** for
    the same `Person URL` in the last 30 days. Found → it's a duplicate: don't save it again (add the new post to the
-   existing lead's notes if useful). Prefer the tool's **upsert** on the key field (Airtable's `performUpsert` with
+   existing lead's notes if useful). **Right after saving, search once more** for the same `Post URL` / `Person URL`:
+   if another PC saved it in the same moment, the record created first wins and the newer one is marked
+   `Stage` = disqualified (`duplicate`) — never contacted, never counted. Prefer the tool's **upsert** on the key field (Airtable's `performUpsert` with
    `fieldsToMergeOn`) where the Airtable tool supports it.
 2. **Claim with the record, not with a message.** To work a lead, set `Owner PC` and `Claimed at` on the Leads record,
    then read it back: if another PC's claim is newer than 60 minutes, let it go. The Board `CLAIM` message is optional.
